@@ -1,0 +1,11 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "shell: Push GH Page",
+            "type": "shell",
+            "command": "git subtree push --prefix build origin gh-pages",
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,13 +1,256 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+* {
+  box-sizing: border-box;
+
+  font-family:
+    "Roboto",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans",
+    Helvetica,
+    Arial,
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji";
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100vw;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+}
+
+a,
+:visited,
+:link {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.github-logo {
+  position: relative;
+  display: inline;
+  height: 1em;
+}
+
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family:
+    source-code-pro,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Courier New",
     monospace;
+}
+
+:root {
+  --transition: 0.5s ease;
+
+  margin: 0;
+}
+
+h1 {
+  margin: 0;
+  padding: 0 0 10px 0;
+  font-size: 28px;
+}
+
+h2 {
+  margin: 0;
+  padding: 0 0 5px 0;
+  font-size: 16px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  /* Set the hr color */
+  color: hsl(0, 0%, 0%, 20%);  /* old IE */
+
+  background-color: hsl(0, 0%, 0%, 20%);  /* Modern Browsers */
+  border: none;
+}
+
+.row-pane {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.column-pane {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  height: 100vh;
+  padding: 10px;
+}
+
+.left {
+  flex: 0 0 max-content;
+  align-items: normal;
+}
+
+form.column-pane.left {
+  background-color: hsl(0, 0%, 95%);
+}
+
+footer {
+  position: absolute;
+  bottom: 0;
+
+  width: 100%;
+  padding: 10px 0 10px 0;
+
+  font-size: 12px;
+  /* height: 10px; */
+}
+
+.layout-table {
+  table-layout: fixed;
+  border-collapse: collapse;
+
+  margin: 0;
+  padding: 0;
+
+  text-align: center;
+}
+
+.layout-table td,
+.layout-table th {
+  box-sizing: border-box;
+  padding: 4px !important;
+}
+
+.layout-table td {
+  width: calc(100% / 7);
+  min-width: fit-content;
+  border: 1px solid hsl(0, 0%, 0%, 100%);
+}
+.layout-table th {
+  border-collapse: collapse;
+  border: 1px solid hsl(0, 0%, 0%, 100%);
+}
+
+/* Removing all unwanted border
+from left hand side by calling
+all the elements in the first
+column and removing their left
+border*/
+.layout-table tr td:first-child,
+th:first-child {
+  text-align: left;
+  border-left: none;
+}
+
+/* Removing all unwanted border
+from top of the table by calling
+all the elements in first row and
+removing their top border*/
+.layout-table tr:first-child th {
+  border-top: none;
+}
+
+/* Removing all unwanted border
+from right hand side by calling
+all the elements in last row and
+removing their right border*/
+.layout-table tr td:last-child,
+th:last-child {
+  border-right: none;
+}
+
+/* Removing all unwanted border
+from bottom of the table by
+calling all the elements in
+last column and removing their
+bottom border*/
+.layout-table tr:last-child td {
+  border-bottom: none;
+}
+
+th {
+  font-weight: 600;
+}
+
+table {
+  table-layout: fixed;
+}
+
+table.column-pane {
+  height: auto;
+  padding: 0px;
+}
+
+td:first-child {
+  padding-left: 0;
+}
+
+td:last-child {
+  padding-right: 0;
+}
+
+.value-input {
+  padding-right: 0;
+}
+
+.right {
+  flex: 1;
+  padding: 0;
+}
+
+td {
+  padding: 0.1em;
+}
+
+.divider {
+  margin: 20px 0 20px 0;
+  border-bottom: 1px solid black;
+}
+
+.left-cell-label {
+  min-width: 220px;
+  white-space: nowrap;
+}
+
+.required-asterisk {
+  color: #e32;
+}
+
+input[type="text"] {
+  width: 150px;
+}
+
+/* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+@media screen and (max-width: 850px) {
+  .row-pane {
+    flex-direction: column;
+  }
+
+  .tubesheet-svg {
+    width: 100dvw;
+    height: auto;
+  }
+
+  footer {
+    position: initial;
+    bottom: initial;
+    width: initial;
+    height: initial;
+  }
 }

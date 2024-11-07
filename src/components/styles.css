@@ -1,0 +1,125 @@
+* {
+  position: relative;
+  /* Make sure all elements are above the background */
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+:root {
+  --black: #333333;
+  --white: #f5f5f5;
+  --background: var(--white);
+  --foreground: var(--black);
+  --transition: 0.5s ease;
+  --invert: 0;
+  --hue: 0deg;
+  --toggle-scale: 0.35;
+}
+
+html {
+  color: var(--foreground);
+  background: var(--background);
+  transition:
+    color var(--transition),
+    transform var(--transition),
+    background var(--transition),
+    background-color var(--transition),
+    filter var(--transition);
+}
+
+html:not(img):not(video):not(.all-color-critical-elements) {
+  filter: invert(var(--invert)) hue-rotate(var(--hue));
+}
+
+.darkmode::before {
+  transform: translateX(0);
+}
+
+.hidden {
+  position: absolute;
+
+  overflow: hidden;
+
+  width: 1px;
+  height: 1px;
+
+  white-space: nowrap;
+
+  clip: rect(0 0 0 0);
+  clip-path: inset(25%);
+}
+
+.toggle-wrapper {
+  display: block;
+  width: calc(130px * var(--toggle-scale));
+  margin: 0; /* Centering for demo */
+}
+
+.toggle {
+  cursor: pointer;
+
+  position: relative;
+
+  width: calc(130px * var(--toggle-scale));
+  height: calc(65px * var(--toggle-scale));
+  padding: calc(12px * var(--toggle-scale));
+
+  background: var(--foreground);
+  border-radius: calc(32.5px * var(--toggle-scale));
+
+  transition:
+    color var(--transition),
+    transform var(--transition),
+    background var(--transition),
+    background-color var(--transition),
+    filter var(--transition);
+}
+
+.toggle::before {
+  content: "";
+
+  position: absolute;
+  z-index: 2;
+  transform: translate(0);
+
+  display: block;
+
+  width: calc(41px * var(--toggle-scale));
+  height: calc(41px * var(--toggle-scale));
+
+  background: var(--background);
+  border-radius: calc(20.5px * var(--toggle-scale));
+
+  transition:
+    color var(--transition),
+    transform var(--transition),
+    background var(--transition),
+    background-color var(--transition),
+    filter var(--transition);
+}
+
+.toggle.enabled::before {
+  transform: translateX(calc(65px * var(--toggle-scale)));
+}
+
+.toggle input {
+  position: absolute;
+  top: 0;
+  opacity: 0;
+}
+
+.toggle .icons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  height: 100%;
+  margin: 0 calc(5px * var(--toggle-scale));
+}
+
+.toggle .icons svg {
+  z-index: 0;
+  width: calc(32px * var(--toggle-scale));
+  height: calc(32px * var(--toggle-scale));
+  fill: var(--background);
+}
