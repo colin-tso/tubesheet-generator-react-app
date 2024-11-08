@@ -209,6 +209,11 @@ td:last-child {
   padding-right: 0;
 }
 
+.value-input,
+.units {
+  vertical-align: bottom;
+}
+
 .right {
   flex: 1;
   padding: 0;
@@ -224,8 +229,8 @@ td {
 }
 
 .left-cell-label {
-  min-width: min(70%, 220px);
-  /* white-space: nowrap; */
+  min-width: 50%;
+  max-width: 220px;
 }
 
 .required-asterisk {

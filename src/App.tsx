@@ -255,7 +255,7 @@ const App = () => {
                                     required
                                 />
                             </td>
-                            <td></td>
+                            <td className="units"></td>
                             <td className="required-asterisk">*</td>
                         </tr>
                         <tr>
@@ -281,7 +281,7 @@ const App = () => {
                                     required
                                 />
                             </td>
-                            <td> mm</td>
+                            <td className="units"> mm</td>
                             <td className="required-asterisk">*</td>
                         </tr>
                         <tr>
@@ -313,7 +313,7 @@ const App = () => {
                                     required
                                 />
                             </td>
-                            <td> mm</td>
+                            <td className="units"> mm</td>
                             <td className="required-asterisk">*</td>
                         </tr>
                         <tr>
@@ -339,7 +339,7 @@ const App = () => {
                                     required
                                 />
                             </td>
-                            <td> mm</td>
+                            <td className="units"> mm</td>
                             <td className="required-asterisk">*</td>
                         </tr>
                         <tr>
@@ -442,6 +442,7 @@ const App = () => {
                                     name="layoutOption"
                                     value="30"
                                     onChange={onBlur}
+                                    required
                                 ></input>
                             </td>
                             <td>
@@ -507,7 +508,8 @@ const App = () => {
                                     inputMode="decimal"
                                 />
                             </td>
-                            <td> mm</td>
+                            <td className="units"> mm</td>
+                            <td></td>
                         </tr>
                     </tbody>
                     <tbody className="divider"></tbody>
@@ -537,7 +539,13 @@ const App = () => {
                     <br />
                     This web app has been released under a GPL 3.0 license.
                     <br />
-                    <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">Find out more here.</a>
+                    <a
+                        href="https://www.gnu.org/licenses/gpl-3.0.en.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Find out more here.
+                    </a>
                 </footer>
             </form>
             <div

@@ -11,7 +11,7 @@ Tubesheet Layout Generator React App is a web app built using ReactJS, and acts 
 
 ## Accessing the App
 
-[Click Here](colin-tso.github.io/tubesheet-generator-react-app)
+[Click Here](https://colin-tso.github.io/tubesheet-generator-react-app)
 
 ## Dependencies
 
