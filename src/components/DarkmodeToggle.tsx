@@ -17,6 +17,24 @@ const updateTheme = (isDarkEnabled: Boolean) => {
 export default function ThemeToggle() {
     const [isEnabled, setIsEnabled] = useState(false);
 
+    // User system dark mode detection
+    useEffect(() => {
+        // Add listener to update styles
+        window
+            .matchMedia("(prefers-color-scheme: dark)")
+            .addEventListener("change", (e) => setIsEnabled(e.matches));
+
+        // Setup dark/light mode for the first time
+        setIsEnabled(window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+        // Remove listener
+        return () => {
+            window
+                .matchMedia("(prefers-color-scheme: dark)")
+                .removeEventListener("change", () => {});
+        };
+    }, []);
+
     useEffect(() => {
         updateTheme(isEnabled);
     }, [isEnabled]);
