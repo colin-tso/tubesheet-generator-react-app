@@ -251,6 +251,7 @@ const App = () => {
                                     onBlur={onBlur}
                                     onChange={(e) => {}}
                                     onSubmit={inputOnSubmitHandler}
+                                    inputMode="numeric"
                                     required
                                 />
                             </td>
@@ -276,6 +277,7 @@ const App = () => {
                                     onBlur={onBlur}
                                     onChange={(e) => {}}
                                     onSubmit={inputOnSubmitHandler}
+                                    inputMode="decimal"
                                     required
                                 />
                             </td>
@@ -307,6 +309,7 @@ const App = () => {
                                             ? ""
                                             : OTLtoShell.toString()
                                     }
+                                    inputMode="decimal"
                                     required
                                 />
                             </td>
@@ -332,6 +335,7 @@ const App = () => {
                                     onChange={(e) => {}}
                                     onSubmit={inputOnSubmitHandler}
                                     value={typeof pitch === "undefined" ? "" : pitch.toString()}
+                                    inputMode="decimal"
                                     required
                                 />
                             </td>
@@ -361,6 +365,7 @@ const App = () => {
                                             ? ""
                                             : pitchRatio.toString()
                                     }
+                                    inputMode="decimal"
                                     required
                                 />
                             </td>
@@ -499,6 +504,7 @@ const App = () => {
                                     onChange={(e) => {}}
                                     onSubmit={inputOnSubmitHandler}
                                     value={typeof shellID === "undefined" ? "" : shellID.toString()}
+                                    inputMode="decimal"
                                 />
                             </td>
                             <td> mm</td>
