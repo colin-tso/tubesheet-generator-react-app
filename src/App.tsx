@@ -7,11 +7,8 @@ import GitHubButton from "react-github-btn";
 import ThemeToggle from "./components/DarkmodeToggle";
 
 const App = () => {
-    // dr.auto({});
-
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // alert(JSON.stringify(stateVars));
         if (typeof layoutOption !== "undefined") {
             const parsedLayoutOption = layoutOption === 0 ? "radial" : layoutOption;
             let selectedLayout: TubeSheet | null = null;
@@ -218,6 +215,7 @@ const App = () => {
         layoutInputsDefined,
     ]);
 
+    // JSX return
     return (
         <div className="row-pane">
             <form onSubmit={formOnSubmitHandler} className="column-pane left">
@@ -523,7 +521,7 @@ const App = () => {
                 </button>
                 <footer>
                     <GitHubButton
-                        href="https://github.com/colin-tso"
+                        href="https://github.com/colin-tso/tubesheet-generator-react-app"
                         data-color-scheme="dark;"
                         data-size="large"
                         aria-label=" View this repo on GitHub"
