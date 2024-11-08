@@ -24,13 +24,13 @@ body {
 }
 
 html {
-  width: 100vw;
-  height: 100%;
+  width: 100dvw;
+  height: 100dvh;
 }
 
 body {
-  width: 100%;
-  height: 100%;
+  width: 100dvw;
+  height: 100dvh;
 }
 
 a,
@@ -224,8 +224,8 @@ td {
 }
 
 .left-cell-label {
-  min-width: 220px;
-  white-space: nowrap;
+  min-width: min(70%, 220px);
+  /* white-space: nowrap; */
 }
 
 .required-asterisk {
@@ -233,7 +233,8 @@ td {
 }
 
 input[type="text"] {
-  width: 150px;
+  width: 100%;
+  min-width: 30px;
 }
 
 /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */

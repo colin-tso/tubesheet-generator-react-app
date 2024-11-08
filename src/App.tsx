@@ -529,7 +529,8 @@ const App = () => {
                         View this repo on GitHub
                     </GitHubButton>
                     <br />
-                    This web app has been released under a GPL 3.0 license.{" "}
+                    This web app has been released under a GPL 3.0 license.
+                    <br />
                     <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">Find out more here.</a>
                 </footer>
             </form>
