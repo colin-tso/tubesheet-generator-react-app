@@ -57,7 +57,8 @@
             "xml2js": "0.5.0"
         },
         "react-scripts": {
-            "resolve-url-loader": "5.0.0"
+            "resolve-url-loader": "5.0.0",
+            "@svgr/webpack": "6.5.1"
         }
     },
     "engines": {
