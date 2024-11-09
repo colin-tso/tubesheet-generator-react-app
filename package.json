@@ -55,6 +55,9 @@
         "svg-react-loader": {
             "loader-utils": "1.4.2",
             "xml2js": "0.5.0"
+        },
+        "react-scripts": {
+            "resolve-url-loader": "5.0.0"
         }
     },
     "engines": {
