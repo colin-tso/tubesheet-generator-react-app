@@ -229,8 +229,8 @@ td {
 }
 
 .left-cell-label {
-  min-width: 50%;
-  max-width: 220px;
+  min-width: fit-content;
+  max-width: 250px;
 }
 
 .required-asterisk {
