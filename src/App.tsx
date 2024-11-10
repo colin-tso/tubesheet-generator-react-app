@@ -5,8 +5,10 @@ import { utils } from "./utils/";
 import "./index.css";
 import GitHubButton from "react-github-btn";
 import ThemeToggle from "./components/DarkmodeToggle";
+import SVG from "react-inlinesvg";
 
 const App = () => {
+    const SVGComponent = SVG as React.FC<any>;
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (typeof layoutOption !== "undefined") {
@@ -548,10 +550,7 @@ const App = () => {
                     </a>
                 </footer>
             </form>
-            <div
-                className="column-pane right"
-                dangerouslySetInnerHTML={{ __html: drawingSVG.outerHTML }}
-            />
+            <SVGComponent className="column-pane right" src={drawingSVG.outerHTML} />
         </div>
     );
 };
