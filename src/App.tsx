@@ -1,14 +1,13 @@
 import React, { useCallback, useState, useEffect } from "react";
+import GitHubButton from "react-github-btn";
 import { IMaskInput } from "react-imask";
 import { TubeSheet } from "./plugins/tubesheet-layout-generator";
+import { TubeSheetSVG } from "./components/TubeSheetSVG";
 import { utils } from "./utils/";
-import "./index.css";
-import GitHubButton from "react-github-btn";
 import ThemeToggle from "./components/DarkmodeToggle";
-import SVG from "react-inlinesvg";
+import "./index.css";
 
 const App = () => {
-    const SVGComponent = SVG as React.FC<any>;
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (typeof layoutOption !== "undefined") {
@@ -550,7 +549,9 @@ const App = () => {
                     </a>
                 </footer>
             </form>
-            <SVGComponent className="column-pane right" src={drawingSVG.outerHTML} />
+            <div className="column-pane right">
+                <TubeSheetSVG src={drawingSVG} className="tubesheet-svg" />
+            </div>
         </div>
     );
 };
