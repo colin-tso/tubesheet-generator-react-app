@@ -43,6 +43,7 @@
         ]
     },
     "devDependencies": {
+        "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
         "@babel/plugin-transform-private-property-in-object": "^7.25.9",
         "@stylistic/stylelint-config": "^2.0.0",
         "eslint-config-react-app": "^7.0.1",
