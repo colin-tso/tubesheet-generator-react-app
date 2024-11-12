@@ -219,315 +219,326 @@ const App = () => {
     // JSX return
     return (
         <div className="row-pane">
-            <form onSubmit={formOnSubmitHandler} className="column-pane left">
-                <h1>Tubesheet Layout Generator</h1>
-                <ThemeToggle />
-                <table className="column-pane">
-                    <tbody className="divider"></tbody>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <h2>Calculation Inputs</h2>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="left-cell-label" colSpan={4}>
-                                <label htmlFor="minTubes">Minimum number of tubes:</label>
-                            </td>
-                            <td className="value-input" colSpan={1}>
-                                <IMaskInput
-                                    id={"minTubes"}
-                                    name={"minTubes"}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder=""
-                                    mask={Number}
-                                    scale={0}
-                                    min={0}
-                                    radix="."
-                                    thousandsSeparator=","
-                                    value={
-                                        typeof minTubes === "undefined" ? "" : minTubes.toString()
-                                    }
-                                    onBlur={onBlur}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    inputMode="numeric"
-                                    required
-                                />
-                            </td>
-                            <td className="units"></td>
-                            <td className="required-asterisk">*</td>
-                        </tr>
-                        <tr>
-                            <td className="left-cell-label" colSpan={4}>
-                                <label htmlFor="tubeOD">Tube OD:</label>
-                            </td>
-                            <td className="value-input" colSpan={1}>
-                                <IMaskInput
-                                    id={"tubeOD"}
-                                    name={"tubeOD"}
-                                    type="text"
-                                    autoComplete="off"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    value={typeof tubeOD === "undefined" ? "" : tubeOD.toString()}
-                                    onBlur={onBlur}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    inputMode="decimal"
-                                    required
-                                />
-                            </td>
-                            <td className="units"> mm</td>
-                            <td className="required-asterisk">*</td>
-                        </tr>
-                        <tr>
-                            <td className="left-cell-label" colSpan={4}>
-                                <label htmlFor="OTLtoShell">
-                                    OTL to shell diametrical clearance:
-                                </label>
-                            </td>
-                            <td className="value-input" colSpan={1}>
-                                <IMaskInput
-                                    id="OTLtoShell"
-                                    name="OTLtoShell"
-                                    type="text"
-                                    autoComplete="off"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={
-                                        typeof OTLtoShell === "undefined"
-                                            ? ""
-                                            : OTLtoShell.toString()
-                                    }
-                                    inputMode="decimal"
-                                    required
-                                />
-                            </td>
-                            <td className="units"> mm</td>
-                            <td className="required-asterisk">*</td>
-                        </tr>
-                        <tr>
-                            <td className="left-cell-label" colSpan={4}>
-                                <label htmlFor="pitch">Pitch:</label>
-                            </td>
-                            <td className="value-input" colSpan={1}>
-                                <IMaskInput
-                                    id="pitch"
-                                    name="pitch"
-                                    type="text"
-                                    autoComplete="off"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={typeof pitch === "undefined" ? "" : pitch.toString()}
-                                    inputMode="decimal"
-                                    required
-                                />
-                            </td>
-                            <td className="units"> mm</td>
-                            <td className="required-asterisk">*</td>
-                        </tr>
-                        <tr>
-                            <td className="left-cell-label" colSpan={4}>
-                                <label htmlFor="pitchRatio">Pitch ratio:</label>
-                            </td>
-                            <td className="value-input" colSpan={1}>
-                                <IMaskInput
-                                    id={"pitchRatio"}
-                                    name={"pitchRatio"}
-                                    type="text"
-                                    autoComplete="off"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={
-                                        typeof pitchRatio === "undefined"
-                                            ? ""
-                                            : pitchRatio.toString()
-                                    }
-                                    inputMode="decimal"
-                                    required
-                                />
-                            </td>
-                            <td></td>
-                            <td className="required-asterisk">*</td>
-                        </tr>
-                    </tbody>
-                    <tbody className="divider"></tbody>
-                    <tbody className="layout-table">
-                        <tr>
-                            <th>Layout</th>
-                            <th>
-                                <label htmlFor="30deg">30°</label>
-                            </th>
-                            <th>
-                                <label htmlFor="45deg">45°</label>
-                            </th>
-                            <th>
-                                <label htmlFor="60deg">60°</label>
-                            </th>
-                            <th>
-                                <label htmlFor="90deg">90°</label>
-                            </th>
-                            <th>
-                                <label htmlFor="radial">Radial</label>
-                            </th>
-                            <th>Units</th>
-                        </tr>
-
-                        <tr>
-                            <td>Min. ID</td>
-                            <td>
-                                {layoutResults[30] && layoutResults[30].minID !== null
-                                    ? utils.numFormat3SigFigs(layoutResults[30].minID)
-                                    : null}
-                            </td>
-                            <td>
-                                {layoutResults[45] && layoutResults[45].minID !== null
-                                    ? utils.numFormat3SigFigs(layoutResults[45].minID as number)
-                                    : null}
-                            </td>
-                            <td>
-                                {layoutResults[60] && layoutResults[60].minID !== null
-                                    ? utils.numFormat3SigFigs(layoutResults[60].minID as number)
-                                    : null}
-                            </td>
-                            <td>
-                                {layoutResults[90] && layoutResults[90].minID !== null
-                                    ? utils.numFormat3SigFigs(layoutResults[90].minID as number)
-                                    : null}
-                            </td>
-                            <td>
-                                {layoutResults.radial && layoutResults.radial.minID !== null
-                                    ? utils.numFormat3SigFigs(layoutResults.radial.minID as number)
-                                    : null}
-                            </td>
-                            <td>mm</td>
-                        </tr>
-                        <tr>
-                            <td>Tubes</td>
-                            <td>{layoutResults[30] ? layoutResults[30].numTubes : null}</td>
-                            <td>{layoutResults[45] ? layoutResults[45].numTubes : null}</td>
-                            <td>{layoutResults[60] ? layoutResults[60].numTubes : null}</td>
-                            <td>{layoutResults[90] ? layoutResults[90].numTubes : null}</td>
-                            <td>{layoutResults.radial ? layoutResults.radial.numTubes : null}</td>
-                            <td>mm</td>
-                        </tr>
-                        <tr>
-                            <td>Selected</td>
-                            <td>
-                                <input
-                                    type="radio"
-                                    id="30deg"
-                                    name="layoutOption"
-                                    value="30"
-                                    onChange={onBlur}
-                                    required
-                                ></input>
-                            </td>
-                            <td>
-                                <input
-                                    type="radio"
-                                    id="45deg"
-                                    name="layoutOption"
-                                    value="45"
-                                    onChange={onBlur}
-                                ></input>
-                            </td>
-                            <td>
-                                <input
-                                    type="radio"
-                                    id="60deg"
-                                    name="layoutOption"
-                                    value="60"
-                                    onChange={onBlur}
-                                ></input>
-                            </td>
-                            <td>
-                                <input
-                                    type="radio"
-                                    id="90deg"
-                                    name="layoutOption"
-                                    value="90"
-                                    onChange={onBlur}
-                                ></input>
-                            </td>
-                            <td>
-                                <input
-                                    type="radio"
-                                    id="radial"
-                                    name="layoutOption"
-                                    value="0"
-                                    onChange={onBlur}
-                                ></input>
-                            </td>
-                            <td />
-                        </tr>
-                    </tbody>
-                    <tbody className="divider"></tbody>
-                    <tbody>
-                        <tr>
-                            <td className="left-cell-label" colSpan={4}>
-                                <label htmlFor="shellID">Custom Shell ID:</label>
-                            </td>
-                            <td className="value-input" colSpan={1}>
-                                <IMaskInput
-                                    id={"shellID"}
-                                    name={"shellID"}
-                                    type="text"
-                                    autoComplete="off"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={typeof shellID === "undefined" ? "" : shellID.toString()}
-                                    inputMode="decimal"
-                                />
-                            </td>
-                            <td className="units"> mm</td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                    <tbody className="divider"></tbody>
-                </table>
-                <button
-                    type="submit"
-                    disabled={!layoutInputsDefined || !layoutOptionSelected}
-                    style={{
-                        display: "block",
-                        float: "right",
-                        width: "fit-content",
-                        padding: "2px 10px 2px 10px",
-                        margin: "10px 0 10px 0",
-                    }}
-                >
-                    Generate
-                </button>
+            <div className="column-pane left">
+                <form onSubmit={formOnSubmitHandler}>
+                    <h1>Tubesheet Layout Generator</h1>
+                    <ThemeToggle />
+                    <table className="column-pane">
+                        <tbody className="divider"></tbody>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <h2>Calculation Inputs</h2>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="minTubes">Minimum number of tubes:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"minTubes"}
+                                        name={"minTubes"}
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder=""
+                                        mask={Number}
+                                        scale={0}
+                                        min={0}
+                                        radix="."
+                                        thousandsSeparator=","
+                                        value={
+                                            typeof minTubes === "undefined"
+                                                ? ""
+                                                : minTubes.toString()
+                                        }
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        inputMode="numeric"
+                                        required
+                                    />
+                                </td>
+                                <td className="units"></td>
+                                <td className="required-asterisk">*</td>
+                            </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="tubeOD">Tube OD:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"tubeOD"}
+                                        name={"tubeOD"}
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={2}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        value={
+                                            typeof tubeOD === "undefined" ? "" : tubeOD.toString()
+                                        }
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        inputMode="decimal"
+                                        required
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td className="required-asterisk">*</td>
+                            </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="OTLtoShell">
+                                        OTL to shell diametrical clearance:
+                                    </label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id="OTLtoShell"
+                                        name="OTLtoShell"
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={2}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        value={
+                                            typeof OTLtoShell === "undefined"
+                                                ? ""
+                                                : OTLtoShell.toString()
+                                        }
+                                        inputMode="decimal"
+                                        required
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td className="required-asterisk">*</td>
+                            </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="pitch">Pitch:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id="pitch"
+                                        name="pitch"
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={2}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        value={typeof pitch === "undefined" ? "" : pitch.toString()}
+                                        inputMode="decimal"
+                                        required
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td className="required-asterisk">*</td>
+                            </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="pitchRatio">Pitch ratio:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"pitchRatio"}
+                                        name={"pitchRatio"}
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={2}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        value={
+                                            typeof pitchRatio === "undefined"
+                                                ? ""
+                                                : pitchRatio.toString()
+                                        }
+                                        inputMode="decimal"
+                                        required
+                                    />
+                                </td>
+                                <td></td>
+                                <td className="required-asterisk">*</td>
+                            </tr>
+                        </tbody>
+                        <tbody className="divider"></tbody>
+                        <tbody className="layout-table">
+                            <tr>
+                                <th>Layout</th>
+                                <th>
+                                    <label htmlFor="30deg">30°</label>
+                                </th>
+                                <th>
+                                    <label htmlFor="45deg">45°</label>
+                                </th>
+                                <th>
+                                    <label htmlFor="60deg">60°</label>
+                                </th>
+                                <th>
+                                    <label htmlFor="90deg">90°</label>
+                                </th>
+                                <th>
+                                    <label htmlFor="radial">Radial</label>
+                                </th>
+                                <th>Units</th>
+                            </tr>
+                            <tr>
+                                <td>Min. ID</td>
+                                <td>
+                                    {layoutResults[30] && layoutResults[30].minID !== null
+                                        ? utils.numFormat3SigFigs(layoutResults[30].minID)
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults[45] && layoutResults[45].minID !== null
+                                        ? utils.numFormat3SigFigs(layoutResults[45].minID as number)
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults[60] && layoutResults[60].minID !== null
+                                        ? utils.numFormat3SigFigs(layoutResults[60].minID as number)
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults[90] && layoutResults[90].minID !== null
+                                        ? utils.numFormat3SigFigs(layoutResults[90].minID as number)
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults.radial && layoutResults.radial.minID !== null
+                                        ? utils.numFormat3SigFigs(
+                                              layoutResults.radial.minID as number
+                                          )
+                                        : null}
+                                </td>
+                                <td>mm</td>
+                            </tr>
+                            <tr>
+                                <td>Tubes</td>
+                                <td>{layoutResults[30] ? layoutResults[30].numTubes : null}</td>
+                                <td>{layoutResults[45] ? layoutResults[45].numTubes : null}</td>
+                                <td>{layoutResults[60] ? layoutResults[60].numTubes : null}</td>
+                                <td>{layoutResults[90] ? layoutResults[90].numTubes : null}</td>
+                                <td>
+                                    {layoutResults.radial ? layoutResults.radial.numTubes : null}
+                                </td>
+                                <td>mm</td>
+                            </tr>
+                            <tr>
+                                <td>Selected</td>
+                                <td>
+                                    <input
+                                        type="radio"
+                                        id="30deg"
+                                        name="layoutOption"
+                                        value="30"
+                                        onChange={onBlur}
+                                        required
+                                    ></input>
+                                </td>
+                                <td>
+                                    <input
+                                        type="radio"
+                                        id="45deg"
+                                        name="layoutOption"
+                                        value="45"
+                                        onChange={onBlur}
+                                    ></input>
+                                </td>
+                                <td>
+                                    <input
+                                        type="radio"
+                                        id="60deg"
+                                        name="layoutOption"
+                                        value="60"
+                                        onChange={onBlur}
+                                    ></input>
+                                </td>
+                                <td>
+                                    <input
+                                        type="radio"
+                                        id="90deg"
+                                        name="layoutOption"
+                                        value="90"
+                                        onChange={onBlur}
+                                    ></input>
+                                </td>
+                                <td>
+                                    <input
+                                        type="radio"
+                                        id="radial"
+                                        name="layoutOption"
+                                        value="0"
+                                        onChange={onBlur}
+                                    ></input>
+                                </td>
+                                <td />
+                            </tr>
+                        </tbody>
+                        <tbody className="divider"></tbody>
+                        <tbody>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="shellID">Custom Shell ID:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"shellID"}
+                                        name={"shellID"}
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={2}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        value={
+                                            typeof shellID === "undefined" ? "" : shellID.toString()
+                                        }
+                                        inputMode="decimal"
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                        <tbody className="divider"></tbody>
+                    </table>
+                    <button
+                        type="submit"
+                        disabled={!layoutInputsDefined || !layoutOptionSelected}
+                        style={{
+                            display: "block",
+                            float: "right",
+                            width: "fit-content",
+                            padding: "2px 10px 2px 10px",
+                            margin: "10px 0 10px 0",
+                        }}
+                    >
+                        Generate
+                    </button>
+                </form>
                 <footer>
                     <GitHubButton
                         href="https://github.com/colin-tso/tubesheet-generator-react-app"
@@ -548,7 +559,7 @@ const App = () => {
                         Find out more here.
                     </a>
                 </footer>
-            </form>
+            </div>
             <div className="column-pane right">
                 <TubeSheetSVG src={drawingSVG} className="tubesheet-svg" />
             </div>
