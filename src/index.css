@@ -248,6 +248,13 @@ td {
 input[type="text"] {
   width: 100%;
   min-width: 30px;
+  border: 1.5px #ccc solid;
+  border-radius: 0.2em;
+}
+
+input[type="text"]:read-only {
+  color: hsl(0, 0%, 50%);
+  background-color: hsl(0, 0%, 90%);
 }
 
 /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
