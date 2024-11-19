@@ -13,7 +13,7 @@ const App = () => {
         if (typeof layoutOption !== "undefined") {
             const parsedLayoutOption = layoutOption === 0 ? "radial" : layoutOption;
             let selectedLayout: TubeSheet | null = null;
-            if (typeof shellID !== "undefined" && shellID !== 0) {
+            if (typeof shellID !== "undefined" && !isNaN(shellID) && shellID !== 0) {
                 selectedLayout = layoutInputsDefined
                     ? new TubeSheet(
                           OTLtoShell,
@@ -44,6 +44,7 @@ const App = () => {
     const [pitch, setPitch] = useState<number | undefined>();
     const [pitchRatio, setPitchRatio] = useState<number | undefined>();
     const [shellID, setShellID] = useState<number | undefined>();
+    const [actualTubes, setActualTubes] = useState<number | undefined>();
     const [layoutOption, setLayoutOption] = useState<number | undefined>();
     const [pitchUpdateFunc, setPitchUpdateFunc] = useState<string | undefined>();
     const [layoutResults, setLayoutResults] = useState<{
@@ -70,6 +71,7 @@ const App = () => {
         setPitch,
         setPitchRatio,
         setShellID,
+        setActualTubes,
         setLayoutOption,
     };
 
@@ -154,7 +156,7 @@ const App = () => {
                     if (utils.trunc(pitch, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
                         setPitchUpdateFunc("setPitchRatioFromPitch");
-                        setPitchRatioFromPitch(parseFloat(val));
+                        // setPitchRatioFromPitch(parseFloat(val));
                         break;
                     }
                 }
@@ -171,12 +173,11 @@ const App = () => {
                     if (utils.trunc(pitchRatio, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
                         setPitchUpdateFunc("setPitchFromPitchRatio");
-                        setPitchFromPitchRatio(parseFloat(val));
+                        // setPitchFromPitchRatio(parseFloat(val));
                         break;
                     }
                 }
                 break;
-
             default:
                 callSetFunc(`set${utils.capitalize(name)}`, val);
         }
@@ -215,6 +216,30 @@ const App = () => {
         calcLayoutResults,
         layoutInputsDefined,
     ]);
+
+    useEffect(() => {
+        let selectedLayout: TubeSheet | null = null;
+        if (typeof layoutOption !== "undefined") {
+            const parsedLayoutOption = layoutOption === 0 ? "radial" : layoutOption;
+            if (typeof shellID !== "undefined" && shellID !== 0) {
+                selectedLayout = layoutInputsDefined
+                    ? new TubeSheet(
+                          OTLtoShell,
+                          tubeOD,
+                          pitchRatio,
+                          parsedLayoutOption,
+                          undefined,
+                          shellID
+                      )
+                    : null;
+            }
+        }
+        if (selectedLayout && selectedLayout.numTubes) {
+            setActualTubes(selectedLayout.numTubes);
+        }
+    }, [OTLtoShell, layoutInputsDefined, layoutOption, pitchRatio, shellID, tubeOD]);
+
+    useEffect(() => {}, [actualTubes]);
 
     // JSX return
     return (
@@ -378,6 +403,60 @@ const App = () => {
                                 <td></td>
                                 <td className="required-asterisk">*</td>
                             </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="shellID">Custom Shell ID:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"shellID"}
+                                        name={"shellID"}
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={2}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        value={
+                                            typeof shellID === "undefined" ? "" : shellID.toString()
+                                        }
+                                        inputMode="decimal"
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="actualTubes">Actual number of tubes:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"actualTubes"}
+                                        name={"actualTubes"}
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={0}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        value={
+                                            typeof actualTubes === "undefined"
+                                                ? ""
+                                                : actualTubes.toString()
+                                        }
+                                        inputMode="numeric"
+                                        readOnly
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td></td>
+                            </tr>
                         </tbody>
                         <tbody className="divider"></tbody>
                         <tbody className="layout-table">
@@ -491,36 +570,6 @@ const App = () => {
                                     ></input>
                                 </td>
                                 <td />
-                            </tr>
-                        </tbody>
-                        <tbody className="divider"></tbody>
-                        <tbody>
-                            <tr>
-                                <td className="left-cell-label" colSpan={4}>
-                                    <label htmlFor="shellID">Custom Shell ID:</label>
-                                </td>
-                                <td className="value-input" colSpan={1}>
-                                    <IMaskInput
-                                        id={"shellID"}
-                                        name={"shellID"}
-                                        type="text"
-                                        autoComplete="off"
-                                        mask={Number}
-                                        scale={2}
-                                        min={0}
-                                        radix={"."}
-                                        thousandsSeparator=","
-                                        onBlur={onBlur}
-                                        onChange={(e) => {}}
-                                        onSubmit={inputOnSubmitHandler}
-                                        value={
-                                            typeof shellID === "undefined" ? "" : shellID.toString()
-                                        }
-                                        inputMode="decimal"
-                                    />
-                                </td>
-                                <td className="units"> mm</td>
-                                <td></td>
                             </tr>
                         </tbody>
                         <tbody className="divider"></tbody>
