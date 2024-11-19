@@ -2,7 +2,7 @@ name: "Dev - PR Open"
 on:
     pull_request:
         branches:
-            - master
+            - dev
         types:
             - opened
 jobs:
