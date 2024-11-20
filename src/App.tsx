@@ -7,13 +7,48 @@ import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import "./index.css";
 
+const emptySVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+emptySVG.setAttribute("viewBox", "1 1 1 1");
+
+const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
+    const objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+};
+
 const App = () => {
+    // User system dark mode detection
+    const [darkMode, setDarkMode] = useState(false);
+    useEffect(() => {
+        // Add listener to update styles
+        window
+            .matchMedia("(prefers-color-scheme: dark)")
+            .addEventListener("change", (e) => setDarkMode(e.matches));
+
+        // Setup dark/light mode for the first time
+        setDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+        // Remove listener
+        return () => {
+            window
+                .matchMedia("(prefers-color-scheme: dark)")
+                .removeEventListener("change", () => {});
+        };
+    }, []);
+
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (typeof layoutOption !== "undefined") {
             const parsedLayoutOption = layoutOption === 0 ? "radial" : layoutOption;
             let selectedLayout: TubeSheet | null = null;
-            if (typeof shellID !== "undefined" && shellID !== 0) {
+            if (typeof shellID !== "undefined" && !isNaN(shellID) && shellID !== 0) {
                 selectedLayout = layoutInputsDefined
                     ? new TubeSheet(
                           OTLtoShell,
@@ -44,6 +79,7 @@ const App = () => {
     const [pitch, setPitch] = useState<number | undefined>();
     const [pitchRatio, setPitchRatio] = useState<number | undefined>();
     const [shellID, setShellID] = useState<number | undefined>();
+    const [actualTubes, setActualTubes] = useState<number | undefined>();
     const [layoutOption, setLayoutOption] = useState<number | undefined>();
     const [pitchUpdateFunc, setPitchUpdateFunc] = useState<string | undefined>();
     const [layoutResults, setLayoutResults] = useState<{
@@ -60,7 +96,6 @@ const App = () => {
         radial: null,
     });
 
-    const emptySVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(emptySVG);
 
     const stateFuncs = {
@@ -70,6 +105,7 @@ const App = () => {
         setPitch,
         setPitchRatio,
         setShellID,
+        setActualTubes,
         setLayoutOption,
     };
 
@@ -154,7 +190,7 @@ const App = () => {
                     if (utils.trunc(pitch, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
                         setPitchUpdateFunc("setPitchRatioFromPitch");
-                        setPitchRatioFromPitch(parseFloat(val));
+                        // setPitchRatioFromPitch(parseFloat(val));
                         break;
                     }
                 }
@@ -171,12 +207,11 @@ const App = () => {
                     if (utils.trunc(pitchRatio, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
                         setPitchUpdateFunc("setPitchFromPitchRatio");
-                        setPitchFromPitchRatio(parseFloat(val));
+                        // setPitchFromPitchRatio(parseFloat(val));
                         break;
                     }
                 }
                 break;
-
             default:
                 callSetFunc(`set${utils.capitalize(name)}`, val);
         }
@@ -185,6 +220,38 @@ const App = () => {
     const inputOnSubmitHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
         e.preventDefault();
     };
+
+    const downloadSVG = useCallback(() => {
+        const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
+        downloadBlob(blob, `tubesheet.svg`);
+    }, [drawingSVG.outerHTML]);
+
+    // not supported in Firefox
+    //-------------------------
+    // const copySVG = useCallback(async () => {
+    //     alert(window.isSecureContext);
+    //     const image = new Image();
+    //     image.src = "data:image/png," + encodeURIComponent(drawingSVG.outerHTML);
+
+    //     await navigator.clipboard.write([
+    //         new ClipboardItem({
+    //             "image/png": new Promise((resolve) => {
+    //                 const canvas = document.createElement("canvas");
+    //                 canvas.width = image.naturalWidth;
+    //                 canvas.height = image.naturalHeight;
+    //                 const context = canvas.getContext("2d");
+    //                 context?.drawImage(image, 0, 0);
+
+    //                 canvas.toBlob((blob) => {
+    //                     if (blob) {
+    //                         resolve(blob);
+    //                     }
+    //                     canvas.remove();
+    //                 }, "image/png");
+    //             }),
+    //         }),
+    //     ]);
+    // }, [drawingSVG.outerHTML]);
 
     useEffect(() => {
         if (typeof pitchUpdateFunc !== "undefined") {
@@ -215,6 +282,30 @@ const App = () => {
         calcLayoutResults,
         layoutInputsDefined,
     ]);
+
+    useEffect(() => {
+        let selectedLayout: TubeSheet | null = null;
+        if (typeof layoutOption !== "undefined") {
+            const parsedLayoutOption = layoutOption === 0 ? "radial" : layoutOption;
+            if (typeof shellID !== "undefined" && shellID !== 0) {
+                selectedLayout = layoutInputsDefined
+                    ? new TubeSheet(
+                          OTLtoShell,
+                          tubeOD,
+                          pitchRatio,
+                          parsedLayoutOption,
+                          undefined,
+                          shellID
+                      )
+                    : null;
+            }
+        }
+        if (selectedLayout && selectedLayout.numTubes) {
+            setActualTubes(selectedLayout.numTubes);
+        }
+    }, [OTLtoShell, layoutInputsDefined, layoutOption, pitchRatio, shellID, tubeOD]);
+
+    useEffect(() => {}, [actualTubes]);
 
     // JSX return
     return (
@@ -378,6 +469,60 @@ const App = () => {
                                 <td></td>
                                 <td className="required-asterisk">*</td>
                             </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="shellID">Custom Shell ID:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"shellID"}
+                                        name={"shellID"}
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={2}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        onBlur={onBlur}
+                                        onChange={(e) => {}}
+                                        onSubmit={inputOnSubmitHandler}
+                                        value={
+                                            typeof shellID === "undefined" ? "" : shellID.toString()
+                                        }
+                                        inputMode="decimal"
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td className="left-cell-label" colSpan={4}>
+                                    <label htmlFor="actualTubes">Actual number of tubes:</label>
+                                </td>
+                                <td className="value-input" colSpan={1}>
+                                    <IMaskInput
+                                        id={"actualTubes"}
+                                        name={"actualTubes"}
+                                        type="text"
+                                        autoComplete="off"
+                                        mask={Number}
+                                        scale={0}
+                                        min={0}
+                                        radix={"."}
+                                        thousandsSeparator=","
+                                        value={
+                                            typeof actualTubes === "undefined"
+                                                ? ""
+                                                : actualTubes.toString()
+                                        }
+                                        inputMode="numeric"
+                                        readOnly
+                                    />
+                                </td>
+                                <td className="units"> mm</td>
+                                <td></td>
+                            </tr>
                         </tbody>
                         <tbody className="divider"></tbody>
                         <tbody className="layout-table">
@@ -494,47 +639,11 @@ const App = () => {
                             </tr>
                         </tbody>
                         <tbody className="divider"></tbody>
-                        <tbody>
-                            <tr>
-                                <td className="left-cell-label" colSpan={4}>
-                                    <label htmlFor="shellID">Custom Shell ID:</label>
-                                </td>
-                                <td className="value-input" colSpan={1}>
-                                    <IMaskInput
-                                        id={"shellID"}
-                                        name={"shellID"}
-                                        type="text"
-                                        autoComplete="off"
-                                        mask={Number}
-                                        scale={2}
-                                        min={0}
-                                        radix={"."}
-                                        thousandsSeparator=","
-                                        onBlur={onBlur}
-                                        onChange={(e) => {}}
-                                        onSubmit={inputOnSubmitHandler}
-                                        value={
-                                            typeof shellID === "undefined" ? "" : shellID.toString()
-                                        }
-                                        inputMode="decimal"
-                                    />
-                                </td>
-                                <td className="units"> mm</td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                        <tbody className="divider"></tbody>
                     </table>
                     <button
                         type="submit"
+                        className="generate-button"
                         disabled={!layoutInputsDefined || !layoutOptionSelected}
-                        style={{
-                            display: "block",
-                            float: "right",
-                            width: "fit-content",
-                            padding: "2px 10px 2px 10px",
-                            margin: "10px 0 10px 0",
-                        }}
                     >
                         Generate
                     </button>
@@ -542,9 +651,10 @@ const App = () => {
                 <footer>
                     <GitHubButton
                         href="https://github.com/colin-tso/tubesheet-generator-react-app"
-                        data-color-scheme="dark;"
+                        data-color-scheme={darkMode ? "light" : "dark"}
                         data-size="large"
                         aria-label=" View this repo on GitHub"
+                        key={darkMode.toString()}
                     >
                         View this repo on GitHub
                     </GitHubButton>
@@ -562,6 +672,20 @@ const App = () => {
             </div>
             <div className="column-pane right">
                 <TubeSheetSVG src={drawingSVG} className="tubesheet-svg" />
+                <button
+                    className="save-button"
+                    onClick={downloadSVG}
+                    hidden={drawingSVG === emptySVG}
+                >
+                    Save Image
+                </button>
+                {/* <button
+                    className="copy-button"
+                    onClick={copySVG}
+                    disabled={drawingSVG === emptySVG}
+                >
+                    Copy Image
+                </button> */}
             </div>
         </div>
     );
