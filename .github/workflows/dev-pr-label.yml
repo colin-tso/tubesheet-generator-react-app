@@ -7,6 +7,8 @@ on:
             - reopened
             - labeled
             - unlabeled
+            - edited
+            - synchronize
 jobs:
     check_labels:
         name: "Check PR Labels"
