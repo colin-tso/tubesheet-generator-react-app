@@ -6,11 +6,23 @@
 }
 
 :root {
-  --black: #333333;
-  --white: #f5f5f5;
-  --background: var(--white);
-  --foreground: var(--black);
-  --transition: 0.5s ease;
+  --darker-background: hsl(210, 6%, 6%);
+  --dark-background: hsl(200, 6%, 10%);
+  --dark-text: #000000;
+  --lighter-background: hsl(285, 100%, 99%);
+  --light-background: hsl(340, 19%, 94%);
+  --light-text: #ffffff;
+  --light-grey-text: hsl(0, 0%, 50%);
+  --light-grey-background: hsl(0, 0%, 15%);
+  --dark-grey-text: hsl(0, 0%, 50%);
+  --dark-grey-background: hsl(0, 0%, 90%);
+  --background: var(--light-background);
+  --foreground: var(--dark-text);
+  --background-accent: var(--dark-background);
+  --input-readonly-text: var(--light-grey-text);
+  --input-readonly-background: var(--light-grey-background);
+  --input-checked: var(--dark-grey-background);
+  --transition: 0.2s ease;
   --invert: 0;
   --hue: 0deg;
   --toggle-scale: 0.35;
@@ -18,7 +30,7 @@
 
 html {
   color: var(--foreground);
-  background: var(--background);
+  background-color: var(--background);
   transition:
     color var(--transition),
     transform var(--transition),
@@ -122,4 +134,37 @@ html:not(img):not(video):not(.all-color-critical-elements) {
   width: calc(32px * var(--toggle-scale));
   height: calc(32px * var(--toggle-scale));
   fill: var(--background);
+}
+
+.divider {
+  border-bottom-color: var(--foreground);
+}
+
+input {
+  color: var(--foreground);
+  background-color: var(--background);
+  transition:
+    color var(--transition),
+    background-color var(--transition);
+}
+
+input[type="text"]:read-only {
+  color: var(--input-readonly-text);
+  background-color: var(--input-readonly-background);
+}
+
+.tubesheet-svg > * {
+  stroke: var(--foreground);
+  transition: stroke var(--transition);
+}
+
+.layout-table td,
+.layout-table th,
+.layout-table tr,
+.layout-table td {
+  border-color: var(--foreground);
+}
+
+.column-pane.left {
+  background-color: var(--background-accent);
 }
