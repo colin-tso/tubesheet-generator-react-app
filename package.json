@@ -2,7 +2,7 @@
     "name": "tubesheet-generator-react-app",
     "author": "Colin Tso",
     "license": "GPL-3.0-only",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "homepage": "https://colin-tso.github.io/tubesheet-generator-react-app/",
     "private": true,
     "dependencies": {
@@ -44,8 +44,10 @@
         ]
     },
     "devDependencies": {
+        "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
         "@babel/plugin-transform-private-property-in-object": "^7.25.9",
         "@stylistic/stylelint-config": "^2.0.0",
+        "eslint-config-react-app": "^7.0.1",
         "gh-pages": "^6.2.0",
         "react-app-rewired": "^2.2.1",
         "stylelint": "^16.10.0",

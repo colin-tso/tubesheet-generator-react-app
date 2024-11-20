@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./styles.css";
+import "./darkmode-toggle.css";
 import { ReactComponent as MoonIcon } from "../assets/moon.svg";
 import { ReactComponent as SunIcon } from "../assets/sun.svg";
 

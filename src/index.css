@@ -102,7 +102,9 @@ hr {
 }
 
 .left {
+  overflow-y: auto;
   flex: 0 0 max-content;
+  flex-direction: column;
   align-items: normal;
 }
 
@@ -111,14 +113,12 @@ form.column-pane.left {
 }
 
 footer {
-  position: absolute;
-  bottom: 0;
-
   width: 100%;
+  height: fit-content;
+  margin-top: auto;
   padding: 10px 0 10px 0;
 
   font-size: 12px;
-  /* height: 10px; */
 }
 
 .layout-table {
