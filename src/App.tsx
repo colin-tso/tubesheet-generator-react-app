@@ -7,6 +7,22 @@ import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import "./index.css";
 
+const emptySVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+emptySVG.setAttribute("viewBox", "1 1 1 1");
+
+const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
+    const objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+};
+
 const App = () => {
     // User system dark mode detection
     const [darkMode, setDarkMode] = useState(false);
@@ -80,7 +96,6 @@ const App = () => {
         radial: null,
     });
 
-    const emptySVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(emptySVG);
 
     const stateFuncs = {
@@ -205,6 +220,38 @@ const App = () => {
     const inputOnSubmitHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
         e.preventDefault();
     };
+
+    const downloadSVG = useCallback(() => {
+        const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
+        downloadBlob(blob, `tubesheet.svg`);
+    }, [drawingSVG.outerHTML]);
+
+    // not supported in Firefox
+    //-------------------------
+    // const copySVG = useCallback(async () => {
+    //     alert(window.isSecureContext);
+    //     const image = new Image();
+    //     image.src = "data:image/png," + encodeURIComponent(drawingSVG.outerHTML);
+
+    //     await navigator.clipboard.write([
+    //         new ClipboardItem({
+    //             "image/png": new Promise((resolve) => {
+    //                 const canvas = document.createElement("canvas");
+    //                 canvas.width = image.naturalWidth;
+    //                 canvas.height = image.naturalHeight;
+    //                 const context = canvas.getContext("2d");
+    //                 context?.drawImage(image, 0, 0);
+
+    //                 canvas.toBlob((blob) => {
+    //                     if (blob) {
+    //                         resolve(blob);
+    //                     }
+    //                     canvas.remove();
+    //                 }, "image/png");
+    //             }),
+    //         }),
+    //     ]);
+    // }, [drawingSVG.outerHTML]);
 
     useEffect(() => {
         if (typeof pitchUpdateFunc !== "undefined") {
@@ -595,14 +642,8 @@ const App = () => {
                     </table>
                     <button
                         type="submit"
+                        className="generate-button"
                         disabled={!layoutInputsDefined || !layoutOptionSelected}
-                        style={{
-                            display: "block",
-                            float: "right",
-                            width: "fit-content",
-                            padding: "2px 10px 2px 10px",
-                            margin: "10px 0 10px 0",
-                        }}
                     >
                         Generate
                     </button>
@@ -631,6 +672,20 @@ const App = () => {
             </div>
             <div className="column-pane right">
                 <TubeSheetSVG src={drawingSVG} className="tubesheet-svg" />
+                <button
+                    className="save-button"
+                    onClick={downloadSVG}
+                    hidden={drawingSVG === emptySVG}
+                >
+                    Save Image
+                </button>
+                {/* <button
+                    className="copy-button"
+                    onClick={copySVG}
+                    disabled={drawingSVG === emptySVG}
+                >
+                    Copy Image
+                </button> */}
             </div>
         </div>
     );
