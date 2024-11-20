@@ -15,18 +15,6 @@
     "Apple Color Emoji",
     "Segoe UI Emoji";
   font-size: 14px;
-  font-variation-settings:
-    "slnt" 0,
-    "wdth" 100,
-    "GRAD" 0,
-    "XOPQ" 96,
-    "XTRA" 468,
-    "YOPQ" 79,
-    "YTAS" 750,
-    "YTDE" -203,
-    "YTFI" 738,
-    "YTLC" 514,
-    "YTUC" 712;
   font-optical-sizing: none;
   font-style: normal;
   -webkit-font-smoothing: antialiased;
@@ -81,15 +69,13 @@ code {
 }
 
 h1 {
-  font-family: "Zilla Slab", serif;
-  font-weight: 700;
-  font-style: normal;
-}
-
-h1 {
   margin: 0;
   padding: 0 0 10px 0;
+
+  font-family: "Zilla Slab", serif;
   font-size: 28px;
+  font-weight: 700;
+  font-style: normal;
 }
 
 h2 {
