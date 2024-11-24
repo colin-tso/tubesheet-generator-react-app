@@ -2,7 +2,7 @@
     "name": "tubesheet-generator-react-app",
     "author": "Colin Tso",
     "license": "GPL-3.0-only",
-    "version": "0.4.11",
+    "version": "0.4.12",
     "homepage": "https://colin-tso.github.io/tubesheet-generator-react-app/",
     "private": true,
     "dependencies": {
