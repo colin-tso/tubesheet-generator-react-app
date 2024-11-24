@@ -15,9 +15,17 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
+              with:
+                  token: ${{ secrets.GH_ORG_PAT }}
+            - uses: actions/setup-node@v2
+              with:
+                  node-version: "16.x"
+                  cache: "npm"
+            - name: Git config
+              run: |
+                  git config --global user.email "${{ secrets.GH_ORG_EMAIL }}"
+                  git config --global user.name "${{ secrets.GH_ORG_NAME }}"
             - name: Build and Deploy
               run: |
                   git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
                   npx gh-pages -d build -u "github-actions-bot <support+actions@github.com>"
-              env:
-                  ITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
