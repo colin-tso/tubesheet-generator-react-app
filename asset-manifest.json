@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/tubesheet-generator-react-app/static/css/main.3a7942dc.css",
-    "main.js": "/tubesheet-generator-react-app/static/js/main.45a47c13.js",
-    "static/media/sun.svg": "/tubesheet-generator-react-app/static/media/sun.c870eb9f28a49cc10647448699310094.svg",
+    "main.css": "/tubesheet-generator-react-app/static/css/main.a856ffc0.css",
+    "main.js": "/tubesheet-generator-react-app/static/js/main.09beb5ba.js",
+    "static/media/sun.svg": "/tubesheet-generator-react-app/static/media/sun.936ada37476a20e049f326fc6bf4982c.svg",
     "index.html": "/tubesheet-generator-react-app/index.html",
-    "static/media/moon.svg": "/tubesheet-generator-react-app/static/media/moon.4c51ca1d4de294c962571a04ad0ffcf4.svg",
-    "main.3a7942dc.css.map": "/tubesheet-generator-react-app/static/css/main.3a7942dc.css.map",
-    "main.45a47c13.js.map": "/tubesheet-generator-react-app/static/js/main.45a47c13.js.map"
+    "static/media/moon.svg": "/tubesheet-generator-react-app/static/media/moon.251d6c454a598f6b0c41322989474659.svg",
+    "main.a856ffc0.css.map": "/tubesheet-generator-react-app/static/css/main.a856ffc0.css.map",
+    "main.09beb5ba.js.map": "/tubesheet-generator-react-app/static/js/main.09beb5ba.js.map"
   },
   "entrypoints": [
-    "static/css/main.3a7942dc.css",
-    "static/js/main.45a47c13.js"
+    "static/css/main.a856ffc0.css",
+    "static/js/main.09beb5ba.js"
   ]
 }
