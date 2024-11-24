@@ -2,7 +2,7 @@
     "name": "tubesheet-generator-react-app",
     "author": "Colin Tso",
     "license": "GPL-3.0-only",
-    "version": "0.4.9",
+    "version": "0.4.10",
     "homepage": "https://colin-tso.github.io/tubesheet-generator-react-app/",
     "private": true,
     "dependencies": {
@@ -51,7 +51,8 @@
         "stylelint": "^16.10.0",
         "stylelint-config-clean-order": "^6.1.0",
         "stylelint-config-standard": "^36.0.1",
-        "svg-react-loader": "^0.4.6"
+        "svg-react-loader": "^0.4.6",
+        "typescript": "^5.7.2"
     },
     "overrides": {
         "svg-react-loader": {
