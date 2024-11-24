@@ -45,5 +45,5 @@ jobs:
               env:
                   user_name: "github-actions[bot]"
                   user_email: "github-actions[bot]@users.noreply.github.com"
-                  github_token: ${{ SECRETS.GITHUB_TOKEN }}
+                  github_token: ${{ SECRETS.GH_ORG_PAT }}
                   repository: ${{ GITHUB.REPOSITORY }}
