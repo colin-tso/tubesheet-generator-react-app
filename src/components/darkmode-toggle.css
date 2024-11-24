@@ -20,7 +20,7 @@
   --foreground: light-dark(var(--dark-text), var(--light-text));
   --background-accent: light-dark(var(--light-background), var(--dark-background));
   --input-readonly-text: light-dark(var(--dark-grey-text), var(--light-grey-text));
-  --input-readonly-background: light-dark(var(--input-readonly-background), var(--light-grey-background));
+  --input-readonly-background: light-dark(var(--dark-grey-background), var(--light-grey-background));
   --transition: 0.2s ease;
   --toggle-scale: 0.35;
 }
