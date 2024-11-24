@@ -24,25 +24,6 @@ const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
 };
 
 const App = () => {
-    // User system dark mode detection
-    const [darkMode, setDarkMode] = useState(false);
-    useEffect(() => {
-        // Add listener to update styles
-        window
-            .matchMedia("(prefers-color-scheme: dark)")
-            .addEventListener("change", (e) => setDarkMode(e.matches));
-
-        // Setup dark/light mode for the first time
-        setDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-        // Remove listener
-        return () => {
-            window
-                .matchMedia("(prefers-color-scheme: dark)")
-                .removeEventListener("change", () => {});
-        };
-    }, []);
-
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (typeof layoutOption !== "undefined") {
@@ -623,10 +604,9 @@ const App = () => {
                 <footer>
                     <GitHubButton
                         href="https://github.com/colin-tso/tubesheet-generator-react-app"
-                        data-color-scheme={darkMode ? "light" : "dark"}
+                        data-color-scheme="light"
                         data-size="large"
                         aria-label=" View this repo on GitHub"
-                        key={darkMode.toString()}
                     >
                         View this repo on GitHub
                     </GitHubButton>
