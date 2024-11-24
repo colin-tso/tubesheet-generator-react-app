@@ -27,5 +27,5 @@ jobs:
                   git config --global user.name "${{ secrets.GH_ORG_NAME }}"
             - name: Build and Deploy
               run: |
-                  git remote set-url origin https://git:${GH_ORG_PAT}@github.com/${GITHUB_REPOSITORY}.git
-                  npx gh-pages -d build -u "${{ secrets.GH_ORG_EMAIL }}"
+                  git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+                  npx gh-pages -d build -u "github-actions-bot <support+actions@github.com>"
