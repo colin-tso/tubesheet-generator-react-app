@@ -1,26 +1,49 @@
-name: Deploy with gh-pages
+name: Deploy to GitHub Pages
+
 on:
+    push:
+        branches: [master]
     pull_request:
-        branches:
-            - master
-        types:
-            - closed
+        branches: [master]
+
 jobs:
-    build-and-deploy:
-        name: "Master branch updated"
-        if: github.event.pull_request.merged == true
+    build:
         runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [12.x]
+
         steps:
-            - uses: actions/checkout@v2
+            - name: Checkout repository
+              uses: actions/checkout@v2
+
+            - name: Set up Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v1
               with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-            - uses: actions/setup-node@v2
+                  node-version: ${{ matrix.node-version }}
+
+            - name: Cache dependencies
+              uses: actions/cache@v2
               with:
-                  node-version: "16.x"
-                  cache: "npm"
-            - name: Deploy with gh-pages
+                  path: |
+                      **/node_modules
+                  key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+            - name: Install dependencies
+              run: npm install
+
+            - name: Build
+              run: npm run build
+
+            - name: Deploy
               run: |
-                  git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-                  npx gh-pages -d build -u "github-actions-bot <support+actions@github.com>"
+                  git config --global user.name $user_name
+                  git config --global user.email $user_email
+                  git remote set-url origin https://${github_token}@github.com/${repository}
+                  npm run deploy
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  user_name: "github-actions[bot]"
+                  user_email: "github-actions[bot]@users.noreply.github.com"
+                  github_token: ${{ SECRETS.GITHUB_TOKEN }}
+                  repository: ${{ GITHUB.REPOSITORY }}
