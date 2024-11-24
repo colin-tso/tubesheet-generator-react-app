@@ -1,5 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Zilla+Slab:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap");
-
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 * {
   box-sizing: border-box;
 
@@ -20,23 +19,19 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 html,
 body {
   margin: 0;
   padding: 0;
 }
-
 html {
   width: 100dvw;
   height: 100dvh;
 }
-
 body {
   width: 100dvw;
   height: 100dvh;
 }
-
 a,
 :visited,
 :link {
@@ -45,61 +40,43 @@ a,
   font-weight: inherit;
   color: inherit;
 }
-
 .github-logo {
   position: relative;
   display: inline;
   height: 1em;
 }
-
-code {
-  font-family:
-    source-code-pro,
-    Menlo,
-    Monaco,
-    Consolas,
-    "Courier New",
-    monospace;
-}
-
 :root {
   --transition: 0.5s ease;
 
   margin: 0;
 }
-
 h1 {
   margin: 0;
   padding: 0 0 10px 0;
 
-  font-family: "Zilla Slab", serif;
-  font-size: 28px;
+  font-size: 25px;
   font-weight: 700;
   font-style: normal;
 }
-
 h2 {
-  margin: 0;
+  margin: 0 0 0.5em 0;
   padding: 0 0 5px 0;
   font-size: 16px;
 }
-
 hr {
   width: 100%;
   height: 1px;
-  /* Set the hr color */
-  color: hsl(0, 0%, 0%, 20%);  /* old IE */
 
-  background-color: hsl(0, 0%, 0%, 20%);  /* Modern Browsers */
+  color: hsl(0, 0%, 0%, 20%);
+
+  background-color: hsl(0, 0%, 0%, 20%);
   border: none;
 }
-
 .row-pane {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
 }
-
 .column-pane {
   display: flex;
   flex-direction: column;
@@ -108,18 +85,15 @@ hr {
   height: 100vh;
   padding: 10px;
 }
-
 .left {
   overflow-y: auto;
   flex: 0 0 max-content;
   flex-direction: column;
   align-items: normal;
 }
-
 form.column-pane.left {
   background-color: hsl(0, 0%, 95%);
 }
-
 footer {
   width: 100%;
   height: fit-content;
@@ -128,7 +102,6 @@ footer {
 
   font-size: 12px;
 }
-
 .layout-table {
   table-layout: fixed;
   border-collapse: collapse;
@@ -138,13 +111,11 @@ footer {
 
   text-align: center;
 }
-
 .layout-table td,
 .layout-table th {
   box-sizing: border-box;
   padding: 4px !important;
 }
-
 .layout-table td {
   width: calc(100% / 7);
   min-width: fit-content;
@@ -154,116 +125,98 @@ footer {
   border-collapse: collapse;
   border: 1px solid hsl(0, 0%, 0%, 100%);
 }
-
-/* Removing all unwanted border
-from left hand side by calling
-all the elements in the first
-column and removing their left
+/* Removing all unwanted borderfrom left hand side by calling
+all the elements in the firstcolumn and removing their left
 border*/
 .layout-table tr td:first-child,
 th:first-child {
   text-align: left;
   border-left: none;
 }
-
-/* Removing all unwanted border
-from top of the table by calling
-all the elements in first row and
-removing their top border*/
+/* Removing all unwanted borderfrom top of the table by calling
+all the elements in first row andremoving their top border*/
 .layout-table tr:first-child th {
   border-top: none;
 }
-
-/* Removing all unwanted border
-from right hand side by calling
-all the elements in last row and
-removing their right border*/
+/* Removing all unwanted borderfrom right hand side by calling
+all the elements in last row andremoving their right border*/
 .layout-table tr td:last-child,
 th:last-child {
   border-right: none;
 }
-
-/* Removing all unwanted border
-from bottom of the table by
-calling all the elements in
-last column and removing their
+/* Removing all unwanted borderfrom bottom of the table by
+calling all the elements inlast column and removing their
 bottom border*/
 .layout-table tr:last-child td {
   border-bottom: none;
 }
-
 th {
   font-weight: 600;
 }
-
 table {
   table-layout: fixed;
 }
-
 table.column-pane {
   height: auto;
   padding: 0px;
 }
-
 td:first-child {
   padding-left: 0;
 }
-
 td:last-child {
   padding-right: 0;
 }
-
 .value-input {
-  padding-right: 0;
+  margin-bottom: 1em !important;
+  padding-right: 5ex !important;
 }
-
-.value-input,
-.units {
-  vertical-align: bottom;
+.input-group > .units {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
 }
-
 .right {
   flex: 1;
   padding: 0;
 }
-
 td {
   padding: 0.1em;
 }
-
 .divider {
-  margin: 20px 0 20px 0;
+  margin: 1.1em 0 1.1em 0;
   border-bottom: 1px solid black;
 }
-
 .left-cell-label {
   min-width: fit-content;
   max-width: 250px;
 }
-
 .required-asterisk {
+  transform: translateY(-0.2em);
+  display: inline-block;
+  margin-left: 0.2em;
   color: #e32;
 }
-
 input[type="text"] {
+  display: block;
+
   width: 100%;
   min-width: 30px;
-  border: 1.5px #ccc solid;
-  border-radius: 0.2em;
-}
+  margin: 5px 0 5px 0;
+  padding: 0.5em;
 
+  border: 1.5px #ccc solid;
+  border-radius: 0.3em;
+}
 input[type="text"]:read-only {
   color: hsl(0, 0%, 50%);
   background-color: hsl(0, 0%, 90%);
 }
-
 .generate-button {
   float: right;
   display: block;
   width: fit-content;
-  margin: 10px 0 10px 0;
+  margin: 0;
 }
-
 .save-button,
 .copy-button {
   position: absolute;
@@ -275,27 +228,23 @@ input[type="text"]:read-only {
   width: fit-content;
   height: fit-content;
 }
-
 button {
   cursor: pointer;
   padding: 5px 10px 5px 10px;
 }
-
 button:disabled {
   cursor: auto;
 }
-
-/* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+/* Responsive layout - makes the two columns stack on top of each
+other instead of next to each other */
 @media screen and (max-width: 850px) {
   .row-pane {
     flex-direction: column;
   }
-
   .tubesheet-svg {
     width: 100dvw;
     height: auto;
   }
-
   footer {
     position: initial;
     bottom: initial;
