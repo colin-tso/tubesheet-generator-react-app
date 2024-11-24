@@ -16,15 +16,12 @@
   --light-grey-background: hsl(0, 0%, 15%);
   --dark-grey-text: hsl(0, 0%, 50%);
   --dark-grey-background: hsl(0, 0%, 90%);
-  --background: var(--light-background);
-  --foreground: var(--dark-text);
-  --background-accent: var(--dark-background);
-  --input-readonly-text: var(--light-grey-text);
-  --input-readonly-background: var(--light-grey-background);
-  --input-checked: var(--dark-grey-background);
+  --background: light-dark(var(--lighter-background), var(--darker-background));
+  --foreground: light-dark(var(--dark-text), var(--light-text));
+  --background-accent: light-dark(var(--light-background), var(--dark-background));
+  --input-readonly-text: light-dark(var(--dark-grey-text), var(--light-grey-text));
+  --input-readonly-background: light-dark(var(--input-readonly-background), var(--light-grey-background));
   --transition: 0.2s ease;
-  --invert: 0;
-  --hue: 0deg;
   --toggle-scale: 0.35;
 }
 
@@ -34,13 +31,8 @@ html {
   transition:
     color var(--transition),
     transform var(--transition),
-    background var(--transition),
     background-color var(--transition),
     filter var(--transition);
-}
-
-html:not(img):not(video):not(.all-color-critical-elements) {
-  filter: invert(var(--invert)) hue-rotate(var(--hue));
 }
 
 .darkmode::before {
@@ -82,7 +74,6 @@ html:not(img):not(video):not(.all-color-critical-elements) {
   transition:
     color var(--transition),
     transform var(--transition),
-    background var(--transition),
     background-color var(--transition),
     filter var(--transition);
 }
@@ -105,7 +96,6 @@ html:not(img):not(video):not(.all-color-critical-elements) {
   transition:
     color var(--transition),
     transform var(--transition),
-    background var(--transition),
     background-color var(--transition),
     filter var(--transition);
 }
