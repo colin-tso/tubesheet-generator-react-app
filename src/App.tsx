@@ -98,7 +98,7 @@ const App = () => {
         typeof minTubes !== "undefined" &&
         OTLtoShell >= 0 &&
         tubeOD > 0 &&
-        pitch >= 1 &&
+        pitch >= 0 &&
         pitchRatio >= 1 &&
         minTubes > 0 &&
         !isNaN(OTLtoShell) &&
