@@ -27,7 +27,9 @@ const App = () => {
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (typeof layoutOption !== "undefined") {
-            const parsedLayoutOption = layoutOption === 0 ? "radial" : layoutOption;
+            const parsedLayoutOption = (
+                layoutOption === 0 ? "radial" : layoutOption
+            ) as TubeSheet["layout"];
             let selectedLayout: TubeSheet | null = null;
             if (typeof shellID !== "undefined" && !isNaN(shellID) && shellID !== 0) {
                 selectedLayout = layoutInputsDefined
@@ -272,7 +274,9 @@ const App = () => {
     useEffect(() => {
         let selectedLayout: TubeSheet | null = null;
         if (typeof layoutOption !== "undefined") {
-            const parsedLayoutOption = layoutOption === 0 ? "radial" : layoutOption;
+            const parsedLayoutOption = (
+                layoutOption === 0 ? "radial" : layoutOption
+            ) as TubeSheet["layout"];
             if (typeof shellID !== "undefined" && shellID !== 0) {
                 selectedLayout = layoutInputsDefined
                     ? new TubeSheet(
