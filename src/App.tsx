@@ -57,7 +57,7 @@ const App = () => {
     const [minTubes, setMinTubes] = useState<number | undefined>();
     const [tubeOD, setTubeOD] = useState<number | undefined>();
     const [OTLtoShell, setOTLtoShell] = useState<number | undefined>();
-    const [pitch, setPitch] = useState<number | undefined>();
+    const [tubeClearance, setTubeClearance] = useState<number | undefined>();
     const [pitchRatio, setPitchRatio] = useState<number | undefined>();
     const [shellID, setShellID] = useState<number | undefined>();
     const [actualTubes, setActualTubes] = useState<number | undefined>();
@@ -83,7 +83,7 @@ const App = () => {
         setMinTubes,
         setTubeOD,
         setOTLtoShell,
-        setPitch,
+        setTubeClearance,
         setPitchRatio,
         setShellID,
         setActualTubes,
@@ -93,17 +93,17 @@ const App = () => {
     const layoutInputsDefined =
         typeof OTLtoShell !== "undefined" &&
         typeof tubeOD !== "undefined" &&
-        typeof pitch !== "undefined" &&
+        typeof tubeClearance !== "undefined" &&
         typeof pitchRatio !== "undefined" &&
         typeof minTubes !== "undefined" &&
         OTLtoShell >= 0 &&
         tubeOD > 0 &&
-        pitch >= 0 &&
+        tubeClearance >= 0 &&
         pitchRatio >= 1 &&
         minTubes > 0 &&
         !isNaN(OTLtoShell) &&
         !isNaN(tubeOD) &&
-        !isNaN(pitch) &&
+        !isNaN(tubeClearance) &&
         !isNaN(pitchRatio) &&
         !isNaN(minTubes);
 
@@ -141,7 +141,7 @@ const App = () => {
         }
     };
 
-    const setPitchRatioFromPitch = useCallback(
+    const setPitchRatioFromTubeClearance = useCallback(
         (value: number) => {
             if (typeof value !== "undefined" && typeof tubeOD !== "undefined" && tubeOD !== 0) {
                 setPitchRatio(1 + value / tubeOD);
@@ -150,10 +150,10 @@ const App = () => {
         [tubeOD]
     );
 
-    const setPitchFromPitchRatio = useCallback(
+    const setTubeClearanceFromPitchRatio = useCallback(
         (value: number) => {
             if (typeof value !== "undefined" && typeof tubeOD !== "undefined") {
-                setPitch((value - 1) * tubeOD);
+                setTubeClearance((value - 1) * tubeOD);
             }
         },
         [tubeOD]
@@ -163,17 +163,21 @@ const App = () => {
         const val = e.target.value.replace(",", ""),
             name = e.target.name;
         switch (name) {
-            case "pitch":
-                if (typeof pitch === "undefined" || pitch === 0 || isNaN(pitch)) {
+            case "tubeClearance":
+                if (
+                    typeof tubeClearance === "undefined" ||
+                    tubeClearance === 0 ||
+                    isNaN(tubeClearance)
+                ) {
                     callSetFunc(`set${utils.capitalize(name)}`, val);
-                    setPitchUpdateFunc("setPitchRatioFromPitch");
-                    setPitchRatioFromPitch(parseFloat(val));
+                    setPitchUpdateFunc("setPitchRatioFromTubeClearance");
+                    setPitchRatioFromTubeClearance(parseFloat(val));
                     break;
                 }
-                if (typeof pitch !== "undefined" && pitch > 0) {
-                    if (utils.trunc(pitch, 2) !== parseFloat(val)) {
+                if (typeof tubeClearance !== "undefined" && tubeClearance > 0) {
+                    if (utils.trunc(tubeClearance, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
-                        setPitchUpdateFunc("setPitchRatioFromPitch");
+                        setPitchUpdateFunc("setPitchRatioFromTubeClearance");
                         break;
                     }
                 }
@@ -182,14 +186,14 @@ const App = () => {
             case "pitchRatio":
                 if (typeof pitchRatio === "undefined" || pitchRatio === 0 || isNaN(pitchRatio)) {
                     callSetFunc(`set${utils.capitalize(name)}`, val);
-                    setPitchUpdateFunc("setPitchFromPitchRatio");
-                    setPitchFromPitchRatio(parseFloat(val));
+                    setPitchUpdateFunc("setTubeClearanceFromPitchRatio");
+                    setTubeClearanceFromPitchRatio(parseFloat(val));
                     break;
                 }
                 if (typeof pitchRatio !== "undefined" && pitchRatio > 0) {
                     if (utils.trunc(pitchRatio, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
-                        setPitchUpdateFunc("setPitchFromPitchRatio");
+                        setPitchUpdateFunc("setTubeClearanceFromPitchRatio");
                         break;
                     }
                 }
@@ -237,30 +241,30 @@ const App = () => {
 
     useEffect(() => {
         if (typeof pitchUpdateFunc !== "undefined") {
-            let value = pitch;
+            let value = tubeClearance;
             switch (pitchUpdateFunc) {
-                case "setPitchRatioFromPitch":
-                    value = pitch;
+                case "setPitchRatioFromTubeClearance":
+                    value = tubeClearance;
                     if (value !== undefined) {
-                        setPitchRatioFromPitch(value);
+                        setPitchRatioFromTubeClearance(value);
                     }
                     break;
-                case "setPitchFromPitchRatio":
+                case "setTubeClearanceFromPitchRatio":
                     value = pitchRatio;
                     if (value !== undefined) {
-                        setPitchFromPitchRatio(value);
+                        setTubeClearanceFromPitchRatio(value);
                     }
                     break;
             }
             setLayoutResults(calcLayoutResults());
         }
     }, [
-        pitch,
+        tubeClearance,
         pitchRatio,
         tubeOD,
         pitchUpdateFunc,
-        setPitchRatioFromPitch,
-        setPitchFromPitchRatio,
+        setPitchRatioFromTubeClearance,
+        setTubeClearanceFromPitchRatio,
         calcLayoutResults,
         layoutInputsDefined,
     ]);
@@ -381,17 +385,17 @@ const App = () => {
                     </div>
 
                     <label className="left-cell-label" htmlFor="pitch">
-                        Pitch
+                        Tube Clearance
                     </label>
                     <span className="required-asterisk">*</span>
                     <div className="input-group">
                         <IMaskInput
                             className="value-input"
-                            id="pitch"
-                            name="pitch"
+                            id="tubeClearance"
+                            name="tubeClearance"
                             type="text"
                             autoComplete="off"
-                            placeholder="Pitch (> 0)"
+                            placeholder="Tube Clearance (≥ 0)"
                             mask={Number}
                             scale={2}
                             min={0}
@@ -400,7 +404,9 @@ const App = () => {
                             onBlur={onBlur}
                             onChange={(e) => {}}
                             onSubmit={inputOnSubmitHandler}
-                            value={typeof pitch === "undefined" ? "" : pitch.toString()}
+                            value={
+                                typeof tubeClearance === "undefined" ? "" : tubeClearance.toString()
+                            }
                             inputMode="decimal"
                             required
                         />
@@ -418,7 +424,7 @@ const App = () => {
                             name={"pitchRatio"}
                             type="text"
                             autoComplete="off"
-                            placeholder="Pitch ratio (> 1)"
+                            placeholder="Pitch ratio (≥ 1)"
                             mask={Number}
                             scale={2}
                             min={0}
