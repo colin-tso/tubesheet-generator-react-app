@@ -548,12 +548,40 @@ const App = () => {
                             </tr>
                             <tr>
                                 <td>Tubes</td>
-                                <td>{layoutResults[30] ? layoutResults[30].numTubes : null}</td>
-                                <td>{layoutResults[45] ? layoutResults[45].numTubes : null}</td>
-                                <td>{layoutResults[60] ? layoutResults[60].numTubes : null}</td>
-                                <td>{layoutResults[90] ? layoutResults[90].numTubes : null}</td>
                                 <td>
-                                    {layoutResults.radial ? layoutResults.radial.numTubes : null}
+                                    {layoutResults[30]
+                                        ? utils.numFormat3SigFigs(
+                                              layoutResults[30].numTubes as number
+                                          )
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults[45]
+                                        ? utils.numFormat3SigFigs(
+                                              layoutResults[45].numTubes as number
+                                          )
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults[60]
+                                        ? utils.numFormat3SigFigs(
+                                              layoutResults[60].numTubes as number
+                                          )
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults[90]
+                                        ? utils.numFormat3SigFigs(
+                                              layoutResults[90].numTubes as number
+                                          )
+                                        : null}
+                                </td>
+                                <td>
+                                    {layoutResults.radial
+                                        ? utils.numFormat3SigFigs(
+                                              layoutResults.radial.numTubes as number
+                                          )
+                                        : null}
                                 </td>
                                 <td>mm</td>
                             </tr>
