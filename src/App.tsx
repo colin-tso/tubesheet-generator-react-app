@@ -7,8 +7,8 @@ import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import "./index.css";
 
-const emptySVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-emptySVG.setAttribute("viewBox", "1 1 1 1");
+const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
+const placeholderSVG = emptyTubeSheet.svg;
 
 const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
     const objectUrl = URL.createObjectURL(blob);
@@ -47,7 +47,7 @@ const App = () => {
             }
 
             if (selectedLayout === null) {
-                setDrawingSVG(emptySVG);
+                setDrawingSVG(placeholderSVG);
             } else {
                 setDrawingSVG(selectedLayout.svg);
             }
@@ -77,7 +77,7 @@ const App = () => {
         radial: null,
     });
 
-    const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(emptySVG);
+    const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
 
     const stateFuncs = {
         setMinTubes,
@@ -205,7 +205,7 @@ const App = () => {
 
     const downloadSVG = useCallback(() => {
         const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
-        downloadBlob(blob, `tubesheet.svg`);
+        downloadBlob(blob, "tubesheet.svg");
     }, [drawingSVG.outerHTML]);
 
     // not supported in Firefox
@@ -634,7 +634,7 @@ const App = () => {
                 <button
                     className="save-button"
                     onClick={downloadSVG}
-                    hidden={drawingSVG === emptySVG}
+                    hidden={drawingSVG === placeholderSVG}
                 >
                     Save Image
                 </button>
