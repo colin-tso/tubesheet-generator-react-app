@@ -6,21 +6,24 @@
 }
 
 :root {
-  --darker-background: hsl(210, 6%, 6%);
+  --darker-background: hsl(200, 7%, 8%);
   --dark-background: hsl(200, 6%, 10%);
-  --dark-text: #000000;
+  --dark-text: hsl(0, 0%, 0%);
+  --light-border: hsl(195, 6%, 26%);
+  --dark-border: hsl(0, 0%, 0%);
   --lighter-background: hsl(285, 100%, 99%);
   --light-background: hsl(340, 19%, 94%);
-  --light-text: #ffffff;
+  --light-text: hsl(0, 0%, 100%);
   --light-grey-text: hsl(0, 0%, 50%);
   --light-grey-background: hsl(0, 0%, 15%);
   --dark-grey-text: hsl(0, 0%, 50%);
   --dark-grey-background: hsl(0, 0%, 90%);
-  --background: light-dark(var(--lighter-background), var(--darker-background));
+  --background: light-dark(var(--lighter-background), var(--dark-background));
   --foreground: light-dark(var(--dark-text), var(--light-text));
-  --background-accent: light-dark(var(--light-background), var(--dark-background));
+  --background-accent: light-dark(var(--light-background), var(--darker-background));
   --input-readonly-text: light-dark(var(--dark-grey-text), var(--light-grey-text));
   --input-readonly-background: light-dark(var(--dark-grey-background), var(--light-grey-background));
+  --border-color: light-dark(var(--dark-border), var(--light-border));
   --transition: 0.2s ease;
   --toggle-scale: 0.35;
 }
@@ -32,6 +35,7 @@ html {
     color var(--transition),
     transform var(--transition),
     background-color var(--transition),
+    border-color var(--transition),
     filter var(--transition);
 }
 
@@ -138,9 +142,15 @@ input {
     background-color var(--transition);
 }
 
+input[type="text"] {
+  border-color: var(--border-color);
+  border-color: var(--transition);
+}
+
 input[type="text"]:read-only {
   color: var(--input-readonly-text);
   background-color: var(--input-readonly-background);
+  transition: border-color var(--border-color);
 }
 
 .tubesheet-svg > * {
@@ -152,7 +162,7 @@ input[type="text"]:read-only {
 .layout-table th,
 .layout-table tr,
 .layout-table td {
-  border-color: var(--foreground);
+  border-color: var(--border-color);
 }
 
 .column-pane.left {
