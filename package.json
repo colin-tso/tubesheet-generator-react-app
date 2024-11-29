@@ -14,15 +14,16 @@
         "react-dom": "^18.3.1",
         "react-github-btn": "^1.4.0",
         "react-imask": "^7.6.1",
-        "react-scripts": "5.0.1",
+        "react-app-rewired": "5.0.1",
         "web-vitals": "^2.1.4"
     },
     "scripts": {
         "predeploy": "npm run build",
         "deploy": "gh-pages -d build",
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test"
+        "start": "react-app-rewired start",
+        "build": "react-app-rewired build",
+        "test": "react-app-rewired test",
+        "stop": "taskkill -F -IM node.exe"
     },
     "eslintConfig": {
         "extends": [
@@ -48,6 +49,7 @@
         "@stylistic/stylelint-config": "^2.0.0",
         "eslint-config-react-app": "^7.0.1",
         "gh-pages": "^6.2.0",
+        "react-app-rewired": "^2.2.1",
         "stylelint": "^16.10.0",
         "stylelint-config-clean-order": "^6.1.0",
         "stylelint-config-standard": "^36.0.1",
@@ -58,7 +60,7 @@
             "loader-utils": "1.4.2",
             "xml2js": "0.5.0"
         },
-        "react-scripts": {
+        "react-app-rewired": {
             "resolve-url-loader": "5.0.0",
             "@svgr/webpack": "6.5.1"
         }
