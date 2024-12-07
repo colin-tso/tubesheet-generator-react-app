@@ -206,13 +206,20 @@ function generateTubeField(
     offsetOption: string = "AUTO"
 ): TubeField | null {
     try {
-        // Input validation
-        if (shellID <= 0 || tubeOD <= 0 || pitchRatio <= 1 || OTLClearance < 0) {
-            throw new Error("Invalid input parameters");
+        if (shellID <= 0) {
+            throw new Error("Shell ID must be greater than 0");
         }
-
-        if (tubeOD >= shellID - OTLClearance) {
-            throw new Error("Tube OD exceeds shell ID");
+        if (tubeOD <= 0) {
+            throw new Error("Tube OD must be greater than 0");
+        }
+        if (pitchRatio < 1) {
+            throw new Error("Pitch ratio must be 1 or greater");
+        }
+        if (OTLClearance < 0) {
+            throw new Error("OTL clearance must be 0 or greater");
+        }
+        if (tubeOD > shellID - OTLClearance) {
+            throw new Error("Tube OD exceeds max allowable OTL");
         }
 
         shellID = roundUp(shellID, 8);
@@ -482,8 +489,14 @@ function findMinID(
     // let tubeFieldArr: TubeField
     const max_i: number = 100;
 
-    if (tubeOD <= 0 || pitchRatio <= 1 || OTLClearance < 0) {
-        throw new Error("Invalid input");
+    if (tubeOD <= 0) {
+        throw new Error("Tube outer diameter must be greater than 0");
+    }
+    if (pitchRatio < 1) {
+        throw new Error("Pitch ratio must be 1 or greater");
+    }
+    if (OTLClearance < 0) {
+        throw new Error("OTL clearance must be 0 or greater");
     }
     // shortcircuit when target number of tubes = 1
     if (minTubes === 1) {

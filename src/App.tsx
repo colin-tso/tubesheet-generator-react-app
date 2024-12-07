@@ -93,14 +93,17 @@ const App = () => {
     const layoutInputsDefined =
         typeof OTLtoShell !== "undefined" &&
         typeof tubeOD !== "undefined" &&
+        typeof pitch !== "undefined" &&
         typeof pitchRatio !== "undefined" &&
         typeof minTubes !== "undefined" &&
-        OTLtoShell > 0 &&
+        OTLtoShell >= 0 &&
         tubeOD > 0 &&
+        pitch >= 0 &&
         pitchRatio >= 1 &&
         minTubes > 0 &&
         !isNaN(OTLtoShell) &&
         !isNaN(tubeOD) &&
+        !isNaN(pitch) &&
         !isNaN(pitchRatio) &&
         !isNaN(minTubes);
 
@@ -171,7 +174,6 @@ const App = () => {
                     if (utils.trunc(pitch, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
                         setPitchUpdateFunc("setPitchRatioFromPitch");
-                        // setPitchRatioFromPitch(parseFloat(val));
                         break;
                     }
                 }
@@ -188,7 +190,6 @@ const App = () => {
                     if (utils.trunc(pitchRatio, 2) !== parseFloat(val)) {
                         callSetFunc(`set${utils.capitalize(name)}`, val);
                         setPitchUpdateFunc("setPitchFromPitchRatio");
-                        // setPitchFromPitchRatio(parseFloat(val));
                         break;
                     }
                 }
@@ -309,7 +310,7 @@ const App = () => {
                             name={"minTubes"}
                             type="text"
                             autoComplete="off"
-                            placeholder=""
+                            placeholder="Minimum number of tubes (> 0)"
                             mask={Number}
                             scale={0}
                             min={0}
@@ -336,6 +337,7 @@ const App = () => {
                             name={"tubeOD"}
                             type="text"
                             autoComplete="off"
+                            placeholder="Tube OD (> 0)"
                             mask={Number}
                             scale={2}
                             min={0}
@@ -362,6 +364,7 @@ const App = () => {
                             name="OTLtoShell"
                             type="text"
                             autoComplete="off"
+                            placeholder="Shell ID – OTL (≥ 0)"
                             mask={Number}
                             scale={2}
                             min={0}
@@ -388,6 +391,7 @@ const App = () => {
                             name="pitch"
                             type="text"
                             autoComplete="off"
+                            placeholder="Pitch (> 0)"
                             mask={Number}
                             scale={2}
                             min={0}
@@ -414,6 +418,7 @@ const App = () => {
                             name={"pitchRatio"}
                             type="text"
                             autoComplete="off"
+                            placeholder="Pitch ratio (> 1)"
                             mask={Number}
                             scale={2}
                             min={0}
@@ -440,6 +445,7 @@ const App = () => {
                             name={"shellID"}
                             type="text"
                             autoComplete="off"
+                            placeholder="Shell ID"
                             mask={Number}
                             scale={2}
                             min={0}
@@ -464,6 +470,7 @@ const App = () => {
                             name={"actualTubes"}
                             type="text"
                             autoComplete="off"
+                            placeholder="Actual number of tubes (to be calculated)"
                             mask={Number}
                             scale={0}
                             min={0}
