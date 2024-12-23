@@ -271,34 +271,7 @@ const generateTubeField = memoize(
             const pitch = tubeOD * pitchRatio;
             const maxOTL = shellID - OTLClearance;
 
-            // Calculate dx, dy and per-row offset based on selected layout
-            const sin60 = Math.sqrt(3) / 2;
-            const cos45 = 1 / Math.sqrt(2);
-
-            const layoutConstants: {
-                [key in TubeSheetLayout]: { dx: number; dy: number; C: number };
-            } = {
-                30: {
-                    dx: pitch,
-                    dy: pitch * sin60,
-                    C: pitch / 2,
-                },
-                60: {
-                    dx: pitch * sin60 * 2,
-                    dy: pitch / 2,
-                    C: (pitch * sin60 * 2) / 2,
-                },
-                90: { dx: pitch, dy: pitch, C: 0 },
-                45: {
-                    dx: pitch / cos45,
-                    dy: pitch / cos45 / 2,
-                    C: pitch / cos45 / 2,
-                },
-                radial: { dx: NaN, dy: NaN, C: NaN },
-            };
-
-            const layoutEnum = layoutConstants[layout.toString() as keyof typeof layoutConstants];
-            const { dx, dy, C } = layoutEnum;
+            const { dx, dy, C } = getLayoutConstants(pitch, layout);
 
             // Recursively find optimal layout if offsetOption is set to AUTO.
             // Otherwise, respect offsetOption arg input.
@@ -318,26 +291,26 @@ const generateTubeField = memoize(
                 x = 0,
                 y = 0;
             let goNextRow: boolean = false;
-            let tubeField: TubeField = [];
+            const quarterTubeField: TubeField = [];
 
             while (Math.abs(y) <= maxOTL && j < MAX_ITERATIONS) {
                 y = j * dy;
                 while (Math.abs(x) <= maxOTL && i < MAX_ITERATIONS && !goNextRow) {
                     let cMult = j % 2 === 0 ? 0 : 1;
                     x = C * cMult + i * dx - offset;
-                    if (Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <= maxOTL) {
-                        tubeField.push({ x: x, y: y });
-                    } else {
-                        goNextRow = true;
-                    }
                     i++;
+                    if (Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <= maxOTL) {
+                        quarterTubeField.push({ x: x, y: y });
+                    } else {
+                        break;
+                    }
                 }
                 i = 0;
                 j++;
                 goNextRow = false;
             }
 
-            const applySymmetry = (tubeField: TubeField): TubeField => {
+            const applySymmetry = (quarterTubeField: TubeField): TubeField => {
                 const flipHorz: number[][] = [
                     [-1, 0],
                     [0, 1],
@@ -366,10 +339,13 @@ const generateTubeField = memoize(
                     return Array.from(uniqueSet).map((item) => JSON.parse(item));
                 };
 
-                const flippedHorz = tubeField.map((point) => applyMatrix(point, flipHorz));
-                const flippedVert = mergeUniqueCoordinates(tubeField, flippedHorz).map((point) =>
-                    applyMatrix(point, flipVert)
+                const flippedHorz: TubeField = quarterTubeField.map((point) =>
+                    applyMatrix(point, flipHorz)
                 );
+                const flippedVert: TubeField = mergeUniqueCoordinates(
+                    quarterTubeField,
+                    flippedHorz
+                ).map((point) => applyMatrix(point, flipVert));
 
                 const sortTubePositions = (tubeField: TubeField): TubeField => {
                     return tubeField.sort((a, b) => {
@@ -381,13 +357,17 @@ const generateTubeField = memoize(
                 };
 
                 // Merge and deduplicate tube positions
-                const mergedFields = mergeUniqueCoordinates(tubeField, flippedHorz, flippedVert);
+                const mergedFields = mergeUniqueCoordinates(
+                    quarterTubeField,
+                    flippedHorz,
+                    flippedVert
+                );
 
                 // Sort the final tube positions
                 return sortTubePositions(mergedFields);
             };
 
-            tubeField = applySymmetry(tubeField);
+            const tubeField = applySymmetry(quarterTubeField);
 
             return tubeField;
         } catch (error) {
@@ -425,6 +405,34 @@ const radialFunc = (
     }
 
     return tubeField;
+};
+
+const getLayoutConstants = (pitch: number, layout: TubeSheetLayout) => {
+    const sin60 = Math.sqrt(3) / 2;
+    const cos45 = 1 / Math.sqrt(2);
+
+    const layoutConstants: {
+        [key in TubeSheetLayout]: { dx: number; dy: number; C: number };
+    } = {
+        30: {
+            dx: pitch,
+            dy: pitch * sin60,
+            C: pitch / 2,
+        },
+        60: {
+            dx: pitch * sin60 * 2,
+            dy: pitch / 2,
+            C: (pitch * sin60 * 2) / 2,
+        },
+        90: { dx: pitch, dy: pitch, C: 0 },
+        45: {
+            dx: pitch / cos45,
+            dy: pitch / cos45 / 2,
+            C: pitch / cos45 / 2,
+        },
+        radial: { dx: NaN, dy: NaN, C: NaN },
+    };
+    return layoutConstants[layout.toString() as keyof typeof layoutConstants];
 };
 
 const tubeCount = (
@@ -809,7 +817,7 @@ const generateSVGCircles = <T extends { x: number; y: number }>(
 
 const generateSVGCenteredCross = (diameter: number, svgStyles: string): SVGSVGElement => {
     // Create an SVG element
-    const svgNamespace = "http://www.w3.org/2000/svg";
+    const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
     // Create variables to define bounding box based on coordinates and diameter
     let minX = (-diameter / 2) * 1.1,
@@ -824,10 +832,10 @@ const generateSVGCenteredCross = (diameter: number, svgStyles: string): SVGSVGEl
         return acc;
     }, {} as { [key: string]: string });
 
-    const svg = document.createElementNS(svgNamespace, "svg");
+    const svg = document.createElementNS(SVG_NAMESPACE, "svg");
 
     // Horizontal line
-    const horzLine = document.createElementNS(svgNamespace, "line");
+    const horzLine = document.createElementNS(SVG_NAMESPACE, "line");
     horzLine.setAttribute("x1", minX.toString());
     horzLine.setAttribute("y1", "0");
     horzLine.setAttribute("x2", maxX.toString());
@@ -839,7 +847,7 @@ const generateSVGCenteredCross = (diameter: number, svgStyles: string): SVGSVGEl
     svg.appendChild(horzLine);
 
     // Vertical line
-    const vertLine = document.createElementNS(svgNamespace, "line");
+    const vertLine = document.createElementNS(SVG_NAMESPACE, "line");
     vertLine.setAttribute("x1", "0");
     vertLine.setAttribute("y1", minY.toString());
     vertLine.setAttribute("x2", "0");
@@ -853,19 +861,20 @@ const generateSVGCenteredCross = (diameter: number, svgStyles: string): SVGSVGEl
     const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
     // Set SVG attributes
-    svg.setAttribute("xmlns", svgNamespace);
+    svg.setAttribute("xmlns", SVG_NAMESPACE);
     svg.setAttribute("height", "100dvh");
     svg.setAttribute("viewBox", viewBox);
 
     return svg;
 };
 
-const mergeSVGs = (svgs: SVGSVGElement[]): SVGSVGElement => {
-    const svgNamespace = "http://www.w3.org/2000/svg";
+const mergeSVGs = (svgs: SVGSVGElement[], viewBoxPaddingAsFraction: number): SVGSVGElement => {
+    const VIEWBOX_PADDING = 1 + viewBoxPaddingAsFraction;
+    const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
     // Create a new SVG element to serve as the container
-    const mergedSVG = document.createElementNS(svgNamespace, "svg");
-    mergedSVG.setAttribute("xmlns", svgNamespace);
+    const mergedSVG = document.createElementNS(SVG_NAMESPACE, "svg");
+    mergedSVG.setAttribute("xmlns", SVG_NAMESPACE);
     mergedSVG.setAttribute("height", "100dvh");
     mergedSVG.setAttribute("class", "tubesheet-svg");
     mergedSVG.setAttribute("margin", "0");
@@ -899,43 +908,58 @@ const mergeSVGs = (svgs: SVGSVGElement[]): SVGSVGElement => {
     // Set the viewBox of the merged SVG to encompass all contained SVGs
     mergedSVG.setAttribute(
         "viewBox",
-        `${minX * 1.1} ${minY * 1.1} ${(maxX - minX) * 1.1} ${(maxY - minY) * 1.1}`
+        `${minX * VIEWBOX_PADDING} ${minY * VIEWBOX_PADDING} ${(maxX - minX) * VIEWBOX_PADDING} ${
+            (maxY - minY) * VIEWBOX_PADDING
+        }`
     );
 
     return mergedSVG;
 };
 
-const generateTubeSheetSVG = (ts: TubeSheet) => {
+const generateTubeSheetSVG = (ts: TubeSheet): SVGSVGElement => {
+    const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
     if (!ts.tubeField || !ts.OTL) {
-        return document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        return document.createElementNS(SVG_NAMESPACE, "svg");
     }
 
-    let shellIDForSVG = 0;
-    if (ts.tubeField !== null && ts.OTL !== null) {
-        if (typeof ts.shellID !== "undefined" && ts.shellID !== 0 && !isNaN(ts.shellID)) {
-            shellIDForSVG = ts.shellID;
-        } else if (ts.minID !== null && ts.minID !== 0) {
-            shellIDForSVG = ts.minID;
+    const shellIDForSVG = () => {
+        if (ts.tubeField === null && ts.OTL === null) {
+            return 0;
         }
-    }
 
-    const tubeStyle = "stroke:black; fill:none; stroke-width:1; vector-effect:non-scaling-stroke;";
-    const shellStyle = "stroke:black; fill:none; stroke-width:2; vector-effect:non-scaling-stroke;";
-    const OTLStyle =
+        if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
+            return ts.shellID;
+        }
+
+        if (ts.shellID === 0 || isNaN(ts.shellID)) {
+            return ts.minID;
+        }
+
+        return 0;
+    };
+
+    const VIEWBOX_PADDING_AS_FRACTION = 0.1;
+    const TUBE_STYLE = "stroke:black; fill:none; stroke-width:1; vector-effect:non-scaling-stroke;";
+    const SHELL_STYLE =
+        "stroke:black; fill:none; stroke-width:2; vector-effect:non-scaling-stroke;";
+    const OTL_STYLE =
         "stroke:black; fill:none; stroke-dasharray:8 4; stroke-width:0.5; vector-effect:non-scaling-stroke;";
-    const crossHairsStyle =
+    const CROSSHAIRS_STYLE =
         "stroke:black; fill:none; stroke-dasharray:8 4; stroke-width:0.5; vector-effect:non-scaling-stroke;";
 
-    const tubeFieldSVG = generateSVGCircles(ts.tubeField, ts.tubeOD, tubeStyle, true);
-    const shellSVG = generateSVGCircles([{ x: 0, y: 0 }], shellIDForSVG, shellStyle);
-    const OTLSVG = generateSVGCircles([{ x: 0, y: 0 }], ts.OTL, OTLStyle);
-    const crossHairs = generateSVGCenteredCross(shellIDForSVG, crossHairsStyle);
-    const mergedSVG = mergeSVGs([shellSVG, OTLSVG, tubeFieldSVG, crossHairs]);
+    const tubeFieldSVG = generateSVGCircles(ts.tubeField, ts.tubeOD, TUBE_STYLE, true);
+    const shellSVG = generateSVGCircles([{ x: 0, y: 0 }], shellIDForSVG(), SHELL_STYLE);
+    const OTLSVG = generateSVGCircles([{ x: 0, y: 0 }], ts.OTL, OTL_STYLE);
+    const crossHairs = generateSVGCenteredCross(shellIDForSVG(), CROSSHAIRS_STYLE);
+    const mergedSVG = mergeSVGs(
+        [shellSVG, OTLSVG, tubeFieldSVG, crossHairs],
+        VIEWBOX_PADDING_AS_FRACTION
+    );
 
     mergedSVG.setAttribute("title", "Tubesheet Layout Drawing");
     mergedSVG.setAttribute(
         "desc",
-        `Shell ID: ${round(shellIDForSVG, 2)} mm; OTL: ${round(ts.OTL, 2)} mm; Tube OD: ${
+        `Shell ID: ${round(shellIDForSVG(), 2)} mm; OTL: ${round(ts.OTL, 2)} mm; Tube OD: ${
             ts.tubeOD
         } mm; Pitch: ${round((ts.pitchRatio - 1) * ts.tubeOD, 2)}; Pitch Ratio: ${round(
             ts.pitchRatio,
