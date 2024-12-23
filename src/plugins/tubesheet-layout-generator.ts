@@ -290,13 +290,12 @@ const generateTubeField = memoize(
                 j = 0,
                 x = 0,
                 y = 0;
-            let goNextRow: boolean = false;
             const quarterTubeField: TubeField = [];
 
             while (Math.abs(y) <= maxOTL && j < MAX_ITERATIONS) {
                 y = j * dy;
-                while (Math.abs(x) <= maxOTL && i < MAX_ITERATIONS && !goNextRow) {
-                    let cMult = j % 2 === 0 ? 0 : 1;
+                const cMult = j % 2 === 0 ? 0 : 1;
+                while (Math.abs(x) <= maxOTL && i < MAX_ITERATIONS) {
                     x = C * cMult + i * dx - offset;
                     i++;
                     if (Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <= maxOTL) {
@@ -307,7 +306,6 @@ const generateTubeField = memoize(
                 }
                 i = 0;
                 j++;
-                goNextRow = false;
             }
 
             const applySymmetry = (quarterTubeField: TubeField): TubeField => {
@@ -541,8 +539,7 @@ const findMinID = memoize(
         }
 
         if (layout === "radial") {
-            let pitch: number;
-            pitch = pitchRatio * tubeOD;
+            const pitch = pitchRatio * tubeOD;
             return pitch / Math.sin(Math.PI / minTubes) + tubeOD + OTLClearance;
         }
 

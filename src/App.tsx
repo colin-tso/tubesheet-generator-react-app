@@ -34,9 +34,9 @@ const App = () => {
             if (typeof shellID !== "undefined" && !isNaN(shellID) && shellID !== 0) {
                 selectedLayout = layoutInputsDefined
                     ? new TubeSheet(
-                          OTLtoShell,
-                          tubeOD,
-                          pitchRatio,
+                          OTLtoShell!,
+                          tubeOD!,
+                          pitchRatio!,
                           parsedLayoutOption,
                           undefined,
                           shellID
@@ -79,6 +79,8 @@ const App = () => {
         radial: null,
     });
 
+    const [layoutInputsDefined, setLayoutInputsDefined] = useState<boolean>(false);
+
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
 
     const stateFuncs = {
@@ -92,36 +94,55 @@ const App = () => {
         setLayoutOption,
     };
 
-    const layoutInputsDefined =
-        utils.isNumber(OTLtoShell) &&
-        utils.isNumber(tubeOD) &&
-        utils.isNumber(tubeClearance) &&
-        utils.isNumber(pitchRatio) &&
-        utils.isNumber(minTubes) &&
-        OTLtoShell >= 0 &&
-        tubeOD > 0 &&
-        tubeClearance >= 0 &&
-        pitchRatio >= 1 &&
-        minTubes > 0;
+    // const layoutInputsDefined =
+    //     utils.isNumber(OTLtoShell) &&
+    //     utils.isNumber(tubeOD) &&
+    //     utils.isNumber(tubeClearance) &&
+    //     utils.isNumber(pitchRatio) &&
+    //     utils.isNumber(minTubes) &&
+    //     OTLtoShell >= 0 &&
+    //     tubeOD > 0 &&
+    //     tubeClearance >= 0 &&
+    //     pitchRatio >= 1 &&
+    //     minTubes > 0;
 
     const layoutOptionSelected = typeof layoutOption !== "undefined" && !isNaN(layoutOption);
+
+    const validateLayoutInputs = useCallback(() => {
+        setLayoutInputsDefined(
+            utils.isNumber(OTLtoShell) &&
+                utils.isNumber(tubeOD) &&
+                utils.isNumber(tubeClearance) &&
+                utils.isNumber(pitchRatio) &&
+                utils.isNumber(minTubes) &&
+                OTLtoShell >= 0 &&
+                tubeOD > 0 &&
+                tubeClearance >= 0 &&
+                pitchRatio >= 1 &&
+                minTubes > 0
+        );
+    }, [OTLtoShell, minTubes, pitchRatio, tubeClearance, tubeOD]);
+
+    useEffect(() => {
+        validateLayoutInputs();
+    }, [OTLtoShell, minTubes, pitchRatio, tubeClearance, tubeOD, validateLayoutInputs]);
 
     const calcLayoutResults = useCallback(() => {
         return {
             30: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 30, minTubes)
+                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes)
                 : null,
             45: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 45, minTubes)
+                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes)
                 : null,
             60: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 60, minTubes)
+                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes)
                 : null,
             90: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 90, minTubes)
+                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes)
                 : null,
             radial: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell, tubeOD, pitchRatio, "radial", minTubes)
+                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes)
                 : null,
         };
     }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
@@ -271,9 +292,9 @@ const App = () => {
             if (utils.isNumber(shellID) && shellID > 0) {
                 selectedLayout = layoutInputsDefined
                     ? new TubeSheet(
-                          OTLtoShell,
-                          tubeOD,
-                          pitchRatio,
+                          OTLtoShell!,
+                          tubeOD!,
+                          pitchRatio!,
                           parsedLayoutOption,
                           undefined,
                           shellID
