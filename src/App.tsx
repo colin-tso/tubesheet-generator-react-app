@@ -93,21 +93,16 @@ const App = () => {
     };
 
     const layoutInputsDefined =
-        typeof OTLtoShell !== "undefined" &&
-        typeof tubeOD !== "undefined" &&
-        typeof tubeClearance !== "undefined" &&
-        typeof pitchRatio !== "undefined" &&
-        typeof minTubes !== "undefined" &&
+        utils.isNumber(OTLtoShell) &&
+        utils.isNumber(tubeOD) &&
+        utils.isNumber(tubeClearance) &&
+        utils.isNumber(pitchRatio) &&
+        utils.isNumber(minTubes) &&
         OTLtoShell >= 0 &&
         tubeOD > 0 &&
         tubeClearance >= 0 &&
         pitchRatio >= 1 &&
-        minTubes > 0 &&
-        !isNaN(OTLtoShell) &&
-        !isNaN(tubeOD) &&
-        !isNaN(tubeClearance) &&
-        !isNaN(pitchRatio) &&
-        !isNaN(minTubes);
+        minTubes > 0;
 
     const layoutOptionSelected = typeof layoutOption !== "undefined" && !isNaN(layoutOption);
 
@@ -132,20 +127,24 @@ const App = () => {
     }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
 
     const callSetFunc = (name: string, value: string) => {
+        if (!(name in stateFuncs)) {
+            console.error(`Function ${name} not found.`);
+            return;
+        }
+
         const fn = stateFuncs[name as keyof typeof stateFuncs];
 
-        if (typeof parseFloat(value) === "undefined") {
+        if (!utils.isNumber(value)) {
+            fn(undefined);
             return;
-        } else if (fn) {
-            fn(parseFloat(value.replace(",", "")));
         } else {
-            console.error(`Function ${name} not found.`);
+            fn(utils.stringToNumber(value));
         }
     };
 
     const setPitchRatioFromTubeClearance = useCallback(
         (value: number) => {
-            if (typeof value !== "undefined" && typeof tubeOD !== "undefined" && tubeOD !== 0) {
+            if (utils.isNumber(value) && utils.isNumber(tubeOD) && tubeOD > 0) {
                 setPitchRatio(1 + value / tubeOD);
             }
         },
@@ -154,7 +153,7 @@ const App = () => {
 
     const setTubeClearanceFromPitchRatio = useCallback(
         (value: number) => {
-            if (typeof value !== "undefined" && typeof tubeOD !== "undefined") {
+            if (utils.isNumber(value) && utils.isNumber(tubeOD)) {
                 setTubeClearance((value - 1) * tubeOD);
             }
         },
@@ -166,38 +165,30 @@ const App = () => {
             name = e.target.name;
         switch (name) {
             case "tubeClearance":
-                if (
-                    typeof tubeClearance === "undefined" ||
-                    tubeClearance === 0 ||
-                    isNaN(tubeClearance)
-                ) {
+                if (!utils.isNumber(tubeClearance) || tubeClearance <= 0) {
                     callSetFunc(`set${utils.capitalize(name)}`, val);
                     setPitchUpdateFunc("setPitchRatioFromTubeClearance");
                     setPitchRatioFromTubeClearance(parseFloat(val));
                     break;
                 }
-                if (typeof tubeClearance !== "undefined" && tubeClearance > 0) {
-                    if (utils.trunc(tubeClearance, 2) !== parseFloat(val)) {
-                        callSetFunc(`set${utils.capitalize(name)}`, val);
-                        setPitchUpdateFunc("setPitchRatioFromTubeClearance");
-                        break;
-                    }
+                if (utils.trunc(tubeClearance, 2) !== utils.stringToNumber(val)) {
+                    callSetFunc(`set${utils.capitalize(name)}`, val);
+                    setPitchUpdateFunc("setPitchRatioFromTubeClearance");
+                    break;
                 }
                 break;
 
             case "pitchRatio":
-                if (typeof pitchRatio === "undefined" || pitchRatio === 0 || isNaN(pitchRatio)) {
+                if (!utils.isNumber(pitchRatio) || pitchRatio <= 0) {
                     callSetFunc(`set${utils.capitalize(name)}`, val);
                     setPitchUpdateFunc("setTubeClearanceFromPitchRatio");
                     setTubeClearanceFromPitchRatio(parseFloat(val));
                     break;
                 }
-                if (typeof pitchRatio !== "undefined" && pitchRatio > 0) {
-                    if (utils.trunc(pitchRatio, 2) !== parseFloat(val)) {
-                        callSetFunc(`set${utils.capitalize(name)}`, val);
-                        setPitchUpdateFunc("setTubeClearanceFromPitchRatio");
-                        break;
-                    }
+                if (utils.trunc(pitchRatio, 2) !== utils.stringToNumber(val)) {
+                    callSetFunc(`set${utils.capitalize(name)}`, val);
+                    setPitchUpdateFunc("setTubeClearanceFromPitchRatio");
+                    break;
                 }
                 break;
             default:
@@ -247,13 +238,13 @@ const App = () => {
             switch (pitchUpdateFunc) {
                 case "setPitchRatioFromTubeClearance":
                     value = tubeClearance;
-                    if (value !== undefined) {
+                    if (utils.isNumber(value)) {
                         setPitchRatioFromTubeClearance(value);
                     }
                     break;
                 case "setTubeClearanceFromPitchRatio":
                     value = pitchRatio;
-                    if (value !== undefined) {
+                    if (utils.isNumber(value)) {
                         setTubeClearanceFromPitchRatio(value);
                     }
                     break;
@@ -277,7 +268,7 @@ const App = () => {
             const parsedLayoutOption = (
                 layoutOption === 0 ? "radial" : layoutOption
             ) as TubeSheet["layout"];
-            if (typeof shellID !== "undefined" && shellID !== 0) {
+            if (utils.isNumber(shellID) && shellID > 0) {
                 selectedLayout = layoutInputsDefined
                     ? new TubeSheet(
                           OTLtoShell,
@@ -324,7 +315,7 @@ const App = () => {
                             min={0}
                             radix="."
                             thousandsSeparator=","
-                            value={typeof minTubes === "undefined" ? "" : minTubes.toString()}
+                            value={!utils.isNumber(minTubes) ? "" : minTubes.toString()}
                             onBlur={onBlur}
                             onChange={(e) => {}}
                             onSubmit={inputOnSubmitHandler}
@@ -351,7 +342,7 @@ const App = () => {
                             min={0}
                             radix={"."}
                             thousandsSeparator=","
-                            value={typeof tubeOD === "undefined" ? "" : tubeOD.toString()}
+                            value={!utils.isNumber(tubeOD) ? "" : tubeOD.toString()}
                             onBlur={onBlur}
                             onChange={(e) => {}}
                             onSubmit={inputOnSubmitHandler}
@@ -381,7 +372,7 @@ const App = () => {
                             onBlur={onBlur}
                             onChange={(e) => {}}
                             onSubmit={inputOnSubmitHandler}
-                            value={typeof OTLtoShell === "undefined" ? "" : OTLtoShell.toString()}
+                            value={!utils.isNumber(OTLtoShell) ? "" : OTLtoShell.toString()}
                             inputMode="decimal"
                             required
                         />
@@ -408,9 +399,7 @@ const App = () => {
                             onBlur={onBlur}
                             onChange={(e) => {}}
                             onSubmit={inputOnSubmitHandler}
-                            value={
-                                typeof tubeClearance === "undefined" ? "" : tubeClearance.toString()
-                            }
+                            value={!utils.isNumber(tubeClearance) ? "" : tubeClearance.toString()}
                             inputMode="decimal"
                             required
                         />
@@ -437,7 +426,7 @@ const App = () => {
                             onBlur={onBlur}
                             onChange={(e) => {}}
                             onSubmit={inputOnSubmitHandler}
-                            value={typeof pitchRatio === "undefined" ? "" : pitchRatio.toString()}
+                            value={!utils.isNumber(pitchRatio) ? "" : pitchRatio.toString()}
                             inputMode="decimal"
                             required
                         />
@@ -464,7 +453,7 @@ const App = () => {
                             onBlur={onBlur}
                             onChange={(e) => {}}
                             onSubmit={inputOnSubmitHandler}
-                            value={typeof shellID === "undefined" ? "" : shellID.toString()}
+                            value={!utils.isNumber(shellID) ? "" : shellID.toString()}
                             inputMode="decimal"
                         />
                         <span className="units">mm</span>
@@ -486,7 +475,7 @@ const App = () => {
                             min={0}
                             radix={"."}
                             thousandsSeparator=","
-                            value={typeof actualTubes === "undefined" ? "" : actualTubes.toString()}
+                            value={!utils.isNumber(actualTubes) ? "" : actualTubes.toString()}
                             inputMode="numeric"
                             readOnly
                         />
