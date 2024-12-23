@@ -22,4 +22,13 @@ export const utils = {
         var n = num * p * (1 + Number.EPSILON);
         return Math.trunc(n) / p;
     },
+    isNumber(x: any): x is number {
+        return (
+            (typeof x === "number" && x - x === 0) ||
+            (typeof x === "string" && Number.isFinite(+x.replace(",", "")) && x.trim() !== "")
+        );
+    },
+    stringToNumber(x: string) {
+        return parseFloat(x.replace(",", ""));
+    },
 };
