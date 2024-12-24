@@ -121,6 +121,7 @@ export class TubeSheet {
     }
 
     private updateGeneratedProps() {
+        console.log("Updating generated properties");
         this._minID = this.minIDFunc();
         this._numTubes = this.numTubesFunc();
         this._tubeField = this.tubeFieldFunc();
@@ -129,6 +130,12 @@ export class TubeSheet {
 
     private OTLFunc(): number | null {
         if (this._shellID) {
+            console.log(`getting OTL for:
+                shellID: ${this._shellID}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return (
                 tubeFieldOTL(
                     this._shellID,
@@ -139,6 +146,12 @@ export class TubeSheet {
                 ) ?? null
             );
         } else if (this._minTubes) {
+            console.log(`getting OTL for:
+                minTubes: ${this._minTubes}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return (
                 tubeFieldOTL(
                     this.minIDFunc() as number,
@@ -155,6 +168,12 @@ export class TubeSheet {
 
     private tubeFieldFunc(): TubeField | null {
         if (this._shellID) {
+            console.log(`getting tubefield for:
+                shellID: ${this._shellID}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return generateTubeField(
                 this._shellID,
                 this._OTLClearance,
@@ -163,6 +182,12 @@ export class TubeSheet {
                 this._layout
             );
         } else if (this._minTubes) {
+            console.log(`getting tubefield for:
+                minTubes: ${this._minTubes}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return generateTubeField(
                 this.minIDFunc() as number,
                 this._OTLClearance,
@@ -177,6 +202,12 @@ export class TubeSheet {
 
     private minIDFunc(): number | null {
         if (this._minTubes) {
+            console.log(`getting minID for:
+                minTubes: ${this._minTubes}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return findMinID(
                 this._minTubes,
                 this._OTLClearance,
@@ -185,6 +216,12 @@ export class TubeSheet {
                 this._layout
             );
         } else if (this._shellID) {
+            console.log(`getting minID for:
+                shellID: ${this._shellID}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return findMinID(
                 this.numTubesFunc(),
                 this._OTLClearance,
@@ -199,6 +236,12 @@ export class TubeSheet {
 
     private numTubesFunc(): number {
         if (this._shellID) {
+            console.log(`getting numTubes for:
+                shellID: ${this._shellID}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return tubeCount(
                 this._shellID,
                 this._OTLClearance,
@@ -207,6 +250,12 @@ export class TubeSheet {
                 this._layout
             );
         } else if (this._minTubes) {
+            console.log(`getting numTubes for:
+                minTubes: ${this._minTubes}
+                OTLClearance: ${this._OTLClearance}
+                tubeOD: ${this._tubeOD}
+                pitchRatio: ${this._pitchRatio}
+                layout: ${this._layout}`);
             return tubeCount(
                 this.minIDFunc() as number,
                 this._OTLClearance,
@@ -644,6 +693,7 @@ const findMinID = memoize(
                 );
 
                 while (numTubes_new !== minTubes && iterations < MAX_ITERATIONS) {
+                    console.log(`Iteration: ${iterations}`);
                     // Re-initialise guesses. if there has been a previous attempt, use that as a starting point.
                     if (!D_bestGuess) {
                         D_old = D_new;

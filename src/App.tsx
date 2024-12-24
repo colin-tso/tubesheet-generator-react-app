@@ -24,14 +24,37 @@ const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
 };
 
 const App = () => {
+    const [minTubes, setMinTubes] = useState<number | undefined>();
+    const [tubeOD, setTubeOD] = useState<number | undefined>();
+    const [OTLtoShell, setOTLtoShell] = useState<number | undefined>();
+    const [tubeClearance, setTubeClearance] = useState<number | undefined>();
+    const [pitchRatio, setPitchRatio] = useState<number | undefined>();
+    const [shellID, setShellID] = useState<number | undefined>();
+    const [actualTubes, setActualTubes] = useState<number | undefined>();
+    const [layoutOption, setLayoutOption] = useState<number | undefined>();
+    const [pitchUpdateFunc, setPitchUpdateFunc] = useState<string | undefined>();
+    const [layoutResults, setLayoutResults] = useState<{
+        "30": TubeSheet | null;
+        "45": TubeSheet | null;
+        "60": TubeSheet | null;
+        "90": TubeSheet | null;
+        radial: TubeSheet | null;
+    }>({
+        "30": null,
+        "45": null,
+        "60": null,
+        "90": null,
+        radial: null,
+    });
+
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (typeof layoutOption !== "undefined") {
+        if (utils.isNumber(layoutOption)) {
             const parsedLayoutOption = (
                 layoutOption === 0 ? "radial" : layoutOption
             ) as TubeSheet["layout"];
             let selectedLayout: TubeSheet | null = null;
-            if (typeof shellID !== "undefined" && !isNaN(shellID) && shellID !== 0) {
+            if (utils.isNumber(shellID) && shellID !== 0) {
                 selectedLayout = layoutInputsDefined
                     ? new TubeSheet(
                           OTLtoShell!,
@@ -56,30 +79,8 @@ const App = () => {
         }
     };
 
-    const [minTubes, setMinTubes] = useState<number | undefined>();
-    const [tubeOD, setTubeOD] = useState<number | undefined>();
-    const [OTLtoShell, setOTLtoShell] = useState<number | undefined>();
-    const [tubeClearance, setTubeClearance] = useState<number | undefined>();
-    const [pitchRatio, setPitchRatio] = useState<number | undefined>();
-    const [shellID, setShellID] = useState<number | undefined>();
-    const [actualTubes, setActualTubes] = useState<number | undefined>();
-    const [layoutOption, setLayoutOption] = useState<number | undefined>();
-    const [pitchUpdateFunc, setPitchUpdateFunc] = useState<string | undefined>();
-    const [layoutResults, setLayoutResults] = useState<{
-        "30": TubeSheet | null;
-        "45": TubeSheet | null;
-        "60": TubeSheet | null;
-        "90": TubeSheet | null;
-        radial: TubeSheet | null;
-    }>({
-        "30": null,
-        "45": null,
-        "60": null,
-        "90": null,
-        radial: null,
-    });
-
     const [layoutInputsDefined, setLayoutInputsDefined] = useState<boolean>(false);
+    const [layoutOptionSelected, setLayoutOptionSelected] = useState<boolean>(false);
 
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
 
@@ -106,44 +107,47 @@ const App = () => {
     //     pitchRatio >= 1 &&
     //     minTubes > 0;
 
-    const layoutOptionSelected = typeof layoutOption !== "undefined" && !isNaN(layoutOption);
+    const validateLayoutOption = useCallback(() => {
+        const valid = utils.isNumber(layoutOption);
+        setLayoutOptionSelected(valid);
+        console.log(`Layout option validated: ${valid}`);
+    }, [layoutOption]);
 
     const validateLayoutInputs = useCallback(() => {
-        setLayoutInputsDefined(
+        const valid =
             utils.isNumber(OTLtoShell) &&
-                utils.isNumber(tubeOD) &&
-                utils.isNumber(tubeClearance) &&
-                utils.isNumber(pitchRatio) &&
-                utils.isNumber(minTubes) &&
-                OTLtoShell >= 0 &&
-                tubeOD > 0 &&
-                tubeClearance >= 0 &&
-                pitchRatio >= 1 &&
-                minTubes > 0
-        );
+            utils.isNumber(tubeOD) &&
+            utils.isNumber(tubeClearance) &&
+            utils.isNumber(pitchRatio) &&
+            utils.isNumber(minTubes) &&
+            OTLtoShell >= 0 &&
+            tubeOD > 0 &&
+            tubeClearance >= 0 &&
+            pitchRatio >= 1 &&
+            minTubes > 0;
+        setLayoutInputsDefined(valid);
+        console.log(`Layout calc inputs validated: ${valid}`);
     }, [OTLtoShell, minTubes, pitchRatio, tubeClearance, tubeOD]);
 
-    useEffect(() => {
-        validateLayoutInputs();
-    }, [OTLtoShell, minTubes, pitchRatio, tubeClearance, tubeOD, validateLayoutInputs]);
-
     const calcLayoutResults = useCallback(() => {
+        console.log("calculating layout results");
+
+        if (!layoutInputsDefined) {
+            return {
+                "30": null,
+                "45": null,
+                "60": null,
+                "90": null,
+                radial: null,
+            };
+        }
+
         return {
-            30: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes)
-                : null,
-            45: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes)
-                : null,
-            60: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes)
-                : null,
-            90: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes)
-                : null,
-            radial: layoutInputsDefined
-                ? new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes)
-                : null,
+            30: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes),
+            45: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes),
+            60: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes),
+            90: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes),
+            radial: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes),
         };
     }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
 
@@ -184,6 +188,9 @@ const App = () => {
     const onBlur = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value.replace(",", ""),
             name = e.target.name;
+        if (!utils.isNumber(val)) {
+            return;
+        }
         switch (name) {
             case "tubeClearance":
                 if (!utils.isNumber(tubeClearance) || tubeClearance <= 0) {
@@ -254,23 +261,32 @@ const App = () => {
     // }, [drawingSVG.outerHTML]);
 
     useEffect(() => {
+        console.log("calling validateLayoutInputs");
+        validateLayoutInputs();
+        console.log("calling validateLayoutOption");
+        validateLayoutOption();
         if (typeof pitchUpdateFunc !== "undefined") {
             let value = tubeClearance;
             switch (pitchUpdateFunc) {
                 case "setPitchRatioFromTubeClearance":
                     value = tubeClearance;
                     if (utils.isNumber(value)) {
+                        console.log("setting pitch ratio from tube clearance");
                         setPitchRatioFromTubeClearance(value);
                     }
                     break;
                 case "setTubeClearanceFromPitchRatio":
                     value = pitchRatio;
                     if (utils.isNumber(value)) {
+                        console.log("setting tube clearance from pitch ratio");
                         setTubeClearanceFromPitchRatio(value);
                     }
                     break;
             }
-            setLayoutResults(calcLayoutResults());
+            console.log("calling calcLayoutResults");
+            if (layoutInputsDefined) {
+                setLayoutResults(calcLayoutResults());
+            }
         }
     }, [
         tubeClearance,
@@ -281,27 +297,34 @@ const App = () => {
         setTubeClearanceFromPitchRatio,
         calcLayoutResults,
         layoutInputsDefined,
+        validateLayoutInputs,
+        validateLayoutOption,
     ]);
 
     useEffect(() => {
-        let selectedLayout: TubeSheet | null = null;
-        if (typeof layoutOption !== "undefined") {
-            const parsedLayoutOption = (
-                layoutOption === 0 ? "radial" : layoutOption
-            ) as TubeSheet["layout"];
-            if (utils.isNumber(shellID) && shellID > 0) {
-                selectedLayout = layoutInputsDefined
-                    ? new TubeSheet(
-                          OTLtoShell!,
-                          tubeOD!,
-                          pitchRatio!,
-                          parsedLayoutOption,
-                          undefined,
-                          shellID
-                      )
-                    : null;
-            }
+        if (!utils.isNumber(layoutOption)) {
+            console.log("Layout option not yet selected.");
+            return;
         }
+
+        let selectedLayout: TubeSheet | null = null;
+
+        const parsedLayoutOption = (
+            layoutOption === 0 ? "radial" : layoutOption
+        ) as TubeSheet["layout"];
+        if (utils.isNumber(shellID) && shellID > 0) {
+            selectedLayout = layoutInputsDefined
+                ? new TubeSheet(
+                      OTLtoShell!,
+                      tubeOD!,
+                      pitchRatio!,
+                      parsedLayoutOption,
+                      undefined,
+                      shellID
+                  )
+                : null;
+        }
+
         if (selectedLayout && selectedLayout.numTubes) {
             setActualTubes(selectedLayout.numTubes);
         }
@@ -326,8 +349,8 @@ const App = () => {
                         <span className="required-asterisk">*</span>
                         <IMaskInput
                             className="value-input"
-                            id={"minTubes"}
-                            name={"minTubes"}
+                            id="minTubes"
+                            name="minTubes"
                             type="text"
                             autoComplete="off"
                             placeholder="Minimum number of tubes (> 0)"
@@ -353,8 +376,8 @@ const App = () => {
                     <div className="input-group">
                         <IMaskInput
                             className="value-input"
-                            id={"tubeOD"}
-                            name={"tubeOD"}
+                            id="tubeOD"
+                            name="tubeOD"
                             type="text"
                             autoComplete="off"
                             placeholder="Tube OD (> 0)"
@@ -434,8 +457,8 @@ const App = () => {
                     <div className="input-group">
                         <IMaskInput
                             className="value-input"
-                            id={"pitchRatio"}
-                            name={"pitchRatio"}
+                            id="pitchRatio"
+                            name="pitchRatio"
                             type="text"
                             autoComplete="off"
                             placeholder="Pitch ratio (≥ 1)"
@@ -461,8 +484,8 @@ const App = () => {
                     <div className="input-group">
                         <IMaskInput
                             className="value-input"
-                            id={"shellID"}
-                            name={"shellID"}
+                            id="shellID"
+                            name="shellID"
                             type="text"
                             autoComplete="off"
                             placeholder="Shell ID"
@@ -530,29 +553,29 @@ const App = () => {
                                 <td>
                                     {layoutResults[30] && layoutResults[30].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[30].minID)
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults[45] && layoutResults[45].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[45].minID as number)
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults[60] && layoutResults[60].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[60].minID as number)
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults[90] && layoutResults[90].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[90].minID as number)
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults.radial && layoutResults.radial.minID !== null
                                         ? utils.numFormat3SigFigs(
                                               layoutResults.radial.minID as number
                                           )
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>mm</td>
                             </tr>
@@ -563,35 +586,35 @@ const App = () => {
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[30].numTubes as number
                                           )
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults[45]
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[45].numTubes as number
                                           )
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults[60]
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[60].numTubes as number
                                           )
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults[90]
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[90].numTubes as number
                                           )
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>
                                     {layoutResults.radial
                                         ? utils.numFormat3SigFigs(
                                               layoutResults.radial.numTubes as number
                                           )
-                                        : null}
+                                        : ""}
                                 </td>
                                 <td>mm</td>
                             </tr>
