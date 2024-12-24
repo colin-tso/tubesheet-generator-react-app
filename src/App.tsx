@@ -175,6 +175,7 @@ const App = () => {
         const val = e.target.value.replace(",", ""),
             name = e.target.name;
         if (!utils.isNumber(val)) {
+            callSetFunc(`set${utils.capitalize(name)}`, "");
             return;
         }
         switch (name) {
@@ -294,6 +295,12 @@ const App = () => {
     useEffect(() => {
         if (!utils.isNumber(layoutOption)) {
             console.log("Layout option not yet selected.");
+            return;
+        }
+
+        if (!shellID) {
+            console.log("Shell ID not yet defined.");
+            setActualTubes(undefined);
             return;
         }
 
