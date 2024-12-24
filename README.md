@@ -21,4 +21,4 @@ Tubesheet Layout Generator React App is a web app built using ReactJS, and acts 
 - ```react-github-btn```
 - ```react-imask```
 - ```react-scripts```
-- ```svg-react-loader```
+- ```lodash.memoize```
