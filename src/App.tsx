@@ -46,6 +46,20 @@ const App = () => {
         "90": null,
         radial: null,
     });
+    const [layoutInputsDefined, setLayoutInputsDefined] = useState<boolean>(false);
+    const [layoutOptionSelected, setLayoutOptionSelected] = useState<boolean>(false);
+    const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
+
+    const stateFuncs = {
+        setMinTubes,
+        setTubeOD,
+        setOTLtoShell,
+        setTubeClearance,
+        setPitchRatio,
+        setShellID,
+        setActualTubes,
+        setLayoutOption,
+    };
 
     const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -78,34 +92,6 @@ const App = () => {
             }
         }
     };
-
-    const [layoutInputsDefined, setLayoutInputsDefined] = useState<boolean>(false);
-    const [layoutOptionSelected, setLayoutOptionSelected] = useState<boolean>(false);
-
-    const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
-
-    const stateFuncs = {
-        setMinTubes,
-        setTubeOD,
-        setOTLtoShell,
-        setTubeClearance,
-        setPitchRatio,
-        setShellID,
-        setActualTubes,
-        setLayoutOption,
-    };
-
-    // const layoutInputsDefined =
-    //     utils.isNumber(OTLtoShell) &&
-    //     utils.isNumber(tubeOD) &&
-    //     utils.isNumber(tubeClearance) &&
-    //     utils.isNumber(pitchRatio) &&
-    //     utils.isNumber(minTubes) &&
-    //     OTLtoShell >= 0 &&
-    //     tubeOD > 0 &&
-    //     tubeClearance >= 0 &&
-    //     pitchRatio >= 1 &&
-    //     minTubes > 0;
 
     const validateLayoutOption = useCallback(() => {
         const valid = utils.isNumber(layoutOption);
@@ -260,11 +246,16 @@ const App = () => {
     //     ]);
     // }, [drawingSVG.outerHTML]);
 
+    // Validation
     useEffect(() => {
         console.log("calling validateLayoutInputs");
         validateLayoutInputs();
         console.log("calling validateLayoutOption");
         validateLayoutOption();
+    }, [validateLayoutInputs, validateLayoutOption]);
+
+    // Pitch calculation
+    useEffect(() => {
         if (typeof pitchUpdateFunc !== "undefined") {
             let value = tubeClearance;
             switch (pitchUpdateFunc) {
@@ -293,14 +284,13 @@ const App = () => {
         pitchRatio,
         tubeOD,
         pitchUpdateFunc,
+        layoutInputsDefined,
         setPitchRatioFromTubeClearance,
         setTubeClearanceFromPitchRatio,
         calcLayoutResults,
-        layoutInputsDefined,
-        validateLayoutInputs,
-        validateLayoutOption,
     ]);
 
+    // Actual tubes calculation (only when layout option is selected and shell ID is defined)
     useEffect(() => {
         if (!utils.isNumber(layoutOption)) {
             console.log("Layout option not yet selected.");
@@ -312,6 +302,7 @@ const App = () => {
         const parsedLayoutOption = (
             layoutOption === 0 ? "radial" : layoutOption
         ) as TubeSheet["layout"];
+
         if (utils.isNumber(shellID) && shellID > 0) {
             selectedLayout = layoutInputsDefined
                 ? new TubeSheet(
@@ -330,6 +321,7 @@ const App = () => {
         }
     }, [OTLtoShell, layoutInputsDefined, layoutOption, pitchRatio, shellID, tubeOD]);
 
+    // Force refresh when actual tubes are calculated
     useEffect(() => {}, [actualTubes]);
 
     // JSX return

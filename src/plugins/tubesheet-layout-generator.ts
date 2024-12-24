@@ -560,7 +560,7 @@ const findMinID = memoize(
         layout: TubeSheetLayout,
         offsetOption: boolean | "AUTO" = "AUTO"
     ): number => {
-        const MAX_RETRIES: number = 5;
+        const MAX_RETRIES: number = 10;
         let retries: number = 0;
 
         let D_old: number;
@@ -595,157 +595,92 @@ const findMinID = memoize(
             return pitch / Math.sin(Math.PI / minTubes) + tubeOD + OTLClearance;
         }
 
-        if (offsetOption === "AUTO") {
-            const minID_offsetTrue = findMinID(
-                minTubes,
-                OTLClearance,
-                tubeOD,
-                pitchRatio,
-                layout,
-                true
-            );
-            const minID_offsetFalse = findMinID(
-                minTubes,
-                OTLClearance,
-                tubeOD,
-                pitchRatio,
-                layout,
-                false
-            );
-
-            if (isNaN(minID_offsetTrue)) {
-                return minID_offsetFalse;
-            }
-            if (isNaN(minID_offsetFalse)) {
-                return minID_offsetTrue;
-            }
-            return Math.min(minID_offsetTrue, minID_offsetFalse);
-        }
-
         while (true) {
             try {
                 iterations = 0;
 
-                // Initialise guesses depending on selected layout
-                if (layout === 30 || layout === 60) {
-                    if (offsetOption === true) {
-                        D_old = Math.max(
-                            tubeOD * pitchRatio * Math.sqrt(minTubes / 0.84) + OTLClearance,
-                            tubeOD * pitchRatio * 2 + OTLClearance + 0.1
-                        );
-                    } else {
-                        D_old = Math.max(
-                            tubeOD * pitchRatio * Math.sqrt(minTubes / 0.84) + OTLClearance,
-                            tubeOD + OTLClearance + 0.1
-                        );
+                if (offsetOption === "AUTO") {
+                    const minID_offsetTrue = findMinID(
+                        minTubes,
+                        OTLClearance,
+                        tubeOD,
+                        pitchRatio,
+                        layout,
+                        true
+                    );
+                    const minID_offsetFalse = findMinID(
+                        minTubes,
+                        OTLClearance,
+                        tubeOD,
+                        pitchRatio,
+                        layout,
+                        false
+                    );
+
+                    if (isNaN(minID_offsetTrue)) {
+                        return minID_offsetFalse;
                     }
+                    if (isNaN(minID_offsetFalse)) {
+                        return minID_offsetTrue;
+                    }
+                    return Math.min(minID_offsetTrue, minID_offsetFalse);
                 } else {
-                    if (offsetOption === true) {
-                        D_old = Math.max(
-                            tubeOD * pitchRatio * Math.sqrt(minTubes / 0.61) + OTLClearance,
-                            Math.sqrt(
-                                (tubeOD * pitchRatio) ** 2 + ((tubeOD * pitchRatio) / 2) ** 2
-                            ) *
-                                2 +
-                                OTLClearance +
-                                0.1
-                        );
-                    } else {
-                        D_old = Math.max(
-                            tubeOD * pitchRatio * Math.sqrt(minTubes / 0.61) + OTLClearance,
-                            tubeOD + OTLClearance + 0.1
-                        );
-                    }
-                }
-
-                // Increase diameter guess until valid tubefield is obtained
-                while (
-                    tubeFieldOTL(D_old, OTLClearance, tubeOD, pitchRatio, layout, offsetOption) ===
-                    null
-                ) {
-                    D_old = D_old * BETA;
-                }
-
-                // Save first guess of tube count into memory
-                D_old =
-                    tubeFieldOTL(D_old, OTLClearance, tubeOD, pitchRatio, layout, offsetOption)! +
-                    OTLClearance;
-                numTubes_old = tubeCount(
-                    D_old,
-                    OTLClearance,
-                    tubeOD,
-                    pitchRatio,
-                    layout,
-                    offsetOption
-                );
-
-                // Increment diameter, save second guess of tube count into memory
-                D_new = D_old * BETA;
-                D_new =
-                    tubeFieldOTL(D_new, OTLClearance, tubeOD, pitchRatio, layout, offsetOption)! +
-                    OTLClearance;
-                numTubes_new = tubeCount(
-                    D_new,
-                    OTLClearance,
-                    tubeOD,
-                    pitchRatio,
-                    layout,
-                    offsetOption
-                );
-
-                while (numTubes_new !== minTubes && iterations < MAX_ITERATIONS) {
-                    console.log(`Iteration: ${iterations}`);
-                    // Re-initialise guesses. if there has been a previous attempt, use that as a starting point.
-                    if (!D_bestGuess) {
-                        D_old = D_new;
-                    } else {
-                        D_old = D_bestGuess;
-                    }
-
-                    if (iterations > 1) {
-                        // Shortcircuit by reducing the diameter by a small amount to see whether the predicted number of tubes goes below the target.
-                        // if tube count reduces, then min ID has been found.
-                        if (numTubes_new > minTubes) {
-                            D_check = roundUp(
-                                tubeFieldOTL(
-                                    D_new,
-                                    OTLClearance,
-                                    tubeOD,
-                                    pitchRatio,
-                                    layout,
-                                    offsetOption
-                                )! + OTLClearance,
-                                DECIMAL_PLACES
+                    // Initialise guesses depending on selected layout
+                    if (layout === 30 || layout === 60) {
+                        if (offsetOption === true) {
+                            D_old = Math.max(
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.84) + OTLClearance,
+                                tubeOD * pitchRatio * 2 + OTLClearance + 0.1
                             );
-                            numTubes_check = tubeCount(
-                                D_check - Math.pow(10, -DECIMAL_PLACES),
-                                OTLClearance,
-                                tubeOD,
-                                pitchRatio,
-                                layout,
-                                offsetOption
+                        } else {
+                            D_old = Math.max(
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.84) + OTLClearance,
+                                tubeOD + OTLClearance + 0.1
                             );
-                            if (numTubes_check < minTubes) {
-                                minTubes = numTubes_new;
-                                return D_check;
-                            } else if (numTubes_check < numTubes_new) {
-                                D_new = D_check;
-                            }
+                        }
+                    } else {
+                        if (offsetOption === true) {
+                            D_old = Math.max(
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.61) + OTLClearance,
+                                Math.sqrt(
+                                    (tubeOD * pitchRatio) ** 2 + ((tubeOD * pitchRatio) / 2) ** 2
+                                ) *
+                                    2 +
+                                    OTLClearance +
+                                    0.1
+                            );
+                        } else {
+                            D_old = Math.max(
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.61) + OTLClearance,
+                                tubeOD + OTLClearance + 0.1
+                            );
                         }
                     }
 
-                    // Adjust the diameter guess based on the tube count comparisons
-                    if (numTubes_new < minTubes && numTubes_old < minTubes) {
-                        // Increment diameter guess by beta factor if both are less
-                        D_new = D_old * BETA;
-                    } else if (numTubes_new > minTubes && numTubes_old > minTubes) {
-                        // Decrease diameter by beta factor if both are more
-                        D_new = D_old / BETA;
-                    } else {
-                        // Average the last two guesses if one is more and one is less
-                        D_new = (D_new + D_old) / 2;
+                    // Increase diameter guess until valid tubefield is obtained
+                    while (
+                        tubeFieldOTL(
+                            D_old,
+                            OTLClearance,
+                            tubeOD,
+                            pitchRatio,
+                            layout,
+                            offsetOption
+                        ) === null
+                    ) {
+                        D_old = D_old * BETA;
                     }
 
+                    // Save first guess of tube count into memory
+                    D_old =
+                        tubeFieldOTL(
+                            D_old,
+                            OTLClearance,
+                            tubeOD,
+                            pitchRatio,
+                            layout,
+                            offsetOption
+                        )! + OTLClearance;
                     numTubes_old = tubeCount(
                         D_old,
                         OTLClearance,
@@ -754,6 +689,18 @@ const findMinID = memoize(
                         layout,
                         offsetOption
                     );
+
+                    // Increment diameter, save second guess of tube count into memory
+                    D_new = D_old * BETA;
+                    D_new =
+                        tubeFieldOTL(
+                            D_new,
+                            OTLClearance,
+                            tubeOD,
+                            pitchRatio,
+                            layout,
+                            offsetOption
+                        )! + OTLClearance;
                     numTubes_new = tubeCount(
                         D_new,
                         OTLClearance,
@@ -763,28 +710,111 @@ const findMinID = memoize(
                         offsetOption
                     );
 
-                    if (numTubes_new > minTubes) {
-                        if (!numTubes_bestGuess) {
-                            numTubes_bestGuess = numTubes_new;
-                            D_bestGuess = D_new;
-                        } else if (numTubes_new < numTubes_bestGuess) {
-                            numTubes_bestGuess = numTubes_new;
-                            D_bestGuess = D_new;
+                    while (numTubes_new !== minTubes && iterations < MAX_ITERATIONS) {
+                        // Re-initialise guesses. if there has been a previous attempt, use that as a starting point.
+                        if (!D_bestGuess) {
+                            D_old = D_new;
+                        } else {
+                            D_old = D_bestGuess;
                         }
+
+                        if (iterations > 1) {
+                            // Shortcircuit by reducing the diameter by a small amount to see whether the predicted number of tubes goes below the target.
+                            // if tube count reduces, then min ID has been found.
+                            if (numTubes_new > minTubes) {
+                                D_check = roundUp(
+                                    tubeFieldOTL(
+                                        D_new,
+                                        OTLClearance,
+                                        tubeOD,
+                                        pitchRatio,
+                                        layout,
+                                        offsetOption
+                                    )! + OTLClearance,
+                                    DECIMAL_PLACES
+                                );
+                                numTubes_check = tubeCount(
+                                    D_check - Math.pow(10, -DECIMAL_PLACES),
+                                    OTLClearance,
+                                    tubeOD,
+                                    pitchRatio,
+                                    layout,
+                                    offsetOption
+                                );
+                                if (numTubes_check < minTubes) {
+                                    minTubes = numTubes_new;
+                                    return D_check;
+                                } else if (numTubes_check < numTubes_new) {
+                                    D_new = D_check;
+                                }
+                            }
+                        }
+
+                        // Adjust the diameter guess based on the tube count comparisons
+                        if (numTubes_new < minTubes && numTubes_old < minTubes) {
+                            // Increment diameter guess by beta factor if both are less
+                            D_new = D_old * BETA;
+                        } else if (numTubes_new > minTubes && numTubes_old > minTubes) {
+                            // Decrease diameter by beta factor if both are more
+                            D_new = D_old / BETA;
+                        } else {
+                            // Average the last two guesses if one is more and one is less
+                            D_new = (D_new + D_old) / 2;
+                            console.log(`Averaging guesses`);
+                        }
+
+                        numTubes_old = tubeCount(
+                            D_old,
+                            OTLClearance,
+                            tubeOD,
+                            pitchRatio,
+                            layout,
+                            offsetOption
+                        );
+                        numTubes_new = tubeCount(
+                            D_new,
+                            OTLClearance,
+                            tubeOD,
+                            pitchRatio,
+                            layout,
+                            offsetOption
+                        );
+
+                        if (numTubes_new > minTubes) {
+                            if (!numTubes_bestGuess) {
+                                numTubes_bestGuess = numTubes_new;
+                                D_bestGuess = D_new;
+                            } else if (numTubes_new < numTubes_bestGuess) {
+                                numTubes_bestGuess = numTubes_new;
+                                D_bestGuess = D_new;
+                            }
+                        }
+
+                        console.log(
+                            `Iteration: ${iterations}, D_old: ${D_old}, D_new: ${D_new}, numTubes_old: ${numTubes_old}, numTubes_new: ${numTubes_new}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`
+                        );
+
+                        iterations++;
                     }
-
-                    iterations++;
-
                     if (iterations >= MAX_ITERATIONS) {
+                        console.log(
+                            `D_bestGuess: ${D_bestGuess}, numTubes_bestGuess: ${numTubes_bestGuess}`
+                        );
                         throw new Error("Max iterations reached. Retrying with different guesses");
                     }
-                }
 
-                return roundUp(
-                    tubeFieldOTL(D_new, OTLClearance, tubeOD, pitchRatio, layout, offsetOption)! +
-                        OTLClearance,
-                    DECIMAL_PLACES
-                );
+                    return roundUp(
+                        tubeFieldOTL(
+                            D_new,
+                            OTLClearance,
+                            tubeOD,
+                            pitchRatio,
+                            layout,
+                            offsetOption
+                        )! + OTLClearance,
+                        DECIMAL_PLACES
+                    );
+                }
             } catch (err) {
                 if (retries < MAX_RETRIES) {
                     retries = retries + 1;
