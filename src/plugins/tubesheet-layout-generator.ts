@@ -181,7 +181,9 @@ export class TubeSheet {
                 this._pitchRatio,
                 this._layout
             );
-        } else if (this._minTubes) {
+        }
+
+        if (this._minTubes) {
             console.log(`getting tubefield for:
                 minTubes: ${this._minTubes}
                 OTLClearance: ${this._OTLClearance}
@@ -195,9 +197,9 @@ export class TubeSheet {
                 this._pitchRatio,
                 this._layout
             );
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     private minIDFunc(): number | null {
@@ -291,6 +293,7 @@ const generateTubeField = memoize(
         layout: TubeSheetLayout,
         offsetOption: boolean | "AUTO" = "AUTO"
     ): TubeField | null => {
+        console.log("Generating tube field");
         try {
             if (shellID <= 0) {
                 throw new Error("Shell ID must be greater than 0");
@@ -510,7 +513,7 @@ const tubeFieldOTL = (
     offsetOption: boolean | "AUTO" = "AUTO"
 ): number | null | undefined => {
     try {
-        if (tubeOD >= shellID - OTLClearance) {
+        if (tubeOD > shellID - OTLClearance) {
             throw new Error("Tube OD cannot be greater than max allowable OTL.");
         }
         const DECIMAL_PLACES = 11;
@@ -522,7 +525,7 @@ const tubeFieldOTL = (
             layout,
             offsetOption
         );
-        if (tubeField) {
+        if (tubeField && tubeField.length > 0) {
             let D = 0;
             let D_new = 0;
             tubeField.forEach((tube) => {
@@ -610,15 +613,13 @@ const findMinID = memoize(
                 false
             );
 
-            const validMinID = [minID_offsetTrue, minID_offsetFalse].filter(
-                (minID) => !isNaN(minID)
-            );
-
-            if (validMinID.length === 0) {
-                throw new Error("Both attempts at finding min ID failed.");
+            if (isNaN(minID_offsetTrue)) {
+                return minID_offsetFalse;
             }
-
-            return Math.min(...validMinID);
+            if (isNaN(minID_offsetFalse)) {
+                return minID_offsetTrue;
+            }
+            return Math.min(minID_offsetTrue, minID_offsetFalse);
         }
 
         while (true) {
@@ -777,19 +778,13 @@ const findMinID = memoize(
                     if (iterations >= MAX_ITERATIONS) {
                         throw new Error("Max iterations reached. Retrying with different guesses");
                     }
-
-                    return roundUp(
-                        tubeFieldOTL(
-                            D_new,
-                            OTLClearance,
-                            tubeOD,
-                            pitchRatio,
-                            layout,
-                            offsetOption
-                        )! + OTLClearance,
-                        DECIMAL_PLACES
-                    );
                 }
+
+                return roundUp(
+                    tubeFieldOTL(D_new, OTLClearance, tubeOD, pitchRatio, layout, offsetOption)! +
+                        OTLClearance,
+                    DECIMAL_PLACES
+                );
             } catch (err) {
                 if (retries < MAX_RETRIES) {
                     retries = retries + 1;
