@@ -150,6 +150,7 @@ bottom border*/
 .layout-table tr:last-child td {
   border-bottom: none;
 }
+
 th {
   font-weight: 600;
 }

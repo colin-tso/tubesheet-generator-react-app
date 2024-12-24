@@ -33,6 +33,7 @@ const App = () => {
     const [actualTubes, setActualTubes] = useState<number | undefined>();
     const [layoutOption, setLayoutOption] = useState<number | undefined>();
     const [pitchUpdateFunc, setPitchUpdateFunc] = useState<string | undefined>();
+    const [bestLayoutID, setBestLayoutID] = useState<number | undefined>();
     const [layoutResults, setLayoutResults] = useState<{
         "30": TubeSheet | null;
         "45": TubeSheet | null;
@@ -93,13 +94,13 @@ const App = () => {
         }
     };
 
-    const validateLayoutOption = useCallback(() => {
+    const updateLayoutOptionValidation = useCallback(() => {
         const valid = utils.isNumber(layoutOption);
         setLayoutOptionSelected(valid);
         console.log(`Layout option validated: ${valid}`);
     }, [layoutOption]);
 
-    const validateLayoutInputs = useCallback(() => {
+    const updateLayoutInputsValidation = useCallback(() => {
         const valid =
             utils.isNumber(OTLtoShell) &&
             utils.isNumber(tubeOD) &&
@@ -115,26 +116,32 @@ const App = () => {
         console.log(`Layout calc inputs validated: ${valid}`);
     }, [OTLtoShell, minTubes, pitchRatio, tubeClearance, tubeOD]);
 
-    const calcLayoutResults = useCallback(() => {
+    const updateLayoutResults = useCallback(() => {
         console.log("calculating layout results");
 
         if (!layoutInputsDefined) {
-            return {
-                "30": null,
-                "45": null,
-                "60": null,
-                "90": null,
-                radial: null,
-            };
+            setLayoutResults({ "30": null, "45": null, "60": null, "90": null, radial: null });
+            return;
         }
 
-        return {
+        const layouts = {
             30: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes),
             45: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes),
             60: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes),
             90: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes),
             radial: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes),
         };
+
+        setLayoutResults(layouts);
+
+        // Find the layout with the minimum ID
+        let minID = Infinity;
+        Object.entries(layouts).forEach(([key, layout]) => {
+            if ((utils.isNumber(layout.minID) ? layout.minID : Infinity) < minID) {
+                minID = layout.minID!;
+            }
+        });
+        setBestLayoutID(minID);
     }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
 
     const callSetFunc = (name: string, value: string) => {
@@ -250,10 +257,10 @@ const App = () => {
     // Validation
     useEffect(() => {
         console.log("calling validateLayoutInputs");
-        validateLayoutInputs();
+        updateLayoutInputsValidation();
         console.log("calling validateLayoutOption");
-        validateLayoutOption();
-    }, [validateLayoutInputs, validateLayoutOption]);
+        updateLayoutOptionValidation();
+    }, [updateLayoutInputsValidation, updateLayoutOptionValidation]);
 
     // Pitch calculation
     useEffect(() => {
@@ -277,7 +284,7 @@ const App = () => {
             }
             console.log("calling calcLayoutResults");
             if (layoutInputsDefined) {
-                setLayoutResults(calcLayoutResults());
+                updateLayoutResults();
             }
         }
     }, [
@@ -288,7 +295,7 @@ const App = () => {
         layoutInputsDefined,
         setPitchRatioFromTubeClearance,
         setTubeClearanceFromPitchRatio,
-        calcLayoutResults,
+        updateLayoutResults,
     ]);
 
     // Actual tubes calculation (only when layout option is selected and shell ID is defined)
@@ -530,46 +537,116 @@ const App = () => {
                         <tbody className="layout-table">
                             <tr>
                                 <th>Layout</th>
-                                <th>
+                                <th
+                                    className={
+                                        layoutResults[30] &&
+                                        layoutResults[30].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <label htmlFor="30deg">30°</label>
                                 </th>
-                                <th>
+                                <th
+                                    className={
+                                        layoutResults[45] &&
+                                        layoutResults[45].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <label htmlFor="45deg">45°</label>
                                 </th>
-                                <th>
+                                <th
+                                    className={
+                                        layoutResults[60] &&
+                                        layoutResults[60].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <label htmlFor="60deg">60°</label>
                                 </th>
-                                <th>
+                                <th
+                                    className={
+                                        layoutResults[90] &&
+                                        layoutResults[90].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <label htmlFor="90deg">90°</label>
                                 </th>
-                                <th>
+                                <th
+                                    className={
+                                        layoutResults.radial &&
+                                        layoutResults.radial.minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <label htmlFor="radial">Radial</label>
                                 </th>
                                 <th>Units</th>
                             </tr>
                             <tr>
                                 <td>Min. ID</td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[30] &&
+                                        layoutResults[30].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[30] && layoutResults[30].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[30].minID)
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[45] &&
+                                        layoutResults[45].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[45] && layoutResults[45].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[45].minID as number)
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[60] &&
+                                        layoutResults[60].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[60] && layoutResults[60].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[60].minID as number)
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[90] &&
+                                        layoutResults[90].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[90] && layoutResults[90].minID !== null
                                         ? utils.numFormat3SigFigs(layoutResults[90].minID as number)
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults.radial &&
+                                        layoutResults.radial.minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults.radial && layoutResults.radial.minID !== null
                                         ? utils.numFormat3SigFigs(
                                               layoutResults.radial.minID as number
@@ -580,35 +657,70 @@ const App = () => {
                             </tr>
                             <tr>
                                 <td>Tubes</td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[30] &&
+                                        layoutResults[30].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[30]
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[30].numTubes as number
                                           )
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[45] &&
+                                        layoutResults[45].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[45]
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[45].numTubes as number
                                           )
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[60] &&
+                                        layoutResults[60].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[60]
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[60].numTubes as number
                                           )
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[90] &&
+                                        layoutResults[90].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults[90]
                                         ? utils.numFormat3SigFigs(
                                               layoutResults[90].numTubes as number
                                           )
                                         : ""}
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults.radial &&
+                                        layoutResults.radial.minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     {layoutResults.radial
                                         ? utils.numFormat3SigFigs(
                                               layoutResults.radial.numTubes as number
@@ -619,7 +731,14 @@ const App = () => {
                             </tr>
                             <tr>
                                 <td>Selected</td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[30] &&
+                                        layoutResults[30].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <input
                                         type="radio"
                                         id="30deg"
@@ -629,7 +748,14 @@ const App = () => {
                                         required
                                     ></input>
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[45] &&
+                                        layoutResults[45].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <input
                                         type="radio"
                                         id="45deg"
@@ -638,7 +764,14 @@ const App = () => {
                                         onChange={onBlur}
                                     ></input>
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[60] &&
+                                        layoutResults[60].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <input
                                         type="radio"
                                         id="60deg"
@@ -647,7 +780,14 @@ const App = () => {
                                         onChange={onBlur}
                                     ></input>
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults[90] &&
+                                        layoutResults[90].minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <input
                                         type="radio"
                                         id="90deg"
@@ -656,7 +796,14 @@ const App = () => {
                                         onChange={onBlur}
                                     ></input>
                                 </td>
-                                <td>
+                                <td
+                                    className={
+                                        layoutResults.radial &&
+                                        layoutResults.radial.minID === bestLayoutID
+                                            ? "highlight"
+                                            : ""
+                                    }
+                                >
                                     <input
                                         type="radio"
                                         id="radial"

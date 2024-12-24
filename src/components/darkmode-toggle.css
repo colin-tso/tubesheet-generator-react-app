@@ -18,12 +18,15 @@
   --light-grey-background: hsl(0, 0%, 15%);
   --dark-grey-text: hsl(0, 0%, 50%);
   --dark-grey-background: hsl(0, 0%, 90%);
+  --light-highlight: hsl(130, 100%, 90%);
+  --dark-highlight: hsl(130, 100%, 10%);
   --background: light-dark(var(--lighter-background), var(--dark-background));
   --foreground: light-dark(var(--dark-text), var(--light-text));
   --background-accent: light-dark(var(--light-background), var(--darker-background));
   --input-readonly-text: light-dark(var(--dark-grey-text), var(--light-grey-text));
   --input-readonly-background: light-dark(var(--dark-grey-background), var(--light-grey-background));
   --border-color: light-dark(var(--dark-border), var(--light-border));
+  --highlight-color: light-dark(var(--light-highlight), var(--dark-highlight));
   --transition: 0.2s ease;
   --toggle-scale: 0.35;
 }
@@ -167,4 +170,9 @@ input[type="text"]:read-only {
 
 .column-pane.left {
   background-color: var(--background-accent);
+}
+
+.layout-table * .highlight {
+  background-color: var(--highlight-color);
+  transition: background-color var(--transition);
 }
