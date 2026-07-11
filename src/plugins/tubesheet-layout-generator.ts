@@ -335,6 +335,14 @@ const generateTubeField = memoize(
                 idealOffsetOption =
                     tubeCount(shellID, OTLClearance, tubeOD, pitchRatio, layout, true) >
                     tubeCount(shellID, OTLClearance, tubeOD, pitchRatio, layout, false);
+                return generateTubeField(
+                    shellID,
+                    OTLClearance,
+                    tubeOD,
+                    pitchRatio,
+                    layout,
+                    idealOffsetOption,
+                );
             }
 
             const offset = idealOffsetOption ? dx / 2 : 0;
