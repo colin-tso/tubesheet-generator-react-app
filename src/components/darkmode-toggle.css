@@ -1,46 +1,74 @@
 * {
   position: relative;
-  /* Make sure all elements are above the background */
   z-index: 1;
   box-sizing: border-box;
 }
 
 :root {
-  --darker-background: hsl(200, 7%, 8%);
-  --dark-background: hsl(200, 6%, 10%);
-  --dark-text: hsl(0, 0%, 0%);
-  --light-border: hsl(195, 6%, 26%);
-  --dark-border: hsl(0, 0%, 0%);
-  --lighter-background: hsl(285, 100%, 99%);
-  --light-background: hsl(340, 19%, 94%);
-  --light-text: hsl(0, 0%, 100%);
-  --light-grey-text: hsl(0, 0%, 50%);
-  --light-grey-background: hsl(0, 0%, 15%);
-  --dark-grey-text: hsl(0, 0%, 50%);
-  --dark-grey-background: hsl(0, 0%, 90%);
-  --background: light-dark(var(--lighter-background), var(--dark-background));
-  --foreground: light-dark(var(--dark-text), var(--light-text));
-  --background-accent: light-dark(var(--light-background), var(--darker-background));
-  --input-readonly-text: light-dark(var(--dark-grey-text), var(--light-grey-text));
-  --input-readonly-background: light-dark(var(--dark-grey-background), var(--light-grey-background));
-  --border-color: light-dark(var(--dark-border), var(--light-border));
-  --transition: 0.2s ease;
-  --toggle-scale: 0.35;
+  /* Light — drafting paper */
+  --paper-light: hsl(48, 20%, 97%);
+  --panel-light: hsl(0, 0%, 100%);
+  --ink-light: hsl(214, 28%, 14%);
+  --muted-light: hsl(214, 12%, 42%);
+  --line-light: hsl(214, 16%, 84%);
+  --grid-minor-light: hsl(214, 30%, 92%);
+  --grid-major-light: hsl(214, 24%, 87%);
+  --input-bg-light: hsl(48, 20%, 98%);
+  --input-readonly-bg-light: hsl(214, 20%, 94%);
+  --input-readonly-text-light: hsl(214, 10%, 52%);
+  --viewport-bg-light: hsl(210, 32%, 96%);
+  --blue-light: hsl(214, 62%, 34%);
+  --blue-bright-light: hsl(214, 68%, 42%);
+  --blue-tint-light: hsl(214, 62%, 95%);
+  --blue-glow-light: hsl(214, 68%, 42%, 22%);
+  --redline-light: hsl(16, 74%, 42%);
+
+  /* Dark — blueprint navy */
+  --paper-dark: hsl(212, 32%, 9%);
+  --panel-dark: hsl(212, 28%, 12%);
+  --ink-dark: hsl(210, 40%, 94%);
+  --muted-dark: hsl(212, 16%, 62%);
+  --line-dark: hsl(212, 24%, 22%);
+  --grid-minor-dark: hsl(212, 26%, 16%);
+  --grid-major-dark: hsl(212, 26%, 20%);
+  --input-bg-dark: hsl(212, 30%, 10%);
+  --input-readonly-bg-dark: hsl(212, 24%, 17%);
+  --input-readonly-text-dark: hsl(212, 12%, 55%);
+  --viewport-bg-dark: hsl(212, 34%, 7%);
+  --blue-dark: hsl(212, 78%, 68%);
+  --blue-bright-dark: hsl(212, 84%, 76%);
+  --blue-tint-dark: hsl(212, 50%, 18%);
+  --blue-glow-dark: hsl(212, 84%, 68%, 22%);
+  --redline-dark: hsl(20, 84%, 66%);
+
+  --paper: light-dark(var(--paper-light), var(--paper-dark));
+  --panel: light-dark(var(--panel-light), var(--panel-dark));
+  --ink: light-dark(var(--ink-light), var(--ink-dark));
+  --muted: light-dark(var(--muted-light), var(--muted-dark));
+  --line: light-dark(var(--line-light), var(--line-dark));
+  --grid-minor: light-dark(var(--grid-minor-light), var(--grid-minor-dark));
+  --grid-major: light-dark(var(--grid-major-light), var(--grid-major-dark));
+  --input-background: light-dark(var(--input-bg-light), var(--input-bg-dark));
+  --input-readonly-background: light-dark(var(--input-readonly-bg-light), var(--input-readonly-bg-dark));
+  --input-readonly-text: light-dark(var(--input-readonly-text-light), var(--input-readonly-text-dark));
+  --viewport-bg: light-dark(var(--viewport-bg-light), var(--viewport-bg-dark));
+  --blue: light-dark(var(--blue-light), var(--blue-dark));
+  --blue-bright: light-dark(var(--blue-bright-light), var(--blue-bright-dark));
+  --blue-tint: light-dark(var(--blue-tint-light), var(--blue-tint-dark));
+  --blue-glow: light-dark(var(--blue-glow-light), var(--blue-glow-dark));
+  --redline: light-dark(var(--redline-light), var(--redline-dark));
+
+  --toggle-scale: 0.4;
 }
 
 html {
-  color: var(--foreground);
-  background-color: var(--background);
+  color: var(--ink);
+  background-color: var(--paper);
   transition:
     color var(--transition),
-    transform var(--transition),
     background-color var(--transition),
     border-color var(--transition),
     filter var(--transition);
-}
-
-.darkmode::before {
-  transform: translateX(0);
 }
 
 .hidden {
@@ -60,7 +88,7 @@ html {
 .toggle-wrapper {
   display: block;
   width: calc(130px * var(--toggle-scale));
-  margin: 0; /* Centering for demo */
+  margin: 0;
 }
 
 .toggle {
@@ -72,12 +100,10 @@ html {
   height: calc(65px * var(--toggle-scale));
   padding: calc(12px * var(--toggle-scale));
 
-  background: var(--foreground);
+  background: var(--line);
   border-radius: calc(32.5px * var(--toggle-scale));
 
   transition:
-    color var(--transition),
-    transform var(--transition),
     background-color var(--transition),
     filter var(--transition);
 }
@@ -94,14 +120,15 @@ html {
   width: calc(41px * var(--toggle-scale));
   height: calc(41px * var(--toggle-scale));
 
-  background: var(--background);
+  background: var(--panel);
   border-radius: calc(20.5px * var(--toggle-scale));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
 
-  transition:
-    color var(--transition),
-    transform var(--transition),
-    background-color var(--transition),
-    filter var(--transition);
+  transition: transform var(--transition);
+}
+
+.toggle.enabled {
+  background: var(--blue);
 }
 
 .toggle.enabled::before {
@@ -127,44 +154,19 @@ html {
   z-index: 0;
   width: calc(32px * var(--toggle-scale));
   height: calc(32px * var(--toggle-scale));
-  fill: var(--background);
+  fill: var(--muted);
 }
 
-.divider {
-  border-bottom-color: var(--foreground);
+.toggle.enabled .icons svg {
+  fill: hsl(0, 0%, 100%, 70%);
 }
 
 input {
-  color: var(--foreground);
-  background-color: var(--background);
-  transition:
-    color var(--transition),
-    background-color var(--transition);
-}
-
-input[type="text"] {
-  border-color: var(--border-color);
-  border-color: var(--transition);
-}
-
-input[type="text"]:read-only {
-  color: var(--input-readonly-text);
-  background-color: var(--input-readonly-background);
-  transition: border-color var(--border-color);
+  color: var(--ink);
+  background-color: var(--input-background);
 }
 
 .tubesheet-svg > * {
-  stroke: var(--foreground);
+  stroke: var(--ink);
   transition: stroke var(--transition);
-}
-
-.layout-table td,
-.layout-table th,
-.layout-table tr,
-.layout-table td {
-  border-color: var(--border-color);
-}
-
-.column-pane.left {
-  background-color: var(--background-accent);
 }
