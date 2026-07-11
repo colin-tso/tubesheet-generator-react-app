@@ -1001,6 +1001,7 @@ const App = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                         >
+                            <br />
                             Find out more here.
                         </a>
                     </footer>
