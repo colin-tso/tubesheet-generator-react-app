@@ -1,23 +1,37 @@
 import React, { useCallback, useState, useEffect } from "react";
 import GitHubButton from "react-github-btn";
 import { IMaskInput } from "react-imask";
-import { TubeSheet } from "./plugins/tubesheet-layout-generator";
+import {
+    TubeSheet,
+    generateTubeSheetSVG,
+    ITubeSheetData,
+} from "./plugins/tubesheet-layout-generator";
 import { TubeSheetSVG } from "./components/TubeSheetSVG";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import "./index.css";
 
-type TubeSheetWithPrefIndicator = TubeSheet & { preferred: boolean };
+// type TubeSheetWithPrefIndicator = TubeSheet & { preferred: boolean };
 type LayoutResults = {
-    30: TubeSheetWithPrefIndicator | null;
-    45: TubeSheetWithPrefIndicator | null;
-    60: TubeSheetWithPrefIndicator | null;
-    90: TubeSheetWithPrefIndicator | null;
-    radial: TubeSheetWithPrefIndicator | null;
+    30: (ITubeSheetData & { preferred: boolean }) | null;
+    45: (ITubeSheetData & { preferred: boolean }) | null;
+    60: (ITubeSheetData & { preferred: boolean }) | null;
+    90: (ITubeSheetData & { preferred: boolean }) | null;
+    radial: (ITubeSheetData & { preferred: boolean }) | null;
 };
 
-const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
-const placeholderSVG = emptyTubeSheet.svg;
+// const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
+const emptyData: ITubeSheetData = {
+    tubeField: [],
+    OTL: null,
+    shellID: 100,
+    minID: null,
+    tubeOD: 1,
+    pitchRatio: 30,
+    layout: 30,
+    numTubes: null,
+};
+const placeholderSVG = generateTubeSheetSVG(emptyData);
 
 const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
     const objectUrl = URL.createObjectURL(blob);
@@ -107,6 +121,15 @@ const App = () => {
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
     const [copyState, setCopyState] = useState<"idle" | "copied" | "error" | "unsupported">("idle");
     const [showGrid, setShowGrid] = useState<boolean>(true);
+    const [isCalculating, setIsCalculating] = useState<boolean>(false);
+    // Created inside the effect (not via useMemo) so that each effect run owns
+    // — and only ever terminates — its own Worker instance. React 18 StrictMode
+    // intentionally runs every effect's mount -> cleanup -> mount once in dev;
+    // if the Worker were memoized as a singleton outside the effect, that
+    // cleanup would call .terminate() (irreversible) on the one-and-only
+    // instance, leaving the second "mount" attached to an already-dead worker
+    // that silently drops every postMessage from then on.
+    const [workerInstance, setWorkerInstance] = useState<Worker | null>(null);
 
     const stateFuncs = {
         setMinTubes,
@@ -119,35 +142,86 @@ const App = () => {
         setLayoutOption,
     };
 
-    const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (utils.isNumber(layoutOption)) {
-            const parsedLayoutOption = (
-                layoutOption === 0 ? "radial" : layoutOption
-            ) as TubeSheet["layout"];
-            let selectedLayout: TubeSheet | null = null;
-            if (utils.isNumber(shellID) && shellID !== 0) {
-                selectedLayout = layoutInputsDefined
-                    ? new TubeSheet(
-                          OTLtoShell!,
-                          tubeOD!,
-                          pitchRatio!,
-                          parsedLayoutOption,
-                          undefined,
-                          shellID,
-                      )
-                    : null;
-            } else {
-                selectedLayout = layoutInputsDefined
-                    ? layoutResults[parsedLayoutOption.toString() as keyof typeof layoutResults]
-                    : null;
+    useEffect(() => {
+        const w = new Worker(new URL("./workers/tubesheet.worker.ts", import.meta.url));
+
+        w.onmessage = (event) => {
+            const { type, payload } = event.data;
+
+            if (type === "ALL_RESULTS") {
+                setLayoutResults(payload);
+                setIsCalculating(false);
             }
 
-            if (selectedLayout === null) {
-                setDrawingSVG(placeholderSVG);
-            } else {
-                setDrawingSVG(selectedLayout.svg);
+            if (type === "SINGLE_RESULT") {
+                // Take the raw data payload and generate the SVG purely on the main thread.
+                // isCalculating is intentionally NOT cleared here — TubeSheetSVG's
+                // onRendered callback clears it once the new drawing has actually
+                // been committed to the DOM, not merely once React has re-rendered.
+                setDrawingSVG(generateTubeSheetSVG(payload));
+
+                // If shellID was custom inputted, update actual tubes
+                if (payload.shellID && payload.numTubes) {
+                    setActualTubes(payload.numTubes);
+                }
             }
+
+            if (type === "ERROR") {
+                console.error("Worker Error:", payload);
+                setIsCalculating(false);
+            }
+        };
+
+        setWorkerInstance(w);
+
+        return () => {
+            w.terminate();
+        };
+    }, []);
+
+    // Stable identity so TubeSheetSVG's effect (keyed on this + src) only
+    // re-runs when the drawing itself actually changes, not on every render.
+    const onDrawingRendered = useCallback(() => setIsCalculating(false), []);
+
+    // Helper to package and send calculation requests
+    const triggerSingleCalculation = (overrides?: {
+        overrideLayout?: number;
+        OTLtoShell?: number;
+        tubeOD?: number;
+        pitchRatio?: number;
+        minTubes?: number;
+        shellID?: number;
+    }) => {
+        if (!workerInstance) return;
+
+        const effOTLtoShell = overrides?.OTLtoShell ?? OTLtoShell;
+        const effTubeOD = overrides?.tubeOD ?? tubeOD;
+        const effPitchRatio = overrides?.pitchRatio ?? pitchRatio;
+        const effMinTubes = overrides?.minTubes ?? minTubes;
+        const effShellID = overrides?.shellID ?? shellID;
+        const effLayoutOption = overrides?.overrideLayout ?? layoutOption;
+
+        const parsedLayoutOption = effLayoutOption === 0 ? "radial" : effLayoutOption;
+
+        setIsCalculating(true);
+        workerInstance.postMessage({
+            type: "CALCULATE_SINGLE",
+            payload: {
+                OTLtoShell: effOTLtoShell,
+                tubeOD: effTubeOD,
+                pitchRatio: effPitchRatio,
+                layoutOption: parsedLayoutOption,
+                minTubes: utils.isNumber(effShellID) && effShellID !== 0 ? undefined : effMinTubes,
+                shellID: utils.isNumber(effShellID) && effShellID !== 0 ? effShellID : undefined,
+            },
+        });
+    };
+
+    const formOnSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        // Fallback: If form submits, trigger a single calc request
+        if (utils.isNumber(layoutOption) && layoutInputsDefined) {
+            triggerSingleCalculation();
         }
     };
 
@@ -167,47 +241,57 @@ const App = () => {
         console.log(`Layout calc inputs validated: ${valid}`);
     }, [OTLtoShell, minTubes, pitchRatio, tubeClearance, tubeOD]);
 
-    const calcLayoutResults = useCallback(() => {
-        console.log("calculating layout results");
+    const requestAllLayoutResults = useCallback(() => {
+        if (!layoutInputsDefined || !workerInstance) return;
 
-        if (!layoutInputsDefined) {
-            return {
-                30: null,
-                45: null,
-                60: null,
-                90: null,
-                radial: null,
-            };
-        }
+        setIsCalculating(true);
+        workerInstance.postMessage({
+            type: "CALCULATE_ALL",
+            payload: { OTLtoShell, tubeOD, pitchRatio, minTubes },
+        });
+    }, [layoutInputsDefined, workerInstance, OTLtoShell, tubeOD, pitchRatio, minTubes]);
 
-        const _30 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes);
-        const _45 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes);
-        const _60 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes);
-        const _90 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes);
-        const radial = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes);
+    // const calcLayoutResults = useCallback(() => {
+    //     console.log("calculating layout results");
 
-        const minID = Math.min(
-            _30.minID ?? Infinity,
-            _45.minID ?? Infinity,
-            _60.minID ?? Infinity,
-            _90.minID ?? Infinity,
-            radial.minID ?? Infinity,
-        );
+    //     if (!layoutInputsDefined) {
+    //         return {
+    //             30: null,
+    //             45: null,
+    //             60: null,
+    //             90: null,
+    //             radial: null,
+    //         };
+    //     }
 
-        const markPreferred = (
-            TubeSheet: TubeSheet,
-            preferred: boolean,
-        ): TubeSheetWithPrefIndicator =>
-            Object.assign(TubeSheet, { preferred }) as TubeSheetWithPrefIndicator;
+    //     const _30 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes);
+    //     const _45 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes);
+    //     const _60 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes);
+    //     const _90 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes);
+    //     const radial = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes);
 
-        return {
-            30: markPreferred(_30, _30.minID === minID),
-            45: markPreferred(_45, _45.minID === minID),
-            60: markPreferred(_60, _60.minID === minID),
-            90: markPreferred(_90, _90.minID === minID),
-            radial: markPreferred(radial, radial.minID === minID),
-        };
-    }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
+    //     const minID = Math.min(
+    //         _30.minID ?? Infinity,
+    //         _45.minID ?? Infinity,
+    //         _60.minID ?? Infinity,
+    //         _90.minID ?? Infinity,
+    //         radial.minID ?? Infinity,
+    //     );
+
+    //     const markPreferred = (
+    //         TubeSheet: TubeSheet,
+    //         preferred: boolean,
+    //     ): TubeSheetWithPrefIndicator =>
+    //         Object.assign(TubeSheet, { preferred }) as TubeSheetWithPrefIndicator;
+
+    //     return {
+    //         30: markPreferred(_30, _30.minID === minID),
+    //         45: markPreferred(_45, _45.minID === minID),
+    //         60: markPreferred(_60, _60.minID === minID),
+    //         90: markPreferred(_90, _90.minID === minID),
+    //         radial: markPreferred(radial, radial.minID === minID),
+    //     };
+    // }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
 
     const callSetFunc = (name: string, value: string) => {
         if (!(name in stateFuncs)) {
@@ -310,10 +394,15 @@ const App = () => {
 
     // Intercept Enter, stop the native submit, commit the value the
     // same way onBlur would, and then — if the inputs are now fully valid —
-    // generate the drawing immediately.
+    // trigger the drawing calculation immediately.
     //
-    // React state updates from onBlur() aren't visible until the next render,
-    // so we build a same-tick snapshot of the six inputs.
+    // onBlur()'s setState calls are async, so OTLtoShell/tubeOD/etc. in this
+    // closure still hold their *previous* render's values right after calling
+    // it — calling triggerSingleCalculation() with no overrides here would
+    // silently send the old, pre-edit values to the worker (the calculation
+    // "completes", but visibly nothing changes until state catches up on the
+    // NEXT keystroke). We build a same-tick snapshot of the six inputs and
+    // pass it straight through as overrides instead of relying on state.
     // tubeClearance and pitchRatio are mutually derived, so whichever one
     // wasn't just typed is recomputed the same way the app already does.
     const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -369,29 +458,13 @@ const App = () => {
             return;
         }
 
-        const parsedLayoutOption = (
-            layoutOption === 0 ? "radial" : layoutOption
-        ) as TubeSheet["layout"];
-
-        const generated =
-            utils.isNumber(next.shellID) && next.shellID !== 0
-                ? new TubeSheet(
-                      next.OTLtoShell!,
-                      next.tubeOD!,
-                      next.pitchRatio!,
-                      parsedLayoutOption,
-                      undefined,
-                      next.shellID,
-                  )
-                : new TubeSheet(
-                      next.OTLtoShell!,
-                      next.tubeOD!,
-                      next.pitchRatio!,
-                      parsedLayoutOption,
-                      next.minTubes,
-                  );
-
-        setDrawingSVG(generated.svg);
+        triggerSingleCalculation({
+            OTLtoShell: next.OTLtoShell,
+            tubeOD: next.tubeOD,
+            pitchRatio: next.pitchRatio,
+            minTubes: next.minTubes,
+            shellID: next.shellID,
+        });
     };
 
     // Regenerate on layout option change and inputs are valid.
@@ -405,23 +478,7 @@ const App = () => {
             return;
         }
 
-        const parsedLayoutOption = (
-            parsedValue === 0 ? "radial" : parsedValue
-        ) as TubeSheet["layout"];
-
-        const generated =
-            utils.isNumber(shellID) && shellID !== 0
-                ? new TubeSheet(
-                      OTLtoShell!,
-                      tubeOD!,
-                      pitchRatio!,
-                      parsedLayoutOption,
-                      undefined,
-                      shellID,
-                  )
-                : new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, parsedLayoutOption, minTubes);
-
-        setDrawingSVG(generated.svg);
+        triggerSingleCalculation({ overrideLayout: parsedValue });
     };
 
     const downloadSVG = useCallback(() => {
@@ -503,9 +560,9 @@ const App = () => {
                     }
                     break;
             }
-            console.log("calling calcLayoutResults");
+            console.log("calling requestAllLayoutResults");
             if (layoutInputsDefined) {
-                setLayoutResults(calcLayoutResults());
+                requestAllLayoutResults();
             }
         }
     }, [
@@ -516,7 +573,7 @@ const App = () => {
         layoutInputsDefined,
         setPitchRatioFromTubeClearance,
         setTubeClearanceFromPitchRatio,
-        calcLayoutResults,
+        requestAllLayoutResults,
     ]);
 
     // Actual tubes calculation (only when layout option is selected and shell ID is defined)
@@ -1037,15 +1094,22 @@ const App = () => {
                 </div>
             </form>
             <div className="column-pane right">
-                <div className={`viewport${showGrid ? "" : " grid-hidden"}`}>
+                <div className={`viewport ${showGrid ? "" : "grid-hidden"}`}>
                     <span className="viewport-label noselect">Layout Preview</span>
+                    <span
+                        className={`loading-overlay noselect ${isCalculating ? "visible" : ""}`}
+                        role="status"
+                        aria-live="polite"
+                    >
+                        Calculating Layout...
+                    </span>
                     <span className="reg-tl" aria-hidden="true" />
                     <span className="reg-tr" aria-hidden="true" />
                     <span className="reg-bl" aria-hidden="true" />
                     <span className="reg-br" aria-hidden="true" />
                     <button
                         type="button"
-                        className={`grid-toggle${showGrid ? " active" : ""}`}
+                        className={`grid-toggle ${showGrid ? "active" : ""}`}
                         onClick={() => setShowGrid((v) => !v)}
                         aria-pressed={showGrid}
                         title={showGrid ? "Hide Grid" : "Show Grid"}
@@ -1059,7 +1123,11 @@ const App = () => {
                         </svg>
                         Grid
                     </button>
-                    <TubeSheetSVG src={drawingSVG} className="tubesheet-svg" />
+                    <TubeSheetSVG
+                        src={drawingSVG}
+                        className="tubesheet-svg"
+                        onRendered={onDrawingRendered}
+                    />
                     <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
                         <button className="copy-button" onClick={copySVG} type="button">
                             {copyState === "copied"

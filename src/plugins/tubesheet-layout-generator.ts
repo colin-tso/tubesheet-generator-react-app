@@ -1,8 +1,19 @@
 import memoize from "lodash.memoize";
 
-type Tube = { x: number; y: number };
-type TubeField = Array<Tube>;
-type TubeSheetLayout = 30 | 45 | 60 | 90 | "radial";
+export type Tube = { x: number; y: number };
+export type TubeField = Array<Tube>;
+export type TubeSheetLayout = 30 | 45 | 60 | 90 | "radial";
+
+export interface ITubeSheetData {
+    tubeField: TubeField | null;
+    OTL: number | null;
+    shellID: number;
+    minID: number | null;
+    tubeOD: number;
+    pitchRatio: number;
+    layout: TubeSheetLayout;
+    numTubes: number | null;
+}
 
 export class TubeSheet {
     private _OTLClearance: number;
@@ -130,12 +141,12 @@ export class TubeSheet {
 
     private OTLFunc(): number | null {
         if (this._shellID) {
-            console.log(`getting OTL for:
-                shellID: ${this._shellID}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting OTL for:
+            //     shellID: ${this._shellID}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return (
                 tubeFieldOTL(
                     this._shellID,
@@ -146,12 +157,12 @@ export class TubeSheet {
                 ) ?? null
             );
         } else if (this._minTubes) {
-            console.log(`getting OTL for:
-                minTubes: ${this._minTubes}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting OTL for:
+            //     minTubes: ${this._minTubes}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return (
                 tubeFieldOTL(
                     this.minIDFunc() as number,
@@ -168,12 +179,12 @@ export class TubeSheet {
 
     private tubeFieldFunc(): TubeField | null {
         if (this._shellID) {
-            console.log(`getting tubefield for:
-                shellID: ${this._shellID}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting tubefield for:
+            //     shellID: ${this._shellID}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return generateTubeField(
                 this._shellID,
                 this._OTLClearance,
@@ -184,12 +195,12 @@ export class TubeSheet {
         }
 
         if (this._minTubes) {
-            console.log(`getting tubefield for:
-                minTubes: ${this._minTubes}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting tubefield for:
+            //     minTubes: ${this._minTubes}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return generateTubeField(
                 this.minIDFunc() as number,
                 this._OTLClearance,
@@ -204,12 +215,12 @@ export class TubeSheet {
 
     private minIDFunc(): number | null {
         if (this._minTubes) {
-            console.log(`getting minID for:
-                minTubes: ${this._minTubes}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting minID for:
+            //     minTubes: ${this._minTubes}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return findMinID(
                 this._minTubes,
                 this._OTLClearance,
@@ -218,12 +229,12 @@ export class TubeSheet {
                 this._layout,
             );
         } else if (this._shellID) {
-            console.log(`getting minID for:
-                shellID: ${this._shellID}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting minID for:
+            //     shellID: ${this._shellID}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return findMinID(
                 this.numTubesFunc(),
                 this._OTLClearance,
@@ -238,12 +249,12 @@ export class TubeSheet {
 
     private numTubesFunc(): number {
         if (this._shellID) {
-            console.log(`getting numTubes for:
-                shellID: ${this._shellID}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting numTubes for:
+            //     shellID: ${this._shellID}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return tubeCount(
                 this._shellID,
                 this._OTLClearance,
@@ -252,12 +263,12 @@ export class TubeSheet {
                 this._layout,
             );
         } else if (this._minTubes) {
-            console.log(`getting numTubes for:
-                minTubes: ${this._minTubes}
-                OTLClearance: ${this._OTLClearance}
-                tubeOD: ${this._tubeOD}
-                pitchRatio: ${this._pitchRatio}
-                layout: ${this._layout}`);
+            // console.log(`getting numTubes for:
+            //     minTubes: ${this._minTubes}
+            //     OTLClearance: ${this._OTLClearance}
+            //     tubeOD: ${this._tubeOD}
+            //     pitchRatio: ${this._pitchRatio}
+            //     layout: ${this._layout}`);
             return tubeCount(
                 this.minIDFunc() as number,
                 this._OTLClearance,
@@ -570,7 +581,7 @@ const tubeFieldOTL = (
             return roundUp(D, DECIMAL_PLACES);
         }
     } catch (error) {
-        console.log((error as Error).message);
+        // console.log((error as Error).message);
         return null;
     }
 };
@@ -867,9 +878,9 @@ const findMinID = memoize(
                             }
                         }
 
-                        console.log(
-                            `Heuristic Iteration: ${iterations}, D_old: ${D_old}, D_new: ${D_new}, numTubes_old: ${numTubes_old}, numTubes_new: ${numTubes_new}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
-                        );
+                        // console.log(
+                        //     `Heuristic Iteration: ${iterations}, D_old: ${D_old}, D_new: ${D_new}, numTubes_old: ${numTubes_old}, numTubes_new: ${numTubes_new}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
+                        // );
 
                         iterations++;
                     }
@@ -976,9 +987,9 @@ const findMinID = memoize(
                         } else {
                             D_lowerBound = D_mid;
                         }
-                        console.log(
-                            `Bisection Iteration: ${bisectIterations}, D_lowerBound: ${D_lowerBound}, D_upperBound: ${D_upperBound}, numTubesMid: ${numTubesMid}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
-                        );
+                        // console.log(
+                        //     `Bisection Iteration: ${bisectIterations}, D_lowerBound: ${D_lowerBound}, D_upperBound: ${D_upperBound}, numTubesMid: ${numTubesMid}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
+                        // );
                         bisectIterations++;
                     }
                     return D_upperBound;
@@ -986,7 +997,7 @@ const findMinID = memoize(
             } catch (err) {
                 if (retries < MAX_RETRIES) {
                     retries = retries + 1;
-                    console.log(`Number of retries: ${retries}`);
+                    // console.log(`Number of retries: ${retries}`);
                     minTubes = minTubes + 1;
                 } else {
                     throw new Error("Max number of retries reached. Min ID could not be found.");
@@ -1172,7 +1183,7 @@ const mergeSVGs = (svgs: SVGSVGElement[], viewBoxPaddingAsFraction: number): SVG
     return mergedSVG;
 };
 
-const generateTubeSheetSVG = (ts: TubeSheet): SVGSVGElement => {
+export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
     const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
     if (!ts.tubeField || !ts.OTL) {
         return document.createElementNS(SVG_NAMESPACE, "svg");

@@ -596,6 +596,36 @@ footer a {
   letter-spacing: 0.12em;
 }
 
+.loading-overlay {
+  pointer-events: none;
+
+  position: absolute;
+  z-index: 2;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: 6px 14px;
+
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+
+  opacity: 0;
+  background-color: var(--blue-tint);
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-sm);
+
+  transition: opacity 0.2s ease;
+}
+
+.loading-overlay.visible {
+  opacity: 1;
+}
+
 .noselect {
   -webkit-user-select: none; /* Safari */
   -khtml-user-select: none; /* Konqueror HTML */
