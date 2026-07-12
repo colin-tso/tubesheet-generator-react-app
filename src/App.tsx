@@ -104,7 +104,6 @@ const App = () => {
         radial: null,
     });
     const [layoutInputsDefined, setLayoutInputsDefined] = useState<boolean>(false);
-    const [layoutOptionSelected, setLayoutOptionSelected] = useState<boolean>(false);
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
     const [copyState, setCopyState] = useState<"idle" | "copied" | "error" | "unsupported">("idle");
     const [showGrid, setShowGrid] = useState<boolean>(true);
@@ -151,12 +150,6 @@ const App = () => {
             }
         }
     };
-
-    const validateLayoutOption = useCallback(() => {
-        const valid = utils.isNumber(layoutOption);
-        setLayoutOptionSelected(valid);
-        console.log(`Layout option validated: ${valid}`);
-    }, [layoutOption]);
 
     const validateLayoutInputs = useCallback(() => {
         const valid =
@@ -488,9 +481,7 @@ const App = () => {
     useEffect(() => {
         console.log("calling validateLayoutInputs");
         validateLayoutInputs();
-        console.log("calling validateLayoutOption");
-        validateLayoutOption();
-    }, [validateLayoutInputs, validateLayoutOption]);
+    }, [validateLayoutInputs]);
 
     // Pitch calculation
     useEffect(() => {
