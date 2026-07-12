@@ -315,6 +315,11 @@ input[type="text"]:read-only {
     background-color var(--transition);
 }
 
+.layout-tile.preferred {
+  /* border-color: #f08d32; */
+  box-shadow: 0 0 0 3px var(--preferred);
+}
+
 .layout-tile:has(input:disabled) {
   cursor: default;
   opacity: 0.4;
