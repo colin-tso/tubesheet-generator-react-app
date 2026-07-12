@@ -7,6 +7,15 @@ import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import "./index.css";
 
+type TubeSheetWithPrefIndicator = TubeSheet & { preferred: boolean };
+type LayoutResults = {
+    30: TubeSheetWithPrefIndicator | null;
+    45: TubeSheetWithPrefIndicator | null;
+    60: TubeSheetWithPrefIndicator | null;
+    90: TubeSheetWithPrefIndicator | null;
+    radial: TubeSheetWithPrefIndicator | null;
+};
+
 const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
 const placeholderSVG = emptyTubeSheet.svg;
 
@@ -87,13 +96,7 @@ const App = () => {
     const [actualTubes, setActualTubes] = useState<number | undefined>();
     const [layoutOption, setLayoutOption] = useState<number | undefined>();
     const [pitchUpdateFunc, setPitchUpdateFunc] = useState<string | undefined>();
-    const [layoutResults, setLayoutResults] = useState<{
-        "30": TubeSheet | null;
-        "45": TubeSheet | null;
-        "60": TubeSheet | null;
-        "90": TubeSheet | null;
-        radial: TubeSheet | null;
-    }>({
+    const [layoutResults, setLayoutResults] = useState<LayoutResults>({
         "30": null,
         "45": null,
         "60": null,
@@ -176,20 +179,40 @@ const App = () => {
 
         if (!layoutInputsDefined) {
             return {
-                "30": null,
-                "45": null,
-                "60": null,
-                "90": null,
+                30: null,
+                45: null,
+                60: null,
+                90: null,
                 radial: null,
             };
         }
 
+        const _30 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes);
+        const _45 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes);
+        const _60 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes);
+        const _90 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes);
+        const radial = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes);
+
+        const minID = Math.min(
+            _30.minID ?? Infinity,
+            _45.minID ?? Infinity,
+            _60.minID ?? Infinity,
+            _90.minID ?? Infinity,
+            radial.minID ?? Infinity,
+        );
+
+        const markPreferred = (
+            TubeSheet: TubeSheet,
+            preferred: boolean,
+        ): TubeSheetWithPrefIndicator =>
+            Object.assign(TubeSheet, { preferred }) as TubeSheetWithPrefIndicator;
+
         return {
-            30: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes),
-            45: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes),
-            60: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes),
-            90: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes),
-            radial: new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes),
+            30: markPreferred(_30, _30.minID === minID),
+            45: markPreferred(_45, _45.minID === minID),
+            60: markPreferred(_60, _60.minID === minID),
+            90: markPreferred(_90, _90.minID === minID),
+            radial: markPreferred(radial, radial.minID === minID),
         };
     }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
 
@@ -784,7 +807,10 @@ const App = () => {
                             role="radiogroup"
                             aria-label="Tube layout angle"
                         >
-                            <label className="layout-tile" htmlFor="30deg">
+                            <label
+                                className={`layout-tile ${layoutResults[30]?.preferred ? "preferred" : ""}`}
+                                htmlFor="30deg"
+                            >
                                 <input
                                     type="radio"
                                     id="30deg"
@@ -821,7 +847,10 @@ const App = () => {
                                 </span>
                             </label>
 
-                            <label className="layout-tile" htmlFor="45deg">
+                            <label
+                                className={`layout-tile ${layoutResults[45]?.preferred ? "preferred" : ""}`}
+                                htmlFor="45deg"
+                            >
                                 <input
                                     type="radio"
                                     id="45deg"
@@ -859,7 +888,10 @@ const App = () => {
                                 </span>
                             </label>
 
-                            <label className="layout-tile" htmlFor="60deg">
+                            <label
+                                className={`layout-tile ${layoutResults[60]?.preferred ? "preferred" : ""}`}
+                                htmlFor="60deg"
+                            >
                                 <input
                                     type="radio"
                                     id="60deg"
@@ -897,7 +929,10 @@ const App = () => {
                                 </span>
                             </label>
 
-                            <label className="layout-tile" htmlFor="90deg">
+                            <label
+                                className={`layout-tile ${layoutResults[90]?.preferred ? "preferred" : ""}`}
+                                htmlFor="90deg"
+                            >
                                 <input
                                     type="radio"
                                     id="90deg"
@@ -935,7 +970,10 @@ const App = () => {
                                 </span>
                             </label>
 
-                            <label className="layout-tile" htmlFor="radial">
+                            <label
+                                className={`layout-tile ${layoutResults.radial?.preferred ? "preferred" : ""}`}
+                                htmlFor="radial"
+                            >
                                 <input
                                     type="radio"
                                     id="radial"
