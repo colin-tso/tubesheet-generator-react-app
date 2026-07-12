@@ -1009,7 +1009,7 @@ const App = () => {
             </form>
             <div className="column-pane right">
                 <div className={`viewport${showGrid ? "" : " grid-hidden"}`}>
-                    <span className="viewport-label">Layout Preview</span>
+                    <span className="viewport-label noselect">Layout Preview</span>
                     <span className="reg-tl" aria-hidden="true" />
                     <span className="reg-tr" aria-hidden="true" />
                     <span className="reg-bl" aria-hidden="true" />
@@ -1019,7 +1019,7 @@ const App = () => {
                         className={`grid-toggle${showGrid ? " active" : ""}`}
                         onClick={() => setShowGrid((v) => !v)}
                         aria-pressed={showGrid}
-                        title={showGrid ? "Hide grid" : "Show grid"}
+                        title={showGrid ? "Hide Grid" : "Show Grid"}
                     >
                         <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
                             <rect x="1" y="1" width="14" height="14" rx="1" />
