@@ -388,13 +388,26 @@ const generateTubeField = memoize(
                         y: x * matrix[1][0] + y * matrix[1][1],
                     };
                 };
+
+                const COORD_DECIMALS = 8;
+                const normalize = (n: number): number => {
+                    const rounded = round(n, COORD_DECIMALS);
+                    return rounded === 0 ? 0 : rounded;
+                };
+
                 const mergeUniqueCoordinates = (...arrays: TubeField[]): TubeField => {
-                    const merged = arrays.flat(1);
-
-                    // Create a Set to hold unique tube positions based on JSON stringified coordinates
-                    const uniqueSet = new Set(merged.map((item) => JSON.stringify(item)));
-
-                    return Array.from(uniqueSet).map((item) => JSON.parse(item));
+                    const seen = new Map<string, Tube>();
+                    for (const arr of arrays) {
+                        for (const point of arr) {
+                            const x = normalize(point.x);
+                            const y = normalize(point.y);
+                            const key = `${x}|${y}`;
+                            if (!seen.has(key)) {
+                                seen.set(key, { x, y });
+                            }
+                        }
+                    }
+                    return Array.from(seen.values());
                 };
 
                 const flippedHorz: TubeField = quarterTubeField.map((point) =>
