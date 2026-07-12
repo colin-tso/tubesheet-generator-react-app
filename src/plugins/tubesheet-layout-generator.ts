@@ -597,7 +597,8 @@ const findMinID = memoize(
         let numTubes_new: number;
         let numTubes_bestGuess: number | undefined;
         let numTubes_check: number;
-        const MAX_ITERATIONS: number = 100;
+        const HEURISTIC_MAX_ITERATIONS: number = 20;
+        const BISECT_MAX_ITERATIONS: number = 100;
         const DECIMAL_PLACES = 8;
 
         if (tubeOD <= 0) {
@@ -649,23 +650,62 @@ const findMinID = memoize(
                     }
                     return Math.min(minID_offsetTrue, minID_offsetFalse);
                 } else {
+                    // Track bounds for bisection fallback if heuristic fails to converge
+                    let D_lowerBound = 0;
+                    let D_upperBound = 0;
+                    let haveLowerBound = false;
+                    let haveUpperBound = false;
+
+                    const updateBounds = (D: number, numTubes: number, targetTubes: number) => {
+                        if (numTubes < targetTubes) {
+                            if (!haveLowerBound) {
+                                D_lowerBound = D;
+                                haveLowerBound = true;
+                            } else if (D > D_lowerBound) {
+                                D_lowerBound = D;
+                            }
+                        } else {
+                            const OTL = tubeFieldOTL(
+                                D,
+                                OTLClearance,
+                                tubeOD,
+                                pitchRatio,
+                                layout,
+                                offsetOption,
+                            );
+                            if (OTL !== null && OTL !== undefined) {
+                                const D_snap = roundUp(OTL + OTLClearance, DECIMAL_PLACES);
+                                if (!haveUpperBound) {
+                                    D_upperBound = D_snap;
+                                    haveUpperBound = true;
+                                } else if (D_snap < D_upperBound) {
+                                    D_upperBound = D_snap;
+                                }
+                            }
+                        }
+                    };
+
                     // Initialise guesses depending on selected layout
+                    const packingFactor = layout === 30 || layout === 60 ? 0.84 : 0.61;
                     if (layout === 30 || layout === 60) {
                         if (offsetOption === true) {
                             D_old = Math.max(
-                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.84) + OTLClearance,
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / packingFactor) +
+                                    OTLClearance,
                                 tubeOD * pitchRatio * 2 + OTLClearance + 0.1,
                             );
                         } else {
                             D_old = Math.max(
-                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.84) + OTLClearance,
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / packingFactor) +
+                                    OTLClearance,
                                 tubeOD + OTLClearance + 0.1,
                             );
                         }
                     } else {
                         if (offsetOption === true) {
                             D_old = Math.max(
-                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.61) + OTLClearance,
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / packingFactor) +
+                                    OTLClearance,
                                 Math.sqrt(
                                     (tubeOD * pitchRatio) ** 2 + ((tubeOD * pitchRatio) / 2) ** 2,
                                 ) *
@@ -675,7 +715,8 @@ const findMinID = memoize(
                             );
                         } else {
                             D_old = Math.max(
-                                tubeOD * pitchRatio * Math.sqrt(minTubes / 0.61) + OTLClearance,
+                                tubeOD * pitchRatio * Math.sqrt(minTubes / packingFactor) +
+                                    OTLClearance,
                                 tubeOD + OTLClearance + 0.1,
                             );
                         }
@@ -734,7 +775,10 @@ const findMinID = memoize(
                         offsetOption,
                     );
 
-                    while (numTubes_new !== minTubes && iterations < MAX_ITERATIONS) {
+                    updateBounds(D_old, numTubes_old, minTubes);
+                    updateBounds(D_new, numTubes_new, minTubes);
+
+                    while (numTubes_new !== minTubes && iterations < HEURISTIC_MAX_ITERATIONS) {
                         // Re-initialise guesses. if there has been a previous attempt, use that as a starting point.
                         if (!D_bestGuess) {
                             D_old = D_new;
@@ -765,6 +809,12 @@ const findMinID = memoize(
                                     layout,
                                     offsetOption,
                                 );
+                                updateBounds(
+                                    D_check - Math.pow(10, -DECIMAL_PLACES),
+                                    numTubes_check,
+                                    minTubes,
+                                );
+
                                 if (numTubes_check < minTubes) {
                                     minTubes = numTubes_new;
                                     return D_check;
@@ -804,6 +854,9 @@ const findMinID = memoize(
                             offsetOption,
                         );
 
+                        updateBounds(D_old, numTubes_old, minTubes);
+                        updateBounds(D_new, numTubes_new, minTubes);
+
                         if (numTubes_new > minTubes) {
                             if (!numTubes_bestGuess) {
                                 numTubes_bestGuess = numTubes_new;
@@ -815,29 +868,120 @@ const findMinID = memoize(
                         }
 
                         console.log(
-                            `Iteration: ${iterations}, D_old: ${D_old}, D_new: ${D_new}, numTubes_old: ${numTubes_old}, numTubes_new: ${numTubes_new}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
+                            `Heuristic Iteration: ${iterations}, D_old: ${D_old}, D_new: ${D_new}, numTubes_old: ${numTubes_old}, numTubes_new: ${numTubes_new}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
                         );
 
                         iterations++;
                     }
-                    if (iterations >= MAX_ITERATIONS) {
-                        console.log(
-                            `D_bestGuess: ${D_bestGuess}, numTubes_bestGuess: ${numTubes_bestGuess}`,
+
+                    if (numTubes_new === minTubes) {
+                        return roundUp(
+                            tubeFieldOTL(
+                                D_new,
+                                OTLClearance,
+                                tubeOD,
+                                pitchRatio,
+                                layout,
+                                offsetOption,
+                            )! + OTLClearance,
+                            DECIMAL_PLACES,
                         );
-                        throw new Error("Max iterations reached. Retrying with different guesses");
                     }
 
-                    return roundUp(
-                        tubeFieldOTL(
-                            D_new,
+                    console.log("Heuristic failed to converge. Falling back to bisection method.");
+
+                    // Bisection fallback if heuristic fails to converge
+                    const minValidID = tubeOD + OTLClearance + Math.pow(10, -DECIMAL_PLACES);
+                    if (!haveLowerBound) {
+                        let D_shrink = haveUpperBound ? D_upperBound : D_old;
+                        while (true) {
+                            D_shrink = D_shrink / BETA;
+                            if (D_shrink <= minValidID) {
+                                D_lowerBound = minValidID;
+                                haveLowerBound = true;
+                                break;
+                            }
+                            const numTubesLower = tubeCount(
+                                D_shrink,
+                                OTLClearance,
+                                tubeOD,
+                                pitchRatio,
+                                layout,
+                                offsetOption,
+                            );
+                            if (numTubesLower < minTubes) {
+                                D_lowerBound = D_shrink;
+                                haveLowerBound = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!haveUpperBound) {
+                        let D_grow = haveLowerBound ? D_lowerBound : D_old;
+                        while (true) {
+                            D_grow = D_grow * BETA;
+                            const numTubesUpper = tubeCount(
+                                D_grow,
+                                OTLClearance,
+                                tubeOD,
+                                pitchRatio,
+                                layout,
+                                offsetOption,
+                            );
+                            if (numTubesUpper > minTubes) {
+                                D_upperBound = roundUp(
+                                    tubeFieldOTL(
+                                        D_grow,
+                                        OTLClearance,
+                                        tubeOD,
+                                        pitchRatio,
+                                        layout,
+                                        offsetOption,
+                                    )! + OTLClearance,
+                                    DECIMAL_PLACES,
+                                );
+                                haveUpperBound = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    let bisectIterations = 0;
+                    while (
+                        D_upperBound - D_lowerBound > Math.pow(10, -DECIMAL_PLACES) &&
+                        bisectIterations < BISECT_MAX_ITERATIONS
+                    ) {
+                        const D_mid = (D_lowerBound + D_upperBound) / 2;
+                        const numTubesMid = tubeCount(
+                            D_mid,
                             OTLClearance,
                             tubeOD,
                             pitchRatio,
                             layout,
                             offsetOption,
-                        )! + OTLClearance,
-                        DECIMAL_PLACES,
-                    );
+                        );
+                        if (numTubesMid >= minTubes) {
+                            D_upperBound = roundUp(
+                                tubeFieldOTL(
+                                    D_mid,
+                                    OTLClearance,
+                                    tubeOD,
+                                    pitchRatio,
+                                    layout,
+                                    offsetOption,
+                                )! + OTLClearance,
+                                DECIMAL_PLACES,
+                            );
+                        } else {
+                            D_lowerBound = D_mid;
+                        }
+                        console.log(
+                            `Bisection Iteration: ${bisectIterations}, D_lowerBound: ${D_lowerBound}, D_upperBound: ${D_upperBound}, numTubesMid: ${numTubesMid}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
+                        );
+                        bisectIterations++;
+                    }
+                    return D_upperBound;
                 }
             } catch (err) {
                 if (retries < MAX_RETRIES) {
