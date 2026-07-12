@@ -3,9 +3,10 @@ import { useEffect, useRef } from "react";
 type SVGProps = {
     src: SVGSVGElement;
     className?: string;
+    onRendered?: () => void;
 };
 
-export function TubeSheetSVG({ src, className }: SVGProps) {
+export function TubeSheetSVG({ src, className, onRendered }: SVGProps) {
     const svg = useRef<SVGSVGElement | null>(null); // defining useRef inside component
     useEffect(() => {
         if (svg.current) {
@@ -27,7 +28,9 @@ export function TubeSheetSVG({ src, className }: SVGProps) {
             svg.current.setAttribute("desc", `${src.getAttribute("desc")}`);
             svg.current.setAttribute("role", `${src.getAttribute("role")}`);
         }
-    }, [src]);
+
+        onRendered?.();
+    }, [src, onRendered]);
     return (
         <>
             <svg ref={svg} className={className} />
