@@ -351,6 +351,8 @@ const generateTubeField = memoize(
                 x = 0,
                 y = 0;
             const quarterTubeField: TubeField = [];
+            const maxCentreDist = (maxOTL - tubeOD) / 2;
+            const maxCentreDistSq = maxCentreDist * maxCentreDist;
 
             while (Math.abs(y) <= maxOTL && j < MAX_ITERATIONS) {
                 y = j * dy;
@@ -358,7 +360,8 @@ const generateTubeField = memoize(
                 while (Math.abs(x) <= maxOTL && i < MAX_ITERATIONS) {
                     x = C * cMult + i * dx - offset;
                     i++;
-                    if (Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <= maxOTL) {
+                    if (x * x + y * y <= maxCentreDistSq) {
+                        // same as Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <= maxOTL
                         quarterTubeField.push({ x: x, y: y });
                     } else {
                         break;
