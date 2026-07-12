@@ -870,39 +870,49 @@ const generateSVGCircles = <T extends { x: number; y: number }>(
 
     const svg = document.createElementNS(svgNamespace, "svg");
 
+    // Predefine tube style
+    const styles = svgStyles.split(";").reduce(
+        (acc, style) => {
+            const [key, value] = style.split(":");
+            if (key && value) acc[key.trim()] = value.trim();
+            return acc;
+        },
+        {} as { [key: string]: string },
+    );
+    const styleEntries = Object.entries(styles);
+    const radius = diameter / 2;
+    const radiusStr = radius.toString();
+
+    // Build circles in a detached DocumentFragment and append it once, rather
+    // than appending to `svg` one tube at a time.
+    const fragment = document.createDocumentFragment();
+
     // Loop through each tube to create circles
     circles.forEach((c, i) => {
         const circle = document.createElementNS(svgNamespace, "circle");
         circle.setAttribute("cx", c.x.toString());
         circle.setAttribute("cy", c.y.toString());
-        circle.setAttribute("r", (diameter / 2).toString());
+        circle.setAttribute("r", radiusStr);
         if (id) {
             circle.setAttribute("id", (i + 1).toString());
         }
 
         // Apply the SVG path styles
-        const styles = svgStyles.split(";").reduce(
-            (acc, style) => {
-                const [key, value] = style.split(":");
-                if (key && value) acc[key.trim()] = value.trim();
-                return acc;
-            },
-            {} as { [key: string]: string },
-        );
-
-        Object.entries(styles).forEach(([key, value]) => {
+        for (const [key, value] of styleEntries) {
             circle.setAttribute(key, value);
-        });
+        }
 
         // Calculate bounding box based on coordinates and diameter
-        minX = Math.min(minX, c.x - diameter / 2);
-        minY = Math.min(minY, c.y - diameter / 2);
-        maxX = Math.max(maxX, c.x + diameter / 2);
-        maxY = Math.max(maxY, c.y + diameter / 2);
+        minX = Math.min(minX, c.x - radius);
+        minY = Math.min(minY, c.y - radius);
+        maxX = Math.max(maxX, c.x + radius);
+        maxY = Math.max(maxY, c.y + radius);
 
-        // Append each circle to the SVG
-        svg.appendChild(circle);
+        // Append each circle to the SVG fragment
+        fragment.appendChild(circle);
     });
+
+    svg.appendChild(fragment);
 
     const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
