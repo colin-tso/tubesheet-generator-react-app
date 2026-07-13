@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import GitHubButton from "react-github-btn";
 import { IMaskInput } from "react-imask";
 import {
@@ -11,7 +11,6 @@ import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import "./index.css";
 
-// type TubeSheetWithPrefIndicator = TubeSheet & { preferred: boolean };
 type LayoutResults = {
     30: (ITubeSheetData & { preferred: boolean }) | null;
     45: (ITubeSheetData & { preferred: boolean }) | null;
@@ -46,9 +45,8 @@ const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
     setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
 };
 
-// Clone svg with explicit pixel dimensions derived from its viewBox
-// to render consistently outside web context for both SVG and PNG
-// rasterisation below.
+// Clone svg with explicit pixel dimensions derived from viewBox
+// for SVG and PNG rasterisation.
 const sizedSvgString = (svg: SVGSVGElement, scale = 2) => {
     const viewBox = svg.getAttribute("viewBox");
     const parts = viewBox ? viewBox.split(" ").map(Number) : [0, 0, 300, 150];
@@ -101,6 +99,7 @@ const svgToPngBlob = (svg: SVGSVGElement, scale = 2): Promise<Blob> => {
 };
 
 const App = () => {
+    // Layout data states
     const [minTubes, setMinTubes] = useState<number | undefined>();
     const [tubeOD, setTubeOD] = useState<number | undefined>();
     const [OTLtoShell, setOTLtoShell] = useState<number | undefined>();
@@ -119,16 +118,43 @@ const App = () => {
     });
     const [layoutInputsDefined, setLayoutInputsDefined] = useState<boolean>(false);
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
+
+    // Copy state
     const [copyState, setCopyState] = useState<"idle" | "copied" | "error" | "unsupported">("idle");
+
+    // Show/hid grid state
     const [showGrid, setShowGrid] = useState<boolean>(true);
+
+    // Loading/calculation visual states
     const [isCalculating, setIsCalculating] = useState<boolean>(false);
-    // Created inside the effect (not via useMemo) so that each effect run owns
-    // — and only ever terminates — its own Worker instance. React 18 StrictMode
-    // intentionally runs every effect's mount -> cleanup -> mount once in dev;
-    // if the Worker were memoized as a singleton outside the effect, that
-    // cleanup would call .terminate() (irreversible) on the one-and-only
-    // instance, leaving the second "mount" attached to an already-dead worker
-    // that silently drops every postMessage from then on.
+    const [showLoadingBadge, setShowLoadingBadge] = useState<boolean>(false);
+    const loadingShownAtRef = useRef<number | null>(null);
+    const [calcError, setCalcError] = useState<string | null>(null);
+
+    // Screen-reader-only status state
+    const [announcement, setAnnouncement] = useState<string>("");
+
+    // Refs
+    const hasRenderedOnceRef = useRef(false);
+    // CALCULATE_ALL (tile stats) and CALCULATE_SINGLE (the drawing) can both
+    // be in flight at once, each clearing isCalculating only once ITS OWN
+    // result has actually committed to the DOM (see the layoutResults effect
+    // and onDrawingRendered below). A single boolean can't represent "two
+    // independent things are pending", so a count is kept instead — isCalculating
+    // only goes false once every outstanding request has actually rendered.
+    const pendingCompletionsRef = useRef(0);
+    const beginCalculation = () => {
+        pendingCompletionsRef.current += 1;
+        setCalcError(null);
+        setIsCalculating(true);
+    };
+    const completeCalculation = () => {
+        pendingCompletionsRef.current = Math.max(0, pendingCompletionsRef.current - 1);
+        if (pendingCompletionsRef.current === 0) {
+            setIsCalculating(false);
+        }
+    };
+    // Workers
     const [workerInstance, setWorkerInstance] = useState<Worker | null>(null);
 
     const stateFuncs = {
@@ -149,15 +175,17 @@ const App = () => {
             const { type, payload } = event.data;
 
             if (type === "ALL_RESULTS") {
+                // isCalculating is intentionally NOT cleared here — the effect
+                // keyed on layoutResults clears it only once the new tile
+                // stats have  committed to the DOM
                 setLayoutResults(payload);
-                setIsCalculating(false);
             }
 
             if (type === "SINGLE_RESULT") {
                 // Take the raw data payload and generate the SVG purely on the main thread.
-                // isCalculating is intentionally NOT cleared here — TubeSheetSVG's
-                // onRendered callback clears it once the new drawing has actually
-                // been committed to the DOM, not merely once React has re-rendered.
+                // isCalculating is NOT cleared here — TubeSheetSVG onRendered callback
+                // clears it once rendred to DOM.
+                setCalcError(null);
                 setDrawingSVG(generateTubeSheetSVG(payload));
 
                 // If shellID was custom inputted, update actual tubes
@@ -168,7 +196,17 @@ const App = () => {
 
             if (type === "ERROR") {
                 console.error("Worker Error:", payload);
+                setCalcError(typeof payload === "string" ? payload : "Calculation failed.");
+                setAnnouncement(`Calculation failed: ${payload}`);
+                // An error is a definitive stop for whichever request(s) were
+                // outstanding — neither will post a normal completion, so drop
+                // the count to zero rather than leaving isCalculating stuck.
+                pendingCompletionsRef.current = 0;
                 setIsCalculating(false);
+                // Swap to the error badge right away instead of waiting out
+                // the loading badge's minimum-visible duration.
+                loadingShownAtRef.current = null;
+                setShowLoadingBadge(false);
             }
         };
 
@@ -179,9 +217,58 @@ const App = () => {
         };
     }, []);
 
+    // Debounce showing the loading badge.
+    useEffect(() => {
+        const SHOW_DELAY_MS = 150;
+        const MIN_VISIBLE_MS = 300;
+
+        if (isCalculating) {
+            setAnnouncement("Calculating layout…");
+
+            const showTimer = window.setTimeout(() => {
+                loadingShownAtRef.current = Date.now();
+                setShowLoadingBadge(true);
+            }, SHOW_DELAY_MS);
+
+            return () => clearTimeout(showTimer);
+        }
+
+        // Calculation finished. If the badge never actually became visible
+        // the cleanup above already cancelled the timer.
+        if (loadingShownAtRef.current === null) {
+            return;
+        }
+
+        const elapsed = Date.now() - loadingShownAtRef.current;
+        const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
+
+        const hideTimer = window.setTimeout(() => {
+            setShowLoadingBadge(false);
+            loadingShownAtRef.current = null;
+        }, remaining);
+
+        return () => clearTimeout(hideTimer);
+    }, [isCalculating]);
+
+    // Fires after React has actually committed the render reflecting the new
+    // layoutResults.
+    useEffect(() => {
+        completeCalculation();
+    }, [layoutResults]);
+
     // Stable identity so TubeSheetSVG's effect (keyed on this + src) only
     // re-runs when the drawing itself actually changes, not on every render.
-    const onDrawingRendered = useCallback(() => setIsCalculating(false), []);
+    const onDrawingRendered = useCallback(() => {
+        completeCalculation();
+
+        // Skip the announcement for the initial placeholder mount
+        if (!hasRenderedOnceRef.current) {
+            hasRenderedOnceRef.current = true;
+            return;
+        }
+
+        setAnnouncement("Layout updated.");
+    }, []);
 
     // Helper to package and send calculation requests
     const triggerSingleCalculation = (overrides?: {
@@ -203,7 +290,7 @@ const App = () => {
 
         const parsedLayoutOption = effLayoutOption === 0 ? "radial" : effLayoutOption;
 
-        setIsCalculating(true);
+        beginCalculation();
         workerInstance.postMessage({
             type: "CALCULATE_SINGLE",
             payload: {
@@ -238,60 +325,18 @@ const App = () => {
             pitchRatio >= 1 &&
             minTubes > 0;
         setLayoutInputsDefined(valid);
-        console.log(`Layout calc inputs validated: ${valid}`);
+        // console.log(`Layout calc inputs validated: ${valid}`);
     }, [OTLtoShell, minTubes, pitchRatio, tubeClearance, tubeOD]);
 
     const requestAllLayoutResults = useCallback(() => {
         if (!layoutInputsDefined || !workerInstance) return;
 
-        setIsCalculating(true);
+        beginCalculation();
         workerInstance.postMessage({
             type: "CALCULATE_ALL",
             payload: { OTLtoShell, tubeOD, pitchRatio, minTubes },
         });
     }, [layoutInputsDefined, workerInstance, OTLtoShell, tubeOD, pitchRatio, minTubes]);
-
-    // const calcLayoutResults = useCallback(() => {
-    //     console.log("calculating layout results");
-
-    //     if (!layoutInputsDefined) {
-    //         return {
-    //             30: null,
-    //             45: null,
-    //             60: null,
-    //             90: null,
-    //             radial: null,
-    //         };
-    //     }
-
-    //     const _30 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 30, minTubes);
-    //     const _45 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 45, minTubes);
-    //     const _60 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 60, minTubes);
-    //     const _90 = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, 90, minTubes);
-    //     const radial = new TubeSheet(OTLtoShell!, tubeOD!, pitchRatio!, "radial", minTubes);
-
-    //     const minID = Math.min(
-    //         _30.minID ?? Infinity,
-    //         _45.minID ?? Infinity,
-    //         _60.minID ?? Infinity,
-    //         _90.minID ?? Infinity,
-    //         radial.minID ?? Infinity,
-    //     );
-
-    //     const markPreferred = (
-    //         TubeSheet: TubeSheet,
-    //         preferred: boolean,
-    //     ): TubeSheetWithPrefIndicator =>
-    //         Object.assign(TubeSheet, { preferred }) as TubeSheetWithPrefIndicator;
-
-    //     return {
-    //         30: markPreferred(_30, _30.minID === minID),
-    //         45: markPreferred(_45, _45.minID === minID),
-    //         60: markPreferred(_60, _60.minID === minID),
-    //         90: markPreferred(_90, _90.minID === minID),
-    //         radial: markPreferred(radial, radial.minID === minID),
-    //     };
-    // }, [layoutInputsDefined, OTLtoShell, tubeOD, pitchRatio, minTubes]);
 
     const callSetFunc = (name: string, value: string) => {
         if (!(name in stateFuncs)) {
@@ -345,8 +390,7 @@ const App = () => {
             name = e.currentTarget.name;
 
         // An intentionally emptied field should stay empty rather than bounce
-        // back to its last committed value (which happens if we bail out here
-        // without ever telling React the field is now blank).
+        // back to its last committed value.
         if (val.trim() === "") {
             callSetFunc(`set${utils.capitalize(name)}`, val);
             return;
@@ -536,7 +580,7 @@ const App = () => {
 
     // Validation
     useEffect(() => {
-        console.log("calling validateLayoutInputs");
+        // console.log("calling validateLayoutInputs");
         validateLayoutInputs();
     }, [validateLayoutInputs]);
 
@@ -548,19 +592,19 @@ const App = () => {
                 case "setPitchRatioFromTubeClearance":
                     value = tubeClearance;
                     if (utils.isNumber(value)) {
-                        console.log("setting pitch ratio from tube clearance");
+                        // console.log("setting pitch ratio from tube clearance");
                         setPitchRatioFromTubeClearance(value);
                     }
                     break;
                 case "setTubeClearanceFromPitchRatio":
                     value = pitchRatio;
                     if (utils.isNumber(value)) {
-                        console.log("setting tube clearance from pitch ratio");
+                        // console.log("setting tube clearance from pitch ratio");
                         setTubeClearanceFromPitchRatio(value);
                     }
                     break;
             }
-            console.log("calling requestAllLayoutResults");
+            // console.log("calling requestAllLayoutResults");
             if (layoutInputsDefined) {
                 requestAllLayoutResults();
             }
@@ -579,7 +623,7 @@ const App = () => {
     // Actual tubes calculation (only when layout option is selected and shell ID is defined)
     useEffect(() => {
         if (!utils.isNumber(layoutOption)) {
-            console.log("Layout option not yet selected.");
+            // console.log("Layout option not yet selected.");
             return;
         }
 
@@ -641,6 +685,7 @@ const App = () => {
                                     className="value-input"
                                     id="minTubes"
                                     name="minTubes"
+                                    readOnly={isCalculating}
                                     type="text"
                                     autoComplete="off"
                                     placeholder="e.g. 100"
@@ -671,6 +716,7 @@ const App = () => {
                                     className="value-input"
                                     id="tubeOD"
                                     name="tubeOD"
+                                    readOnly={isCalculating}
                                     type="text"
                                     autoComplete="off"
                                     placeholder="> 0"
@@ -702,6 +748,7 @@ const App = () => {
                                     className="value-input"
                                     id="OTLtoShell"
                                     name="OTLtoShell"
+                                    readOnly={isCalculating}
                                     type="text"
                                     autoComplete="off"
                                     placeholder="Shell ID – OTL, ≥ 0"
@@ -733,6 +780,7 @@ const App = () => {
                                     className="value-input"
                                     id="tubeClearance"
                                     name="tubeClearance"
+                                    readOnly={isCalculating}
                                     type="text"
                                     autoComplete="off"
                                     placeholder="≥ 0"
@@ -770,6 +818,7 @@ const App = () => {
                                     className="value-input"
                                     id="pitchRatio"
                                     name="pitchRatio"
+                                    readOnly={isCalculating}
                                     type="text"
                                     autoComplete="off"
                                     placeholder="≥ 1"
@@ -799,6 +848,7 @@ const App = () => {
                                     className="value-input"
                                     id="shellID"
                                     name="shellID"
+                                    readOnly={isCalculating}
                                     type="text"
                                     autoComplete="off"
                                     placeholder="Optional override"
@@ -823,7 +873,7 @@ const App = () => {
                             <label className="field-label" htmlFor="actualTubes">
                                 Actual number of tubes
                             </label>
-                            <div className="input-group">
+                            <div className="input-group calculated-field">
                                 <IMaskInput
                                     className="value-input"
                                     id={"actualTubes"}
@@ -854,6 +904,7 @@ const App = () => {
                             className="layout-grid"
                             role="radiogroup"
                             aria-label="Tube layout angle"
+                            aria-busy={isCalculating}
                         >
                             <label
                                 className={`layout-tile ${layoutResults[30]?.preferred ? "preferred" : ""}`}
@@ -865,6 +916,7 @@ const App = () => {
                                     name="layoutOption"
                                     value="30"
                                     onChange={onLayoutOptionChange}
+                                    disabled={isCalculating}
                                     required
                                 />
                                 <span className="tile-angle">30°</span>
@@ -905,6 +957,7 @@ const App = () => {
                                     name="layoutOption"
                                     value="45"
                                     onChange={onLayoutOptionChange}
+                                    disabled={isCalculating}
                                 />
                                 <span className="tile-angle">45°</span>
                                 <span className="tile-stats">
@@ -946,6 +999,7 @@ const App = () => {
                                     name="layoutOption"
                                     value="60"
                                     onChange={onLayoutOptionChange}
+                                    disabled={isCalculating}
                                 />
                                 <span className="tile-angle">60°</span>
                                 <span className="tile-stats">
@@ -987,6 +1041,7 @@ const App = () => {
                                     name="layoutOption"
                                     value="90"
                                     onChange={onLayoutOptionChange}
+                                    disabled={isCalculating}
                                 />
                                 <span className="tile-angle">90°</span>
                                 <span className="tile-stats">
@@ -1028,6 +1083,7 @@ const App = () => {
                                     name="layoutOption"
                                     value="0"
                                     onChange={onLayoutOptionChange}
+                                    disabled={isCalculating}
                                 />
                                 <span className="tile-angle">Radial</span>
                                 <span className="tile-stats">
@@ -1096,12 +1152,28 @@ const App = () => {
             <div className="column-pane right">
                 <div className={`viewport ${showGrid ? "" : "grid-hidden"}`}>
                     <span className="viewport-label noselect">Layout Preview</span>
-                    <span
-                        className={`loading-overlay noselect ${isCalculating ? "visible" : ""}`}
-                        role="status"
-                        aria-live="polite"
-                    >
-                        Calculating Layout...
+                    {calcError ? (
+                        <span className="loading-overlay error visible noselect" aria-hidden="true">
+                            Calculation failed
+                        </span>
+                    ) : (
+                        <span
+                            className={`loading-overlay noselect${showLoadingBadge ? " visible" : ""}`}
+                            aria-hidden="true"
+                        >
+                            Calculating Layout
+                            <span className="loading-dots" aria-hidden="true">
+                                <span />
+                                <span />
+                                <span />
+                            </span>
+                        </span>
+                    )}
+                    {/* Visually hidden; carries the calculating/updated/error
+                        status to screen readers independently of the badge
+                        above, so completion (not just the start) is announced. */}
+                    <span className="hidden" role="status" aria-live="polite">
+                        {announcement}
                     </span>
                     <span className="reg-tl" aria-hidden="true" />
                     <span className="reg-tr" aria-hidden="true" />

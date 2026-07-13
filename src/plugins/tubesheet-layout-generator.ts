@@ -132,7 +132,7 @@ export class TubeSheet {
     }
 
     private updateGeneratedProps() {
-        console.log("Updating generated properties");
+        // console.log("Updating generated properties");
         this._minID = this.minIDFunc();
         this._numTubes = this.numTubesFunc();
         this._tubeField = this.tubeFieldFunc();
@@ -304,7 +304,7 @@ const generateTubeField = memoize(
         layout: TubeSheetLayout,
         offsetOption: boolean | "AUTO" = "AUTO",
     ): TubeField | null => {
-        console.log("Generating tube field");
+        // console.log("Generating tube field");
         try {
             if (shellID <= 0) {
                 throw new Error("Shell ID must be greater than 0");
@@ -845,7 +845,7 @@ const findMinID = memoize(
                         } else {
                             // Average the last two guesses if one is more and one is less
                             D_new = (D_new + D_old) / 2;
-                            console.log(`Averaging guesses`);
+                            // console.log(`Averaging guesses`);
                         }
 
                         numTubes_old = tubeCount(
@@ -899,7 +899,7 @@ const findMinID = memoize(
                         );
                     }
 
-                    console.log("Heuristic failed to converge. Falling back to bisection method.");
+                    // console.log("Heuristic failed to converge. Falling back to bisection method.");
 
                     // Bisection fallback if heuristic fails to converge
                     const minValidID = tubeOD + OTLClearance + Math.pow(10, -DECIMAL_PLACES);

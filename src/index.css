@@ -270,7 +270,6 @@ input[type="text"]:focus {
 input[type="text"]:read-only {
   color: var(--input-readonly-text);
   background-color: var(--input-readonly-background);
-  border-style: dashed;
 }
 
 .input-group > .units {
@@ -624,6 +623,49 @@ footer a {
 
 .loading-overlay.visible {
   opacity: 1;
+}
+
+.loading-overlay.error {
+  color: var(--redline);
+  border-color: var(--redline);
+}
+
+.loading-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.loading-dots span {
+  width: 3px;
+  height: 3px;
+
+  background-color: currentColor;
+  border-radius: 50%;
+
+  animation: loading-dots-pulse 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes loading-dots-pulse {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.25;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .noselect {
