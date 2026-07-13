@@ -319,6 +319,27 @@ input.calculated-field[type="text"]:read-only {
   box-shadow: 0 0 0 3px var(--preferred);
 }
 
+.layout-tile .tile-badge {
+  position: absolute;
+  z-index: 1;
+  right: 8px;
+  bottom: 7px;
+
+  display: inline-flex;
+
+  color: var(--preferred);
+
+  opacity: 0.55;
+}
+
+.layout-tile .tile-badge svg {
+  display: block;
+}
+
+.layout-tile:hover .tile-badge {
+  opacity: 0.9;
+}
+
 .layout-tile:has(input:disabled) {
   cursor: default;
   opacity: 0.4;

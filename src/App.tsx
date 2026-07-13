@@ -9,6 +9,7 @@ import {
 import { TubeSheetSVG } from "./components/TubeSheetSVG";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
+import { ReactComponent as StarIcon } from "./assets/star.svg";
 import "./index.css";
 
 type LayoutResults = {
@@ -917,6 +918,17 @@ const App = () => {
                                 className={`layout-tile ${layoutResults[30]?.preferred ? "preferred" : ""}`}
                                 htmlFor="30deg"
                             >
+                                {layoutResults[30]?.preferred && (
+                                    <span
+                                        className="tile-badge"
+                                        title="Lowest minimum shell ID among the calculated layouts"
+                                    >
+                                        <StarIcon width="10" height="10" aria-hidden="true" />
+                                        <span className="hidden">
+                                            Preferred layout (lowest minimum shell ID)
+                                        </span>
+                                    </span>
+                                )}
                                 <input
                                     type="radio"
                                     id="30deg"
@@ -958,6 +970,17 @@ const App = () => {
                                 className={`layout-tile ${layoutResults[45]?.preferred ? "preferred" : ""}`}
                                 htmlFor="45deg"
                             >
+                                {layoutResults[45]?.preferred && (
+                                    <span
+                                        className="tile-badge"
+                                        title="Lowest minimum shell ID among the calculated layouts"
+                                    >
+                                        <StarIcon width="10" height="10" aria-hidden="true" />
+                                        <span className="hidden">
+                                            Preferred layout (lowest minimum shell ID)
+                                        </span>
+                                    </span>
+                                )}
                                 <input
                                     type="radio"
                                     id="45deg"
@@ -1000,6 +1023,17 @@ const App = () => {
                                 className={`layout-tile ${layoutResults[60]?.preferred ? "preferred" : ""}`}
                                 htmlFor="60deg"
                             >
+                                {layoutResults[60]?.preferred && (
+                                    <span
+                                        className="tile-badge"
+                                        title="Lowest minimum shell ID among the calculated layouts"
+                                    >
+                                        <StarIcon width="10" height="10" aria-hidden="true" />
+                                        <span className="hidden">
+                                            Preferred layout (lowest minimum shell ID)
+                                        </span>
+                                    </span>
+                                )}
                                 <input
                                     type="radio"
                                     id="60deg"
@@ -1042,6 +1076,17 @@ const App = () => {
                                 className={`layout-tile ${layoutResults[90]?.preferred ? "preferred" : ""}`}
                                 htmlFor="90deg"
                             >
+                                {layoutResults[90]?.preferred && (
+                                    <span
+                                        className="tile-badge"
+                                        title="Lowest minimum shell ID among the calculated layouts"
+                                    >
+                                        <StarIcon width="10" height="10" aria-hidden="true" />
+                                        <span className="hidden">
+                                            Preferred layout (lowest minimum shell ID)
+                                        </span>
+                                    </span>
+                                )}
                                 <input
                                     type="radio"
                                     id="90deg"
@@ -1084,6 +1129,17 @@ const App = () => {
                                 className={`layout-tile ${layoutResults.radial?.preferred ? "preferred" : ""}`}
                                 htmlFor="radial"
                             >
+                                {layoutResults.radial?.preferred && (
+                                    <span
+                                        className="tile-badge"
+                                        title="Lowest minimum shell ID among the calculated layouts"
+                                    >
+                                        <StarIcon width="10" height="10" aria-hidden="true" />
+                                        <span className="hidden">
+                                            Preferred layout (lowest minimum shell ID)
+                                        </span>
+                                    </span>
+                                )}
                                 <input
                                     type="radio"
                                     id="radial"
