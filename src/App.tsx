@@ -379,13 +379,8 @@ const App = () => {
         [tubeOD],
     );
 
-    // Prevent react-imask's own commit logic for a Number mask with "min"
-    // revert a field back to its last valid value once on loss of focus
-    // before our onBlur handler runs. onAccept fires on every internal
-    // value change including the moment the field becomes empty,
-    // Use it to commit "empty" to state immediately. By the time blur
-    // happens, the controlled value prop is already blank and there's
-    // nothing left for IMask to revert to.
+    // Prevent IMask from reverting emptied inputs before 'onBlur'.
+    // Use 'onAccept' to commit an empty value immediately.
     const onAcceptEmpty = (value: string, name: string) => {
         if (value.trim() === "") {
             callSetFunc(`set${utils.capitalize(name)}`, "");
@@ -443,19 +438,8 @@ const App = () => {
         e.preventDefault();
     };
 
-    // Intercept Enter, stop the native submit, commit the value the
-    // same way onBlur would, and then — if the inputs are now fully valid —
-    // trigger the drawing calculation immediately.
-    //
-    // onBlur()'s setState calls are async, so OTLtoShell/tubeOD/etc. in this
-    // closure still hold their *previous* render's values right after calling
-    // it — calling triggerSingleCalculation() with no overrides here would
-    // silently send the old, pre-edit values to the worker (the calculation
-    // "completes", but visibly nothing changes until state catches up on the
-    // NEXT keystroke). We build a same-tick snapshot of the six inputs and
-    // pass it straight through as overrides instead of relying on state.
-    // tubeClearance and pitchRatio are mutually derived, so whichever one
-    // wasn't just typed is recomputed the same way the app already does.
+    // Handle Enter/Tab: commit the field (like onBlur) and, if valid,
+    // trigger a calculation using a same-tick snapshot to avoid stale state.
     const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key !== "Enter" && e.key !== "NumpadEnter" && e.key !== "Tab") {
             return;
@@ -478,14 +462,20 @@ const App = () => {
             shellID,
         };
 
-        // Nothing to recalculate if this field's value wasn't actually
-        // changed — e.g. tabbing/entering through a field without editing it.
-        // Without this check, every Tab/Enter re-locked all six fields
-        // (readOnly follows isCalculating) and re-ran a full recompute + SVG
-        // regen even when nothing changed; rapid or held Tab could queue up
-        // several of these back to back and visibly stall the page, since
-        // the SVG is regenerated on the main thread.
-        if (committed === currentValues[name]) {
+        const currentValue = currentValues[name];
+        const unchanged = (() => {
+            // For `tubeClearance` and `pitchRatio` compare values at
+            // display precision (2 decimals).
+            if (name === "tubeClearance" || name === "pitchRatio") {
+                if (utils.isNumber(committed) && utils.isNumber(currentValue)) {
+                    return utils.trunc(currentValue, 2) === utils.trunc(committed, 2);
+                }
+                return committed === currentValue;
+            }
+            return committed === currentValue;
+        })();
+
+        if (unchanged) {
             onBlur(e);
             return;
         }
@@ -505,6 +495,7 @@ const App = () => {
             nextTubeClearance = (committed - 1) * tubeOD;
         }
 
+        // Nothing to recalculate if this field's value is unchanged.
         const next = {
             minTubes: name === "minTubes" ? committed : minTubes,
             tubeOD: name === "tubeOD" ? committed : tubeOD,
@@ -1199,9 +1190,7 @@ const App = () => {
                             </span>
                         </span>
                     )}
-                    {/* Visually hidden; carries the calculating/updated/error
-                        status to screen readers independently of the badge
-                        above, so completion (not just the start) is announced. */}
+                    {/* Calculating/updated/error status for screen readers */}
                     <span className="hidden" role="status" aria-live="polite">
                         {announcement}
                     </span>
