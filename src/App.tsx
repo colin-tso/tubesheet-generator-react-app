@@ -10,6 +10,7 @@ import { TubeSheetSVG } from "./components/TubeSheetSVG";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import { ReactComponent as StarIcon } from "./assets/star.svg";
+import { ReactComponent as GridIcon } from "./assets/grid-icon.svg";
 import "./index.css";
 
 type LayoutResults = {
@@ -1247,13 +1248,7 @@ const App = () => {
                         aria-pressed={showGrid}
                         title={showGrid ? "Hide Grid" : "Show Grid"}
                     >
-                        <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-                            <rect x="1" y="1" width="14" height="14" rx="1" />
-                            <line x1="1" y1="6" x2="15" y2="6" />
-                            <line x1="1" y1="11" x2="15" y2="11" />
-                            <line x1="6" y1="1" x2="6" y2="15" />
-                            <line x1="11" y1="1" x2="11" y2="15" />
-                        </svg>
+                        <GridIcon width="13" height="13" aria-hidden="true" />
                         Grid
                     </button>
                     <TubeSheetSVG
