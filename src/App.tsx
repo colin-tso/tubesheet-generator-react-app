@@ -316,7 +316,7 @@ const App = () => {
     const validateLayoutOption = useCallback(() => {
         const valid = utils.isNumber(layoutOption);
         setLayoutOptionSelected(valid);
-        console.log(`Layout option validated: ${valid}`);
+        // console.log(`Layout option validated: ${valid}`);
     }, [layoutOption]);
 
     const validateLayoutInputs = useCallback(() => {
@@ -601,7 +601,7 @@ const App = () => {
     useEffect(() => {
         // console.log("calling validateLayoutInputs");
         validateLayoutInputs();
-        console.log("calling validateLayoutOption");
+        // console.log("calling validateLayoutOption");
         validateLayoutOption();
     }, [validateLayoutInputs, validateLayoutOption]);
 
