@@ -469,6 +469,27 @@ const App = () => {
         const raw = e.currentTarget.value.replace(",", "");
         const committed = utils.isNumber(raw) ? utils.stringToNumber(raw) : undefined;
 
+        const currentValues: Record<string, number | undefined> = {
+            minTubes,
+            tubeOD,
+            OTLtoShell,
+            tubeClearance,
+            pitchRatio,
+            shellID,
+        };
+
+        // Nothing to recalculate if this field's value wasn't actually
+        // changed — e.g. tabbing/entering through a field without editing it.
+        // Without this check, every Tab/Enter re-locked all six fields
+        // (readOnly follows isCalculating) and re-ran a full recompute + SVG
+        // regen even when nothing changed; rapid or held Tab could queue up
+        // several of these back to back and visibly stall the page, since
+        // the SVG is regenerated on the main thread.
+        if (committed === currentValues[name]) {
+            onBlur(e);
+            return;
+        }
+
         onBlur(e);
 
         let nextPitchRatio = name === "pitchRatio" ? committed : pitchRatio;
