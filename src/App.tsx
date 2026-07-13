@@ -137,12 +137,9 @@ const App = () => {
 
     // Refs
     const hasRenderedOnceRef = useRef(false);
-    // CALCULATE_ALL (tile stats) and CALCULATE_SINGLE (the drawing) can both
-    // be in flight at once, each clearing isCalculating only once ITS OWN
-    // result has actually committed to the DOM (see the layoutResults effect
-    // and onDrawingRendered below). A single boolean can't represent "two
-    // independent things are pending", so a count is kept instead — isCalculating
-    // only goes false once every outstanding request has actually rendered.
+    // Multiple calculation types (ALL and SINGLE) can run concurrently.
+    // Use "pendingCompletionsRef" as a counter so "isCalculating" only
+    // clears when all outstanding requests have finished rendering.
     const pendingCompletionsRef = useRef(0);
     const beginCalculation = () => {
         pendingCompletionsRef.current += 1;
@@ -176,16 +173,14 @@ const App = () => {
             const { type, payload } = event.data;
 
             if (type === "ALL_RESULTS") {
-                // isCalculating is intentionally NOT cleared here — the effect
-                // keyed on layoutResults clears it only once the new tile
-                // stats have  committed to the DOM
+                // Don't clear "isCalculating" here. The layoutResults effect
+                // will clear it after the results commit to the DOM.
                 setLayoutResults(payload);
             }
 
             if (type === "SINGLE_RESULT") {
-                // Take the raw data payload and generate the SVG purely on the main thread.
-                // isCalculating is NOT cleared here — TubeSheetSVG onRendered callback
-                // clears it once rendred to DOM.
+                // Generate the SVG on the main thread. TubeSheetSVG's onRendered
+                // callback will clear "isCalculating" after it renders.
                 setCalcError(null);
                 setDrawingSVG(generateTubeSheetSVG(payload));
 
@@ -199,13 +194,10 @@ const App = () => {
                 console.error("Worker Error:", payload);
                 setCalcError(typeof payload === "string" ? payload : "Calculation failed.");
                 setAnnouncement(`Calculation failed: ${payload}`);
-                // An error is a definitive stop for whichever request(s) were
-                // outstanding — neither will post a normal completion, so drop
-                // the count to zero rather than leaving isCalculating stuck.
+                // Drop the count to zero on error and reset isCalculating.
+                // Hide loading badge immediately, since the error is already announced.
                 pendingCompletionsRef.current = 0;
                 setIsCalculating(false);
-                // Swap to the error badge right away instead of waiting out
-                // the loading badge's minimum-visible duration.
                 loadingShownAtRef.current = null;
                 setShowLoadingBadge(false);
             }
@@ -251,14 +243,12 @@ const App = () => {
         return () => clearTimeout(hideTimer);
     }, [isCalculating]);
 
-    // Fires after React has actually committed the render reflecting the new
-    // layoutResults.
+    // Fires after React has committed the render reflecting the new layoutResults.
     useEffect(() => {
         completeCalculation();
     }, [layoutResults]);
 
-    // Stable identity so TubeSheetSVG's effect (keyed on this + src) only
-    // re-runs when the drawing itself actually changes, not on every render.
+    // Keep a stable identity so TubeSheetSVG only reruns when the drawing changes.
     const onDrawingRendered = useCallback(() => {
         completeCalculation();
 
@@ -464,7 +454,7 @@ const App = () => {
 
         const currentValue = currentValues[name];
         const unchanged = (() => {
-            // For `tubeClearance` and `pitchRatio` compare values at
+            // For "tubeClearance" and "pitchRatio", compare values at
             // display precision (2 decimals).
             if (name === "tubeClearance" || name === "pitchRatio") {
                 if (utils.isNumber(committed) && utils.isNumber(currentValue)) {
@@ -559,12 +549,8 @@ const App = () => {
             return;
         }
 
-        // navigator.clipboard.write() must be called synchronously within the
-        // click's user-activation window, or Safari (and older Firefox) will
-        // reject it — but the image data itself takes a moment to render.
-        // Passing still-pending Promises as the ClipboardItem's values is the
-        // supported way to bridge that gap; Chrome, Firefox 127+, and Safari
-        // all honor it.
+        // Clipboard writes must occur during user activation. Pass pending
+        // Promises to "ClipboardItem" so browsers accept async image data.
         const { svgString } = sizedSvgString(drawingSVG);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
         const pngPromise = svgToPngBlob(drawingSVG);
@@ -641,7 +627,7 @@ const App = () => {
         requestAllLayoutResults,
     ]);
 
-    // Actual tubes calculation (only when layout option is selected and shell ID is defined)
+    // Actual tubes calculation only when layout option is selected and shell ID is defined
     useEffect(() => {
         if (!utils.isNumber(layoutOption)) {
             // console.log("Layout option not yet selected.");
