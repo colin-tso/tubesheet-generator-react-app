@@ -1126,13 +1126,13 @@ const App = () => {
                         </div>
                     </div>
 
-                    {/* <button
+                    <button
                         type="submit"
                         className="generate-button"
                         disabled={!layoutInputsDefined || !layoutOptionSelected}
                     >
                         Regenerate Drawing
-                    </button> */}
+                    </button>
                 </div>
 
                 <div className="form-footer">
