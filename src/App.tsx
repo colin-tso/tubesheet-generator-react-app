@@ -19,16 +19,16 @@ type LayoutResults = {
     radial: (ITubeSheetData & { preferred: boolean }) | null;
 };
 
-// const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
+const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
 const emptyData: ITubeSheetData = {
-    tubeField: [],
-    OTL: null,
-    shellID: 100,
-    minID: null,
-    tubeOD: 1,
-    pitchRatio: 30,
-    layout: 30,
-    numTubes: null,
+    tubeField: emptyTubeSheet.tubeField,
+    OTL: emptyTubeSheet.OTL,
+    shellID: emptyTubeSheet.shellID,
+    minID: emptyTubeSheet.minID,
+    tubeOD: emptyTubeSheet.tubeOD,
+    pitchRatio: emptyTubeSheet.pitchRatio,
+    layout: emptyTubeSheet.layout,
+    numTubes: emptyTubeSheet.numTubes,
 };
 const placeholderSVG = generateTubeSheetSVG(emptyData);
 
