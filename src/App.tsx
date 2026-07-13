@@ -882,9 +882,9 @@ const App = () => {
                             <label className="field-label" htmlFor="actualTubes">
                                 Actual number of tubes
                             </label>
-                            <div className="input-group calculated-field">
+                            <div className="input-group">
                                 <IMaskInput
-                                    className="value-input"
+                                    className="value-input calculated-field"
                                     id={"actualTubes"}
                                     name={"actualTubes"}
                                     type="text"
