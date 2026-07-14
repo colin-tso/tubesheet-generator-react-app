@@ -1,15 +1,21 @@
 {
   "files": {
-    "main.css": "/tubesheet-generator-react-app/static/css/main.37b78775.css",
-    "main.js": "/tubesheet-generator-react-app/static/js/main.e885a676.js",
-    "static/media/sun.svg": "/tubesheet-generator-react-app/static/media/sun.936ada37476a20e049f326fc6bf4982c.svg",
+    "main.css": "/tubesheet-generator-react-app/static/css/main.b3ae546a.css",
+    "main.js": "/tubesheet-generator-react-app/static/js/main.6dc2fd69.js",
+    "static/js/882.1ce45598.chunk.js": "/tubesheet-generator-react-app/static/js/882.1ce45598.chunk.js",
     "index.html": "/tubesheet-generator-react-app/index.html",
+    "static/media/copy-icon.svg": "/tubesheet-generator-react-app/static/media/copy-icon.86a478874e7643d87df6a97b7782746f.svg",
+    "static/media/sun.svg": "/tubesheet-generator-react-app/static/media/sun.936ada37476a20e049f326fc6bf4982c.svg",
     "static/media/moon.svg": "/tubesheet-generator-react-app/static/media/moon.251d6c454a598f6b0c41322989474659.svg",
-    "main.37b78775.css.map": "/tubesheet-generator-react-app/static/css/main.37b78775.css.map",
-    "main.e885a676.js.map": "/tubesheet-generator-react-app/static/js/main.e885a676.js.map"
+    "static/media/grid-icon.svg": "/tubesheet-generator-react-app/static/media/grid-icon.1f2a7b19c7f725bae59d9090943716b5.svg",
+    "static/media/save-icon.svg": "/tubesheet-generator-react-app/static/media/save-icon.694476f29e551ad84b469b20a3bf64a8.svg",
+    "static/media/star.svg": "/tubesheet-generator-react-app/static/media/star.c2777c85e4fd530f84a1da385d2023b3.svg",
+    "main.b3ae546a.css.map": "/tubesheet-generator-react-app/static/css/main.b3ae546a.css.map",
+    "main.6dc2fd69.js.map": "/tubesheet-generator-react-app/static/js/main.6dc2fd69.js.map",
+    "882.1ce45598.chunk.js.map": "/tubesheet-generator-react-app/static/js/882.1ce45598.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.37b78775.css",
-    "static/js/main.e885a676.js"
+    "static/css/main.b3ae546a.css",
+    "static/js/main.6dc2fd69.js"
   ]
 }
