@@ -688,7 +688,7 @@ footer a {
   pointer-events: none;
 
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
@@ -853,13 +853,79 @@ footer a {
     height: 70vh;
     padding: 28px;
   }
-  .layout-grid {
-    grid-template-columns: repeat(3, 1fr);
+  .tubesheet-svg {
+    max-height: calc(70vh - 56px);
+  }
+  /* Move the badge up under the "Layout Preview" */
+  .loading-overlay {
+    top: 52px;
+    bottom: auto;
   }
 }
 
 @media screen and (max-width: 480px) {
-  .layout-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .layout-row,
+  .layout-list-header {
+    grid-template-columns: 16px 44px 1fr auto;
+    gap: 8px;
+  }
+  .layout-row {
+    padding: 8px;
+  }
+
+  .viewport-label {
+    top: 14px;
+    font-size: 9.5px;
+  }
+
+  .grid-toggle {
+    top: 12px;
+    right: 12px;
+    padding: 4px 7px;
+    font-size: 9.5px;
+  }
+
+  .reg-tl,
+  .reg-tr,
+  .reg-bl,
+  .reg-br {
+    width: 16px;
+    height: 16px;
+  }
+  .reg-tl {
+    top: 10px;
+    left: 10px;
+  }
+  .reg-tr {
+    top: 10px;
+    right: 10px;
+  }
+  .reg-bl {
+    bottom: 10px;
+    left: 10px;
+  }
+  .reg-br {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .loading-overlay {
+    top: 40px;
+  }
+
+  /* Stack the action buttons on mobile */
+  .viewport-actions {
+    right: 14px;
+    bottom: 14px;
+
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .save-button,
+  .copy-button {
+    padding: 8px 12px;
+    font-size: 11.5px;
   }
 }
