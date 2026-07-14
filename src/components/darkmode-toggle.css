@@ -21,7 +21,8 @@
   --blue-bright-light: hsl(214, 68%, 42%);
   --blue-tint-light: hsl(214, 62%, 95%);
   --blue-glow-light: hsl(214, 68%, 42%, 22%);
-  --redline-light: hsl(16, 74%, 42%);
+  --redline-light: hsl(0, 74%, 42%);
+  --preferred-light: hsl(214, 68%, 42%);
 
   /* Dark — blueprint navy */
   --paper-dark: hsl(212, 32%, 9%);
@@ -39,7 +40,8 @@
   --blue-bright-dark: hsl(212, 84%, 76%);
   --blue-tint-dark: hsl(212, 50%, 18%);
   --blue-glow-dark: hsl(212, 84%, 68%, 22%);
-  --redline-dark: hsl(20, 84%, 66%);
+  --redline-dark: hsl(0, 84%, 66%);
+  --preferred-dark: hsl(212, 84%, 76%);
 
   --paper: light-dark(var(--paper-light), var(--paper-dark));
   --panel: light-dark(var(--panel-light), var(--panel-dark));
@@ -57,6 +59,7 @@
   --blue-tint: light-dark(var(--blue-tint-light), var(--blue-tint-dark));
   --blue-glow: light-dark(var(--blue-glow-light), var(--blue-glow-dark));
   --redline: light-dark(var(--redline-light), var(--redline-dark));
+  --preferred: light-dark(var(--preferred-light), var(--preferred-dark));
 
   --toggle-scale: 0.4;
 }
