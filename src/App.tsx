@@ -1036,10 +1036,11 @@ const App = () => {
                         </div>
                     </div>
 
+                    {/* Disabled while a calculation is in flight */}
                     <button
                         type="submit"
                         className="generate-button"
-                        disabled={!layoutInputsDefined || !layoutOptionSelected}
+                        disabled={!layoutInputsDefined || !layoutOptionSelected || isCalculating}
                     >
                         Regenerate Drawing
                     </button>
