@@ -811,11 +811,6 @@ footer a {
   background-color: var(--blue);
 }
 
-.save-button::before {
-  content: "↓";
-  font-family: var(--font-monochrome-emoji);
-}
-
 .copy-button {
   color: var(--ink);
   background-color: var(--panel);
@@ -826,11 +821,6 @@ footer a {
 .copy-button:hover {
   color: var(--blue);
   border-color: var(--blue);
-}
-
-.copy-button::before {
-  content: "⧉";
-  font-family: var(--font-monochrome-emoji);
 }
 
 /* ============================================================

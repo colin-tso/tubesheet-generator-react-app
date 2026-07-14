@@ -11,6 +11,8 @@ import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import { ReactComponent as StarIcon } from "./assets/star.svg";
 import { ReactComponent as GridIcon } from "./assets/grid-icon.svg";
+import { ReactComponent as SaveIcon } from "./assets/save-icon.svg";
+import { ReactComponent as CopyIcon } from "./assets/copy-icon.svg";
 import "./index.css";
 
 type LayoutResults = {
@@ -1111,6 +1113,7 @@ const App = () => {
                     />
                     <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
                         <button className="copy-button" onClick={copySVG} type="button">
+                            <CopyIcon width="15" height="15" aria-hidden="true" />
                             {copyState === "copied"
                                 ? "Copied!"
                                 : copyState === "error"
@@ -1120,6 +1123,7 @@ const App = () => {
                                     : "Copy Image"}
                         </button>
                         <button className="save-button" onClick={downloadSVG} type="button">
+                            <SaveIcon width="15" height="15" aria-hidden="true" />
                             Save Image
                         </button>
                     </div>
