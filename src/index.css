@@ -822,6 +822,50 @@ footer a {
   color: var(--blue);
   border-color: var(--blue);
 }
+/* ============================================================
+   Context Menu (drawing canvas)
+   ============================================================ */
+
+.context-menu {
+  position: absolute;
+  z-index: 50;
+
+  min-width: 150px;
+  margin: 0,;
+  padding: 4px 0;
+
+  font-size: 12.5px;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  list-style: none;
+
+  background-color: var(--panel);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 10px -1px var(--box-shadow-1), 0 15px 20px -1px var(--box-shadow-2);
+}
+
+.context-menu > li {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px 15px;
+}
+
+.context-menu-divider {
+  margin: 4px 0;
+  border-top: 1.5px solid var(--line);
+}
+
+.context-menu-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 15px;
+  height: 15px;
+  margin-right: 10px;
+}
 
 /* ============================================================
    Responsive layout - stack panels on narrow viewports
