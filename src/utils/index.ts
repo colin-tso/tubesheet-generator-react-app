@@ -31,4 +31,7 @@ export const utils = {
     stringToNumber(x: string) {
         return parseFloat(x.replace(",", ""));
     },
+    symlog(x: number, c: number = 1) {
+        return Math.sign(x) * Math.log10(Math.abs(x) / c + 1);
+    },
 };

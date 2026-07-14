@@ -663,6 +663,44 @@ const App = () => {
     // Force refresh when actual tubes are calculated
     useEffect(() => {}, [actualTubes]);
 
+    // Layout option rows, driven from data so Min ID values line up in a
+    // single column and can be compared at a glance, with a relative bar
+    // (scaled across the currently calculated results) as a visual cue.
+    const layoutOptionRows: {
+        key: keyof LayoutResults;
+        id: string;
+        label: string;
+        value: string;
+        required?: boolean;
+    }[] = [
+        { key: 30, id: "30deg", label: "30°", value: "30", required: true },
+        { key: 45, id: "45deg", label: "45°", value: "45" },
+        { key: 60, id: "60deg", label: "60°", value: "60" },
+        { key: 90, id: "90deg", label: "90°", value: "90" },
+        { key: "radial", id: "radial", label: "Radial", value: "0" },
+    ];
+
+    const definedMinIDs = layoutOptionRows
+        .map((row) => layoutResults[row.key]?.minID)
+        .filter((v): v is number => utils.isNumber(v));
+    const minIDFloor = definedMinIDs.length ? Math.min(...definedMinIDs) : undefined;
+    const minIDCeiling = definedMinIDs.length ? Math.max(...definedMinIDs) : undefined;
+
+    // Shortest bar = lowest (preferred) Min ID. Floors at 12% so every
+    // calculated option still shows a visible sliver, not a blank track.
+    const minIDBarLogPercent = (value: number | undefined) => {
+        if (!utils.isNumber(value) || minIDFloor === undefined || minIDCeiling === undefined) {
+            return 0;
+        }
+        if (minIDCeiling === minIDFloor) {
+            return 100;
+        }
+        const c = 150;
+        const logRatio =
+            utils.symlog(value - minIDFloor, c) / utils.symlog(minIDCeiling - minIDFloor, c);
+        return Math.max(12, 12 + logRatio * 88);
+    };
+
     // JSX return
     return (
         <div className="row-pane">
@@ -909,275 +947,90 @@ const App = () => {
 
                     <div className="section">
                         <h2>Layout Options</h2>
+                        <div className="layout-list-header" aria-hidden="true">
+                            <span />
+                            <span />
+                            <span />
+                            <span className="header-stats">
+                                <span className="header-minid">ID (mm)</span>
+                                <span className="header-tubes">Tubes</span>
+                            </span>
+                        </div>
                         <div
-                            className="layout-grid"
+                            className="layout-list"
                             role="radiogroup"
                             aria-label="Tube layout angle"
                             aria-busy={isCalculating}
                         >
-                            <label
-                                className={`layout-tile ${layoutResults[30]?.preferred ? "preferred" : ""}`}
-                                htmlFor="30deg"
-                            >
-                                {layoutResults[30]?.preferred && (
-                                    <span
-                                        className="tile-badge"
-                                        title="Lowest minimum shell ID among the calculated layouts"
-                                    >
-                                        <StarIcon width="10" height="10" aria-hidden="true" />
-                                        <span className="hidden">
-                                            Preferred layout (lowest minimum shell ID)
-                                        </span>
-                                    </span>
-                                )}
-                                <input
-                                    type="radio"
-                                    id="30deg"
-                                    name="layoutOption"
-                                    value="30"
-                                    onChange={onLayoutOptionChange}
-                                    disabled={isCalculating}
-                                    required
-                                />
-                                <span className="tile-angle">30°</span>
-                                <span className="tile-stats">
-                                    <span>
-                                        Min ID{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[30] &&
-                                            layoutResults[30].minID !== null ? (
-                                                utils.numFormat3SigFigs(layoutResults[30].minID)
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                    <span>
-                                        Tubes{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[30] ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults[30].numTubes as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                </span>
-                            </label>
+                            {layoutOptionRows.map(({ key, id, label, value, required }) => {
+                                const result = layoutResults[key];
+                                const minIDValue =
+                                    result && result.minID !== null
+                                        ? (result.minID as number)
+                                        : undefined;
 
-                            <label
-                                className={`layout-tile ${layoutResults[45]?.preferred ? "preferred" : ""}`}
-                                htmlFor="45deg"
-                            >
-                                {layoutResults[45]?.preferred && (
-                                    <span
-                                        className="tile-badge"
-                                        title="Lowest minimum shell ID among the calculated layouts"
+                                return (
+                                    <label
+                                        key={id}
+                                        className={`layout-row ${result?.preferred ? "preferred" : ""}`}
+                                        htmlFor={id}
                                     >
-                                        <StarIcon width="10" height="10" aria-hidden="true" />
-                                        <span className="hidden">
-                                            Preferred layout (lowest minimum shell ID)
-                                        </span>
-                                    </span>
-                                )}
-                                <input
-                                    type="radio"
-                                    id="45deg"
-                                    name="layoutOption"
-                                    value="45"
-                                    onChange={onLayoutOptionChange}
-                                    disabled={isCalculating}
-                                />
-                                <span className="tile-angle">45°</span>
-                                <span className="tile-stats">
-                                    <span>
-                                        Min ID{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[45] &&
-                                            layoutResults[45].minID !== null ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults[45].minID as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
+                                        <input
+                                            type="radio"
+                                            id={id}
+                                            name="layoutOption"
+                                            value={value}
+                                            onChange={onLayoutOptionChange}
+                                            disabled={isCalculating}
+                                            required={required}
+                                        />
+                                        <span className="row-angle">
+                                            {label}
+                                            {result?.preferred && (
+                                                <span
+                                                    className="row-badge"
+                                                    title="Lowest minimum shell ID among the calculated layouts"
+                                                >
+                                                    <StarIcon
+                                                        width="10"
+                                                        height="10"
+                                                        aria-hidden="true"
+                                                    />
+                                                    <span className="hidden">
+                                                        Preferred layout (lowest minimum shell ID)
+                                                    </span>
+                                                </span>
                                             )}
                                         </span>
-                                    </span>
-                                    <span>
-                                        Tubes{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[45] ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults[45].numTubes as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
+                                        <span className="row-bar-track" aria-hidden="true">
+                                            <span
+                                                className="row-bar-fill"
+                                                style={{
+                                                    width: `${minIDBarLogPercent(minIDValue)}%`,
+                                                }}
+                                            />
                                         </span>
-                                    </span>
-                                </span>
-                            </label>
-
-                            <label
-                                className={`layout-tile ${layoutResults[60]?.preferred ? "preferred" : ""}`}
-                                htmlFor="60deg"
-                            >
-                                {layoutResults[60]?.preferred && (
-                                    <span
-                                        className="tile-badge"
-                                        title="Lowest minimum shell ID among the calculated layouts"
-                                    >
-                                        <StarIcon width="10" height="10" aria-hidden="true" />
-                                        <span className="hidden">
-                                            Preferred layout (lowest minimum shell ID)
+                                        <span className="row-stats">
+                                            <span className="row-minid">
+                                                {minIDValue !== undefined ? (
+                                                    utils.numFormat3SigFigs(minIDValue)
+                                                ) : (
+                                                    <span className="empty">—</span>
+                                                )}
+                                            </span>
+                                            <span className="row-tubes">
+                                                {result ? (
+                                                    utils.numFormat3SigFigs(
+                                                        result.numTubes as number,
+                                                    )
+                                                ) : (
+                                                    <span className="empty">—</span>
+                                                )}{" "}
+                                            </span>
                                         </span>
-                                    </span>
-                                )}
-                                <input
-                                    type="radio"
-                                    id="60deg"
-                                    name="layoutOption"
-                                    value="60"
-                                    onChange={onLayoutOptionChange}
-                                    disabled={isCalculating}
-                                />
-                                <span className="tile-angle">60°</span>
-                                <span className="tile-stats">
-                                    <span>
-                                        Min ID{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[60] &&
-                                            layoutResults[60].minID !== null ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults[60].minID as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                    <span>
-                                        Tubes{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[60] ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults[60].numTubes as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                </span>
-                            </label>
-
-                            <label
-                                className={`layout-tile ${layoutResults[90]?.preferred ? "preferred" : ""}`}
-                                htmlFor="90deg"
-                            >
-                                {layoutResults[90]?.preferred && (
-                                    <span
-                                        className="tile-badge"
-                                        title="Lowest minimum shell ID among the calculated layouts"
-                                    >
-                                        <StarIcon width="10" height="10" aria-hidden="true" />
-                                        <span className="hidden">
-                                            Preferred layout (lowest minimum shell ID)
-                                        </span>
-                                    </span>
-                                )}
-                                <input
-                                    type="radio"
-                                    id="90deg"
-                                    name="layoutOption"
-                                    value="90"
-                                    onChange={onLayoutOptionChange}
-                                    disabled={isCalculating}
-                                />
-                                <span className="tile-angle">90°</span>
-                                <span className="tile-stats">
-                                    <span>
-                                        Min ID{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[90] &&
-                                            layoutResults[90].minID !== null ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults[90].minID as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                    <span>
-                                        Tubes{" "}
-                                        <span className="stat-value">
-                                            {layoutResults[90] ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults[90].numTubes as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                </span>
-                            </label>
-
-                            <label
-                                className={`layout-tile ${layoutResults.radial?.preferred ? "preferred" : ""}`}
-                                htmlFor="radial"
-                            >
-                                {layoutResults.radial?.preferred && (
-                                    <span
-                                        className="tile-badge"
-                                        title="Lowest minimum shell ID among the calculated layouts"
-                                    >
-                                        <StarIcon width="10" height="10" aria-hidden="true" />
-                                        <span className="hidden">
-                                            Preferred layout (lowest minimum shell ID)
-                                        </span>
-                                    </span>
-                                )}
-                                <input
-                                    type="radio"
-                                    id="radial"
-                                    name="layoutOption"
-                                    value="0"
-                                    onChange={onLayoutOptionChange}
-                                    disabled={isCalculating}
-                                />
-                                <span className="tile-angle">Radial</span>
-                                <span className="tile-stats">
-                                    <span>
-                                        Min ID{" "}
-                                        <span className="stat-value">
-                                            {layoutResults.radial &&
-                                            layoutResults.radial.minID !== null ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults.radial.minID as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                    <span>
-                                        Tubes{" "}
-                                        <span className="stat-value">
-                                            {layoutResults.radial ? (
-                                                utils.numFormat3SigFigs(
-                                                    layoutResults.radial.numTubes as number,
-                                                )
-                                            ) : (
-                                                <span className="empty">—</span>
-                                            )}
-                                        </span>
-                                    </span>
-                                </span>
-                            </label>
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
 

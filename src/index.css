@@ -285,25 +285,59 @@ input.calculated-field[type="text"]:read-only {
 }
 
 /* ============================================================
-   Layout option tiles
+   Layout option rows
    ============================================================ */
-.layout-grid {
+.layout-list-header {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: 16px 52px 1fr auto;
+  gap: 12px;
+  align-items: end;
+
+  margin-bottom: 3px;
+  padding: 0 10px;
 }
 
-.layout-tile {
+.layout-list-header .header-stats {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.layout-list-header .header-minid {
+  min-width: 54px;
+  text-align: center;
+}
+
+.layout-list-header .header-tubes {
+  min-width: 44px;
+  text-align: center;
+}
+
+.layout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.layout-row {
   cursor: pointer;
 
   position: relative;
 
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 16px 52px 1fr auto;
+  gap: 12px;
+  align-items: center;
 
-  padding: 10px 10px 9px;
+  padding: 8px 10px;
 
   background-color: var(--input-background);
   border: 1.5px solid var(--line);
@@ -314,50 +348,41 @@ input.calculated-field[type="text"]:read-only {
     background-color var(--transition);
 }
 
-.layout-tile.preferred {
-  /* border-color: #f08d32; */
+.layout-row.preferred {
   box-shadow: 0 0 0 3px var(--preferred);
 }
 
-.layout-tile .tile-badge {
-  position: absolute;
-  z-index: 1;
-  right: 8px;
-  bottom: 7px;
-
+.layout-row .row-badge {
   display: inline-flex;
-
+  margin-left: 4px;
   color: var(--preferred);
-
   opacity: 0.55;
 }
 
-.layout-tile .tile-badge svg {
+.layout-row .row-badge svg {
   display: block;
 }
 
-.layout-tile:hover .tile-badge {
+.layout-row:hover .row-badge {
   opacity: 0.9;
 }
 
-.layout-tile:has(input:disabled) {
+.layout-row:has(input:disabled) {
   cursor: default;
   opacity: 0.4;
 }
 
-.layout-tile:has(input:checked) {
+.layout-row:has(input:checked) {
   background-color: var(--blue-tint);
   border-color: var(--blue);
 }
 
-.layout-tile:has(input:focus-visible) {
+.layout-row:has(input:focus-visible) {
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
 
-.layout-tile input {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+.layout-row input {
+  position: static;
 
   width: 13px;
   height: 13px;
@@ -366,28 +391,71 @@ input.calculated-field[type="text"]:read-only {
   accent-color: var(--blue);
 }
 
-.layout-tile .tile-angle {
-  font-size: 15px;
+.layout-row .row-angle {
+  display: flex;
+  align-items: center;
+
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
+  white-space: nowrap;
 }
 
-.layout-tile .tile-stats {
+.layout-row .row-bar-track {
+  position: relative;
+
+  overflow: hidden;
+
+  height: 6px;
+
+  background-color: var(--line);
+  border-radius: 3px;
+}
+
+.layout-row .row-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+
+  height: 100%;
+
+  background-color: var(--muted);
+  border-radius: 3px;
+
+  transition: width var(--transition);
+}
+
+.layout-row.preferred .row-bar-fill {
+  background-color: var(--preferred);
+}
+
+.layout-row .row-stats {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  gap: 12px;
+  align-items: baseline;
 
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1.5;
-  color: var(--muted);
+  white-space: nowrap;
 }
 
-.layout-tile .tile-stats span.stat-value {
+.layout-row .row-stats .row-minid {
+  min-width: 54px;
+
+  font-size: 14px;
+  font-weight: 600;
   color: var(--ink);
+  text-align: center;
 }
 
-.layout-tile .tile-stats .empty {
+.layout-row .row-stats .row-tubes {
+  min-width: 44px;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+
+.layout-row .row-stats .empty {
   color: var(--line);
 }
 
@@ -763,14 +831,6 @@ footer a {
 .copy-button::before {
   content: "⧉";
   font-family: var(--font-monochrome-emoji);
-}
-
-/* ============================================================
-   Results table (legacy selector kept for safety, unused visually)
-   ============================================================ */
-table.column-pane {
-  height: auto;
-  padding: 0;
 }
 
 /* ============================================================
