@@ -452,7 +452,7 @@ const App = () => {
         }
     };
 
-    const inputOnSubmitHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputOnSubmitHandler = (e: React.SubmitEvent<HTMLInputElement>) => {
         e.preventDefault();
     };
 
