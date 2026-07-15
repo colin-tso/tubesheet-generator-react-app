@@ -9,6 +9,7 @@ import {
 import { TubeSheetSVG } from "./components/TubeSheetSVG";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
+import { ContextMenu, ContextMenuItem } from "./components/context-menu";
 import { ReactComponent as StarIcon } from "./assets/star.svg";
 import { ReactComponent as GridIcon } from "./assets/grid-icon.svg";
 import { ReactComponent as SaveIcon } from "./assets/save-icon.svg";
@@ -22,6 +23,13 @@ type LayoutResults = {
     90: (ITubeSheetData & { preferred: boolean }) | null;
     radial: (ITubeSheetData & { preferred: boolean }) | null;
 };
+
+interface Position {
+    x: number;
+    y: number;
+}
+
+type AnimationLifecycle = "idle" | "fading-in" | "fading-out";
 
 const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
 const emptyData: ITubeSheetData = {
@@ -127,7 +135,7 @@ const App = () => {
     // Copy state
     const [copyState, setCopyState] = useState<"idle" | "copied" | "error" | "unsupported">("idle");
 
-    // Show/hid grid state
+    // Show/hide grid state
     const [showGrid, setShowGrid] = useState<boolean>(true);
 
     // Loading/calculation visual states
@@ -135,6 +143,12 @@ const App = () => {
     const [showLoadingBadge, setShowLoadingBadge] = useState<boolean>(false);
     const loadingShownAtRef = useRef<number | null>(null);
     const [calcError, setCalcError] = useState<string | null>(null);
+
+    // Context menu
+    const [contextMenuPos, setContextMenuPos] = useState<Position>({ x: 0, y: 0 });
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [contextMenuAnimationState, setContextMenuAnimationState] =
+        useState<AnimationLifecycle>("idle");
 
     // Screen-reader-only status state
     const [announcement, setAnnouncement] = useState<string>("");
@@ -709,6 +723,47 @@ const App = () => {
         return Math.max(12, 12 + logRatio * 88);
     };
 
+    useEffect(() => {
+        const handleContextMenuCloseTrigger = () => {
+            if (contextMenuAnimationState === "fading-in") {
+                setContextMenuAnimationState("fading-out");
+            }
+        };
+        const handleEscapeKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") handleContextMenuCloseTrigger();
+        };
+        window.addEventListener("click", handleContextMenuCloseTrigger);
+        window.addEventListener("keydown", handleEscapeKey);
+        return () => {
+            window.removeEventListener("click", handleContextMenuCloseTrigger);
+            window.removeEventListener("keydown", handleEscapeKey);
+        };
+    }, [contextMenuAnimationState]);
+    const handleContextMenuCopyAction = () => {
+        copySVG();
+        setContextMenuAnimationState("fading-out"); // Initiates the safe unmount fade out
+    };
+    const handleContextMenuSaveAction = () => {
+        downloadSVG();
+        setContextMenuAnimationState("fading-out"); // Initiates the safe unmount fade out
+    };
+    const menuConfig: ContextMenuItem[] = [
+        { label: "Copy Image", icon: <CopyIcon />, onClick: () => handleContextMenuCopyAction() },
+        { label: "", isDivider: true, onClick: () => {} },
+        { label: "Save Image", icon: <SaveIcon />, onClick: () => handleContextMenuSaveAction() },
+    ];
+    const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        if (!containerRef.current) return;
+
+        const rect = containerRef.current.getBoundingClientRect();
+        const relativeX = e.clientX - rect.left;
+        const relativeY = e.clientY - rect.top;
+
+        setContextMenuPos({ x: relativeX, y: relativeY });
+        setContextMenuAnimationState("fading-in");
+    };
+
     // JSX return
     return (
         <div className="row-pane">
@@ -1076,7 +1131,25 @@ const App = () => {
                 </div>
             </form>
             <div className="column-pane right">
-                <div className={`viewport ${showGrid ? "" : "grid-hidden"}`}>
+                <div
+                    className={`viewport ${showGrid ? "" : "grid-hidden"}`}
+                    ref={containerRef}
+                    onContextMenu={handleContextMenu}
+                >
+                    {contextMenuAnimationState !== "idle" && (
+                        <ContextMenu
+                            position={contextMenuPos}
+                            parentRef={containerRef}
+                            items={menuConfig} // Pass layout data array down
+                            animationState={
+                                contextMenuAnimationState === "fading-in"
+                                    ? "fading-in"
+                                    : "fading-out"
+                            }
+                            onAnimationEnd={() => setContextMenuAnimationState("idle")}
+                            onRequestClose={() => setContextMenuAnimationState("fading-out")}
+                        />
+                    )}
                     <span className="viewport-label noselect">Layout Preview</span>
                     {calcError ? (
                         <span className="loading-overlay error visible noselect" aria-hidden="true">
