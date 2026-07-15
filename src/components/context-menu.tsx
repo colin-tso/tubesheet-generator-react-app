@@ -143,6 +143,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 if (item.isDivider) {
                     return <hr key={index} className="context-menu-divider" />;
                 }
+                const isFirstSelectable = selectableIndices[0] === index;
+                const isLastSelectable = selectableIndices[selectableIndices.length - 1] === index;
 
                 return (
                     <li
@@ -154,7 +156,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                             e.stopPropagation(); // Avoid triggering App's raw context dismissals
                             item.onClick();
                         }}
-                        className={`context-menu-item ${item.isDanger ? "danger" : ""} ${focusedIndex === index ? "focus" : ""}`}
+                        className={`context-menu-item ${item.isDanger ? "danger" : ""} ${focusedIndex === index ? "focus" : ""} ${
+                            isFirstSelectable ? "first" : ""
+                        } ${isLastSelectable ? "last" : ""}`}
                     >
                         {item.icon && <span className="icon">{item.icon}</span>}
                         {item.label}
