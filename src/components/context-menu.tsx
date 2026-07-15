@@ -51,12 +51,19 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
         let { x, y } = points;
 
-        if (x + menuWidth > parentRect.width) x = x - menuWidth;
-        if (y + menuHeight > parentRect.height) y = y - menuHeight;
+        // Keep menu inset from parent edges so rounded-focus highlights remain visible.
+        const EDGE_MARGIN = 8; // px
+
+        if (x + menuWidth > parentRect.width - EDGE_MARGIN) x = points.x - menuWidth;
+        if (y + menuHeight > parentRect.height - EDGE_MARGIN) y = points.y - menuHeight;
+
+        // Clamp into parent with margin
+        const maxX = Math.max(EDGE_MARGIN, parentRect.width - menuWidth - EDGE_MARGIN);
+        const maxY = Math.max(EDGE_MARGIN, parentRect.height - menuHeight - EDGE_MARGIN);
 
         setAdjustedPoints({
-            x: Math.max(0, x),
-            y: Math.max(0, y),
+            x: Math.min(Math.max(EDGE_MARGIN, x), maxX),
+            y: Math.min(Math.max(EDGE_MARGIN, y), maxY),
         });
     }, [points, parentRef]);
 
@@ -136,6 +143,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 if (item.isDivider) {
                     return <hr key={index} className="context-menu-divider" />;
                 }
+                const isFirstSelectable = selectableIndices[0] === index;
+                const isLastSelectable = selectableIndices[selectableIndices.length - 1] === index;
 
                 return (
                     <li
@@ -147,7 +156,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                             e.stopPropagation(); // Avoid triggering App's raw context dismissals
                             item.onClick();
                         }}
-                        className={`context-menu-item ${item.isDanger ? "danger" : ""} ${focusedIndex === index ? "focus" : ""}`}
+                        className={`context-menu-item ${item.isDanger ? "danger" : ""} ${focusedIndex === index ? "focus" : ""} ${
+                            isFirstSelectable ? "first" : ""
+                        } ${isLastSelectable ? "last" : ""}`}
                     >
                         {item.icon && <span className="icon">{item.icon}</span>}
                         {item.label}
