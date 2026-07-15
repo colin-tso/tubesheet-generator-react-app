@@ -45,13 +45,14 @@
     "devDependencies": {
         "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
         "@babel/plugin-transform-private-property-in-object": "^7.25.9",
-        "@stylistic/stylelint-config": "^3.0.1",
+        "@stylistic/stylelint-config": "^5.0.0",
         "@types/lodash.memoize": "^4.1.9",
         "eslint-config-react-app": "^7.0.1",
-        "gh-pages": "^6.2.0",
+        "gh-pages": "^6.3.0",
         "stylelint": "^17.14.0",
         "stylelint-config-clean-order": "^10.0.0",
         "stylelint-config-standard": "^40.0.0",
+        "stylelint-order": "^8.1.1",
         "web-vitals": "^5.3.0"
     },
     "overrides": {
