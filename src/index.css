@@ -21,6 +21,7 @@
   font-family: var(--font-ui);
   font-optical-sizing: none;
   font-style: normal;
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -82,13 +83,14 @@ a,
   flex-direction: column;
   align-items: normal;
 
+  border-right: 1px solid var(--line);
+
   background-color: var(--panel);
   background-image:
     linear-gradient(var(--grid-minor) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
   background-position: -1px -1px;
   background-size: 16px 16px;
-  border-right: 1px solid var(--line);
 }
 
 .left.grid-hidden {
@@ -172,18 +174,18 @@ hr {
   width: 100%;
   height: 1px;
   margin: 0;
+  border: none;
 
   color: var(--line);
 
   background-color: var(--line);
-  border: none;
 }
 
 .divider {
   height: 1px;
   margin: 20px 0;
-  background-color: var(--line);
   border: none;
+  background-color: var(--line);
 }
 
 /* ============================================================
@@ -239,6 +241,8 @@ input[type="text"] {
   min-width: 30px;
   margin: 0;
   padding: 9px 40px 9px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
 
   font-family: var(--font-mono);
   font-size: 13px;
@@ -246,8 +250,6 @@ input[type="text"] {
   letter-spacing: 0.01em;
 
   background-color: var(--input-background);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
   outline: none;
 
   transition:
@@ -338,10 +340,10 @@ input.calculated-field[type="text"]:read-only {
   align-items: center;
 
   padding: 8px 10px;
-
-  background-color: var(--input-background);
   border: 1.5px solid var(--line);
   border-radius: var(--radius-sm);
+
+  background-color: var(--input-background);
 
   transition:
     border-color var(--transition),
@@ -373,8 +375,8 @@ input.calculated-field[type="text"]:read-only {
 }
 
 .layout-row:has(input:checked) {
-  background-color: var(--blue-tint);
   border-color: var(--blue);
+  background-color: var(--blue-tint);
 }
 
 .layout-row:has(input:focus-visible) {
@@ -407,9 +409,9 @@ input.calculated-field[type="text"]:read-only {
   overflow: hidden;
 
   height: 6px;
+  border-radius: 3px;
 
   background-color: var(--line);
-  border-radius: 3px;
 }
 
 .layout-row .row-bar-fill {
@@ -417,9 +419,9 @@ input.calculated-field[type="text"]:read-only {
   inset: 0 auto 0 0;
 
   height: 100%;
+  border-radius: 3px;
 
   background-color: var(--muted);
-  border-radius: 3px;
 
   transition: width var(--transition);
 }
@@ -465,12 +467,12 @@ input.calculated-field[type="text"]:read-only {
 button {
   cursor: pointer;
 
+  border: none;
+  border-radius: var(--radius-sm);
+
   font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 600;
-
-  border: none;
-  border-radius: var(--radius-sm);
 
   transition:
     background-color var(--transition),
@@ -567,9 +569,9 @@ footer a {
 
   width: 22px;
   height: 22px;
+  border: 1.5px solid var(--muted);
 
   opacity: 0.55;
-  border: 1.5px solid var(--muted);
 }
 
 .reg-tl {
@@ -622,6 +624,8 @@ footer a {
   align-items: center;
 
   padding: 5px 9px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
 
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -632,8 +636,6 @@ footer a {
 
   opacity: 0.8;
   background-color: var(--panel);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
 
   transition:
     color var(--transition),
@@ -647,16 +649,16 @@ footer a {
 }
 
 .grid-toggle:hover {
+  border-color: var(--blue);
   color: var(--blue);
   opacity: 1;
-  border-color: var(--blue);
 }
 
 .grid-toggle.active {
+  border-color: var(--blue);
   color: var(--blue);
   opacity: 1;
   background-color: var(--blue-tint);
-  border-color: var(--blue);
 }
 
 .grid-toggle.active::after {
@@ -694,6 +696,8 @@ footer a {
   transform: translateX(-50%);
 
   padding: 6px 14px;
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-sm);
 
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -704,8 +708,6 @@ footer a {
 
   opacity: 0;
   background-color: var(--blue-tint);
-  border: 1.5px solid var(--blue);
-  border-radius: var(--radius-sm);
 
   transition: opacity 0.2s ease;
 }
@@ -715,8 +717,8 @@ footer a {
 }
 
 .loading-overlay.error {
-  color: var(--redline);
   border-color: var(--redline);
+  color: var(--redline);
 }
 
 .loading-dots {
@@ -729,9 +731,9 @@ footer a {
 .loading-dots span {
   width: 3px;
   height: 3px;
+  border-radius: 50%;
 
   background-color: currentColor;
-  border-radius: 50%;
 
   animation: loading-dots-pulse 1.2s ease-in-out infinite;
 }
@@ -794,11 +796,11 @@ footer a {
   align-items: center;
 
   padding: 10px 16px;
+  border-radius: var(--radius-md);
 
   font-size: 12.5px;
   letter-spacing: 0.02em;
 
-  border-radius: var(--radius-md);
   box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
 }
 
@@ -812,15 +814,15 @@ footer a {
 }
 
 .copy-button {
+  border: 1.5px solid var(--line);
   color: var(--ink);
   background-color: var(--panel);
-  border: 1.5px solid var(--line);
   box-shadow: none;
 }
 
 .copy-button:hover {
-  color: var(--blue);
   border-color: var(--blue);
+  color: var(--blue);
 }
 /* ============================================================
    Context Menu (drawing canvas)
@@ -834,6 +836,8 @@ footer a {
   margin: 0;
   padding: 0;
   padding: 0;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
 
   font-size: 12.5px;
   color: var(--ink);
@@ -841,8 +845,6 @@ footer a {
   list-style: none;
 
   background-color: var(--panel);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-md);
   box-shadow: 0 4px 10px -1px var(--box-shadow-1), 0 15px 20px -1px var(--box-shadow-2);
 }
 
@@ -850,7 +852,6 @@ footer a {
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 6px 15px;
   padding: 6px 15px;
 }
 
