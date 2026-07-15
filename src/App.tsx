@@ -155,10 +155,11 @@ const App = () => {
 
     // Refs
     const hasRenderedOnceRef = useRef(false);
-    // Multiple calculation types (ALL and SINGLE) can run concurrently.
-    // Use "pendingCompletionsRef" as a counter so "isCalculating" only
-    // clears when all outstanding requests have finished rendering.
+    // Track outstanding calculations so "isCalculating" clears only when all finish.
     const pendingCompletionsRef = useRef(0);
+    // Worker responses increment these refs synchronously; effects drain them.
+    const pendingAllResponsesRef = useRef(0);
+    const pendingSingleResponsesRef = useRef(0);
     const beginCalculation = () => {
         pendingCompletionsRef.current += 1;
         setCalcError(null);
@@ -170,6 +171,14 @@ const App = () => {
             setIsCalculating(false);
         }
     };
+    // Drain counter and call completeCalculation per recorded response.
+    const drainCompletions = useCallback((counterRef: { current: number }) => {
+        const count = counterRef.current;
+        counterRef.current = 0;
+        for (let i = 0; i < count; i++) {
+            completeCalculation();
+        }
+    }, []);
     // Workers
     const [workerInstance, setWorkerInstance] = useState<Worker | null>(null);
 
@@ -191,14 +200,14 @@ const App = () => {
             const { type, payload } = event.data;
 
             if (type === "ALL_RESULTS") {
-                // Don't clear "isCalculating" here. The layoutResults effect
-                // will clear it after the results commit to the DOM.
+                // Count ALL_RESULTS now; an effect will drain and clear isCalculating.
+                pendingAllResponsesRef.current += 1;
                 setLayoutResults(payload);
             }
 
             if (type === "SINGLE_RESULT") {
-                // Generate the SVG on the main thread. TubeSheetSVG's onRendered
-                // callback will clear "isCalculating" after it renders.
+                // Count SINGLE_RESULT and set SVG; TubeSheetSVG's onRendered clears isCalculating.
+                pendingSingleResponsesRef.current += 1;
                 setCalcError(null);
                 setDrawingSVG(generateTubeSheetSVG(payload));
 
@@ -212,9 +221,10 @@ const App = () => {
                 console.error("Worker Error:", payload);
                 setCalcError(typeof payload === "string" ? payload : "Calculation failed.");
                 setAnnouncement(`Calculation failed: ${payload}`);
-                // Drop the count to zero on error and reset isCalculating.
-                // Hide loading badge immediately, since the error is already announced.
+                // On ERROR: reset counters, show error, and stop loading.
                 pendingCompletionsRef.current = 0;
+                pendingAllResponsesRef.current = 0;
+                pendingSingleResponsesRef.current = 0;
                 setIsCalculating(false);
                 loadingShownAtRef.current = null;
                 setShowLoadingBadge(false);
@@ -261,23 +271,24 @@ const App = () => {
         return () => clearTimeout(hideTimer);
     }, [isCalculating]);
 
-    // Fires after React has committed the render reflecting the new layoutResults.
+    // After layoutResults commit: drain pending ALL_RESULTS count.
     useEffect(() => {
-        completeCalculation();
-    }, [layoutResults]);
+        drainCompletions(pendingAllResponsesRef);
+    }, [layoutResults, drainCompletions]);
 
-    // Keep a stable identity so TubeSheetSVG only reruns when the drawing changes.
+    // Stable callback for TubeSheetSVG render.
     const onDrawingRendered = useCallback(() => {
-        completeCalculation();
+        // Drain pending SINGLE_RESULT count.
+        drainCompletions(pendingSingleResponsesRef);
 
-        // Skip the announcement for the initial placeholder mount
+        // Skip initial placeholder announcement
         if (!hasRenderedOnceRef.current) {
             hasRenderedOnceRef.current = true;
             return;
         }
 
         setAnnouncement("Layout updated.");
-    }, []);
+    }, [drainCompletions]);
 
     // Helper to package and send calculation requests
     const triggerSingleCalculation = (overrides?: {
@@ -387,8 +398,7 @@ const App = () => {
         [tubeOD],
     );
 
-    // Prevent IMask from reverting emptied inputs before 'onBlur'.
-    // Use 'onAccept' to commit an empty value immediately.
+    // Allow empty values via onAccept to avoid IMask reverting them.
     const onAcceptEmpty = (value: string, name: string) => {
         if (value.trim() === "") {
             callSetFunc(`set${utils.capitalize(name)}`, "");
@@ -446,8 +456,7 @@ const App = () => {
         e.preventDefault();
     };
 
-    // Handle Enter/Tab: commit the field (like onBlur) and, if valid,
-    // trigger a calculation using a same-tick snapshot to avoid stale state.
+    // Handle Enter/Tab: commit field and trigger calc with snapshot.
     const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key !== "Enter" && e.key !== "NumpadEnter" && e.key !== "Tab") {
             return;
@@ -679,9 +688,7 @@ const App = () => {
     // Force refresh when actual tubes are calculated
     useEffect(() => {}, [actualTubes]);
 
-    // Layout option rows, driven from data so Min ID values line up in a
-    // single column and can be compared at a glance, with a relative bar
-    // (scaled across the currently calculated results) as a visual cue.
+    // Layout options for displaying min ID and tube counts.
     const layoutOptionRows: {
         key: keyof LayoutResults;
         id: string;
@@ -702,8 +709,7 @@ const App = () => {
     const minIDFloor = definedMinIDs.length ? Math.min(...definedMinIDs) : undefined;
     const minIDCeiling = definedMinIDs.length ? Math.max(...definedMinIDs) : undefined;
 
-    // Shortest bar = lowest (preferred) Min ID. Floors at 12% so every
-    // calculated option still shows a visible sliver, not a blank track.
+    // Convert minID to bar width percent (symlog scale, min 12%).
     const minIDBarLogPercent = (value: number | undefined) => {
         if (!utils.isNumber(value) || minIDFloor === undefined || minIDCeiling === undefined) {
             return 0;
