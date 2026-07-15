@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 interface Position {
     x: number;
@@ -18,6 +18,7 @@ interface ContextMenuProps {
     parentRef: React.RefObject<HTMLDivElement | null>;
     animationState: "fading-in" | "fading-out";
     onAnimationEnd: () => void;
+    onRequestClose: () => void;
     items: ContextMenuItem[];
 }
 
@@ -26,13 +27,22 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     parentRef,
     animationState,
     onAnimationEnd,
+    onRequestClose,
     items,
 }) => {
     const menuRef = useRef<HTMLUListElement>(null);
     const [adjustedPoints, setAdjustedPoints] = useState<Position>(points);
+    const selectableIndices = items.reduce<number[]>((acc, item, index) => {
+        if (!item.isDivider) acc.push(index);
+        return acc;
+    }, []);
+    const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
-    // Auto-recalculate spatial boundary limits
-    useEffect(() => {
+    // Auto-recalculate spatial boundary limits.
+    // useLayoutEffect (not useEffect) so this runs synchronously after DOM
+    // mutation but before the browser paints - otherwise the menu briefly
+    // renders at the raw cursor position and visibly jumps once adjusted.
+    useLayoutEffect(() => {
         if (!menuRef.current || !parentRef.current) return;
 
         const menuWidth = menuRef.current.offsetWidth;
@@ -50,6 +60,48 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         });
     }, [points, parentRef]);
 
+    // Keyboard support: Escape closes, arrow keys move focus, Enter/Space activates.
+    useEffect(() => {
+        if (animationState !== "fading-in") return;
+
+        menuRef.current?.focus();
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                e.stopPropagation();
+                onRequestClose();
+                return;
+            }
+
+            const currentPos = selectableIndices.indexOf(focusedIndex);
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                const next =
+                    currentPos === -1
+                        ? selectableIndices[0]
+                        : selectableIndices[(currentPos + 1) % selectableIndices.length];
+                setFocusedIndex(next);
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                const prev =
+                    currentPos === -1
+                        ? selectableIndices[selectableIndices.length - 1]
+                        : selectableIndices[
+                              (currentPos - 1 + selectableIndices.length) % selectableIndices.length
+                          ];
+                setFocusedIndex(prev);
+            } else if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (focusedIndex >= 0) items[focusedIndex]?.onClick();
+            }
+        };
+
+        const node = menuRef.current;
+        node?.addEventListener("keydown", handleKeyDown);
+        return () => node?.removeEventListener("keydown", handleKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [animationState, focusedIndex]);
+
     // Combine static and animation transition styles
     const currentOpacity = animationState === "fading-in" ? 1 : 0;
     const currentScale = animationState === "fading-in" ? "scale(1)" : "scale(0.95)";
@@ -57,6 +109,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     return (
         <ul
             ref={menuRef}
+            role="menu"
+            tabIndex={-1}
+            onMouseLeave={() => setFocusedIndex(-1)}
             onTransitionEnd={(e) => {
                 // Only trigger unmount callback if we finished transitioning opacity to 0
                 if (e.propertyName === "opacity" && animationState === "fading-out") {
@@ -85,13 +140,16 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 return (
                     <li
                         key={index}
+                        role="menuitem"
+                        tabIndex={focusedIndex === index ? 0 : -1}
+                        onMouseEnter={() => setFocusedIndex(index)}
                         onClick={(e) => {
                             e.stopPropagation(); // Avoid triggering App's raw context dismissals
                             item.onClick();
                         }}
-                        className={item.isDanger ? "context-menu-item-danger" : ""}
+                        className={`context-menu-item ${item.isDanger ? "danger" : ""} ${focusedIndex === index ? "focus" : ""}`}
                     >
-                        {item.icon && <span className="context-menu-item-icon">{item.icon}</span>}
+                        {item.icon && <span className="icon">{item.icon}</span>}
                         {item.label}
                     </li>
                 );

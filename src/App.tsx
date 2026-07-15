@@ -723,8 +723,15 @@ const App = () => {
                 setContextMenuAnimationState("fading-out");
             }
         };
+        const handleEscapeKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") handleContextMenuCloseTrigger();
+        };
         window.addEventListener("click", handleContextMenuCloseTrigger);
-        return () => window.removeEventListener("click", handleContextMenuCloseTrigger);
+        window.addEventListener("keydown", handleEscapeKey);
+        return () => {
+            window.removeEventListener("click", handleContextMenuCloseTrigger);
+            window.removeEventListener("keydown", handleEscapeKey);
+        };
     }, [contextMenuAnimationState]);
     const handleContextMenuCopyAction = () => {
         copySVG();
@@ -745,7 +752,7 @@ const App = () => {
 
         const rect = containerRef.current.getBoundingClientRect();
         const relativeX = e.clientX - rect.left;
-        const relativeY = e.clientY - rect.top - 12;
+        const relativeY = e.clientY - rect.top;
 
         setContextMenuPos({ x: relativeX, y: relativeY });
         setContextMenuAnimationState("fading-in");
@@ -1134,6 +1141,7 @@ const App = () => {
                                     : "fading-out"
                             }
                             onAnimationEnd={() => setContextMenuAnimationState("idle")}
+                            onRequestClose={() => setContextMenuAnimationState("fading-out")}
                         />
                     )}
                     <span className="viewport-label noselect">Layout Preview</span>

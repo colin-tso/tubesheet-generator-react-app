@@ -831,7 +831,7 @@ footer a {
   z-index: 50;
 
   min-width: 150px;
-  margin: 0,;
+  margin: 0;
   padding: 4px 0;
 
   font-size: 12.5px;
@@ -857,7 +857,11 @@ footer a {
   border-top: 1.5px solid var(--line);
 }
 
-.context-menu-item-icon {
+.context-menu-item {
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.context-menu-item > .icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -865,6 +869,22 @@ footer a {
   width: 15px;
   height: 15px;
   margin-right: 10px;
+
+  color: currentColor;
+}
+
+.context-menu-item.danger {
+  color: var(--redline);
+}
+
+.context-menu-item.focus {
+  color: var(--panel);
+  background-color: var(--blue);
+}
+
+.context-menu-item.danger.focus {
+  color: var(--panel);
+  background-color: var(--redline);
 }
 
 /* ============================================================
