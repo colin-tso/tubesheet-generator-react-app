@@ -149,6 +149,11 @@ a,
   color: var(--blue);
 }
 
+.version-text {
+  display: inline;
+  padding-left: 10px;
+}
+
 .github-logo {
   position: relative;
   display: inline;
