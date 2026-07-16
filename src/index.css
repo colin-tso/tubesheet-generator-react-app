@@ -12,10 +12,76 @@
   --radius-md: 5px;
   --transition: 0.15s ease;
 
+  /* Color palette — light */
+  --paper-light: hsl(48, 20%, 97%);
+  --panel-light: hsl(0, 0%, 100%);
+  --ink-light: hsl(214, 28%, 14%);
+  --muted-light: hsl(214, 12%, 42%);
+  --line-light: hsl(214, 16%, 84%);
+  --grid-minor-light: hsl(214, 30%, 92%);
+  --grid-major-light: hsl(214, 24%, 87%);
+  --input-bg-light: hsl(48, 20%, 98%);
+  --input-readonly-bg-light: hsl(214, 20%, 94%);
+  --input-readonly-text-light: hsl(214, 10%, 52%);
+  --viewport-bg-light: hsl(210, 32%, 96%);
+  --blue-light: hsl(214, 62%, 34%);
+  --blue-bright-light: hsl(214, 68%, 42%);
+  --blue-tint-light: hsl(214, 62%, 95%);
+  --blue-glow-light: hsl(214, 68%, 42%, 22%);
+  --redline-light: hsl(0, 74%, 42%);
+  --preferred-light: hsl(214, 68%, 42%);
+  --box-shadow-light-1: hsla(0, 0%, 0%, 0.3);
+  --box-shadow-light-2: hsla(0, 0%, 0%, 0.1);
+
+  /* Color palette — dark */
+  --paper-dark: hsl(212, 32%, 9%);
+  --panel-dark: hsl(212, 28%, 12%);
+  --ink-dark: hsl(210, 40%, 94%);
+  --muted-dark: hsl(212, 16%, 62%);
+  --line-dark: hsl(212, 24%, 22%);
+  --grid-minor-dark: hsl(212, 26%, 16%);
+  --grid-major-dark: hsl(212, 26%, 20%);
+  --input-bg-dark: hsl(212, 30%, 10%);
+  --input-readonly-bg-dark: hsl(212, 24%, 17%);
+  --input-readonly-text-dark: hsl(212, 12%, 55%);
+  --viewport-bg-dark: hsl(212, 34%, 7%);
+  --blue-dark: hsl(212, 78%, 68%);
+  --blue-bright-dark: hsl(212, 84%, 76%);
+  --blue-tint-dark: hsl(212, 50%, 18%);
+  --blue-glow-dark: hsl(212, 84%, 68%, 22%);
+  --redline-dark: hsl(0, 84%, 66%);
+  --preferred-dark: hsl(212, 84%, 76%);
+  --box-shadow-dark-1: hsla(0, 0%, 0%, 0.7);
+  --box-shadow-dark-2: hsla(0, 0%, 0%, 0.5);
+
+  /* Color palette — resolved (follows light-dark(), see DarkmodeToggle) */
+  --paper: light-dark(var(--paper-light), var(--paper-dark));
+  --panel: light-dark(var(--panel-light), var(--panel-dark));
+  --ink: light-dark(var(--ink-light), var(--ink-dark));
+  --muted: light-dark(var(--muted-light), var(--muted-dark));
+  --line: light-dark(var(--line-light), var(--line-dark));
+  --grid-minor: light-dark(var(--grid-minor-light), var(--grid-minor-dark));
+  --grid-major: light-dark(var(--grid-major-light), var(--grid-major-dark));
+  --input-background: light-dark(var(--input-bg-light), var(--input-bg-dark));
+  --input-readonly-background: light-dark(var(--input-readonly-bg-light), var(--input-readonly-bg-dark));
+  --input-readonly-text: light-dark(var(--input-readonly-text-light), var(--input-readonly-text-dark));
+  --viewport-bg: light-dark(var(--viewport-bg-light), var(--viewport-bg-dark));
+  --blue: light-dark(var(--blue-light), var(--blue-dark));
+  --blue-bright: light-dark(var(--blue-bright-light), var(--blue-bright-dark));
+  --blue-tint: light-dark(var(--blue-tint-light), var(--blue-tint-dark));
+  --blue-glow: light-dark(var(--blue-glow-light), var(--blue-glow-dark));
+  --redline: light-dark(var(--redline-light), var(--redline-dark));
+  --preferred: light-dark(var(--preferred-light), var(--preferred-dark));
+  --box-shadow-1: light-dark(var(--box-shadow-light-1), var(--box-shadow-dark-1));
+  --box-shadow-2: light-dark(var(--box-shadow-light-2), var(--box-shadow-dark-2));
+
   margin: 0;
 }
 
 * {
+  position: relative;
+  z-index: 1;
+
   box-sizing: border-box;
 
   font-family: var(--font-ui);
@@ -35,11 +101,43 @@ body {
 html {
   width: 100dvw;
   height: 100dvh;
+
+  color: var(--ink);
+
+  background-color: var(--paper);
+
+  transition:
+    color var(--transition),
+    background-color var(--transition),
+    border-color var(--transition),
+    filter var(--transition);
 }
 
 body {
   width: 100dvw;
   height: 100dvh;
+}
+
+/* Visually hides content while keeping it in the accessibility tree
+   (e.g. screen-reader-only status text). */
+.hidden {
+  position: absolute;
+
+  overflow: hidden;
+
+  width: 1px;
+  height: 1px;
+
+  white-space: nowrap;
+
+  clip-path: inset(25%);
+
+  clip: rect(0 0 0 0);
+}
+
+input {
+  color: var(--ink);
+  background-color: var(--input-background);
 }
 
 a,
@@ -775,6 +873,11 @@ footer a {
   z-index: 2;
   max-width: 100%;
   max-height: calc(100vh - 96px);
+}
+
+.tubesheet-svg > * {
+  stroke: var(--ink);
+  transition: stroke var(--transition);
 }
 
 .viewport-actions {
