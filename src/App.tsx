@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import packageJson from "../package.json";
 import GitHubButton from "react-github-btn";
 import { IMaskInput } from "react-imask";
 import {
@@ -143,6 +144,7 @@ const App = () => {
                         <span className="eyebrow">Calculator & Visualiser for</span>
                         <h1>
                             Tubesheet Layouts
+                            <small className="version-text">v{packageJson.version}</small>
                             <small>by Colin Tso</small>
                         </h1>
                     </div>
