@@ -53,6 +53,16 @@ type FieldAction =
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
     | { type: "SET_PITCH_RATIO"; value: number | undefined };
 
+// Distinguish absent override (use fallback) from explicit undefined (clear field)
+// as ?? can't distinguish this difference.
+function withOverride(
+    overrides: Record<string, number | undefined> | undefined,
+    key: string,
+    fallback: number | undefined,
+): number | undefined {
+    return overrides && key in overrides ? overrides[key] : fallback;
+}
+
 // True if "next" rounds to the same displayed value (2dp) as a valid "prev".
 const unchangedAtDisplayPrecision = (prev: number | undefined, next: number) =>
     utils.isNumber(prev) && prev > 0 && utils.trunc(prev, 2) === utils.trunc(next, 2);
@@ -132,10 +142,10 @@ export function useLayoutForm({
                 Pick<FieldValues, "OTLtoShell" | "tubeOD" | "pitchRatio" | "minTubes">
             >,
         ) => {
-            const effOTLtoShell = overrides?.OTLtoShell ?? fields.OTLtoShell;
-            const effTubeOD = overrides?.tubeOD ?? fields.tubeOD;
-            const effPitchRatio = overrides?.pitchRatio ?? fields.pitchRatio;
-            const effMinTubes = overrides?.minTubes ?? fields.minTubes;
+            const effOTLtoShell = withOverride(overrides, "OTLtoShell", fields.OTLtoShell);
+            const effTubeOD = withOverride(overrides, "tubeOD", fields.tubeOD);
+            const effPitchRatio = withOverride(overrides, "pitchRatio", fields.pitchRatio);
+            const effMinTubes = withOverride(overrides, "minTubes", fields.minTubes);
 
             const valid =
                 utils.isNumber(effOTLtoShell) &&
@@ -165,6 +175,15 @@ export function useLayoutForm({
 
         // Emptied field should stay empty
         if (val.trim() === "") {
+            if (name === "shellID") {
+                // Clearing shellID reverts to the min-tubes layout and recalculates
+                // immediately.
+                setGenericField(name, undefined);
+                if (layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
+                    triggerSingleCalculation({ shellID: undefined });
+                }
+                return;
+            }
             setGenericField(name, undefined);
             return;
         }
@@ -195,6 +214,16 @@ export function useLayoutForm({
             return;
         }
 
+        // shellID: recalculate on change commit
+        if (name === "shellID") {
+            const changed = fields.shellID !== parsed;
+            setGenericField(name, parsed);
+            if (changed && layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
+                triggerSingleCalculation({ shellID: parsed });
+            }
+            return;
+        }
+
         setGenericField(name, parsed);
     };
 
@@ -212,12 +241,12 @@ export function useLayoutForm({
             minTubes?: number;
             shellID?: number;
         }) => {
-            const effOTLtoShell = overrides?.OTLtoShell ?? fields.OTLtoShell;
-            const effTubeOD = overrides?.tubeOD ?? fields.tubeOD;
-            const effPitchRatio = overrides?.pitchRatio ?? fields.pitchRatio;
-            const effMinTubes = overrides?.minTubes ?? fields.minTubes;
-            const effShellID = overrides?.shellID ?? fields.shellID;
-            const effLayoutOption = overrides?.overrideLayout ?? fields.layoutOption;
+            const effOTLtoShell = withOverride(overrides, "OTLtoShell", fields.OTLtoShell);
+            const effTubeOD = withOverride(overrides, "tubeOD", fields.tubeOD);
+            const effPitchRatio = withOverride(overrides, "pitchRatio", fields.pitchRatio);
+            const effMinTubes = withOverride(overrides, "minTubes", fields.minTubes);
+            const effShellID = withOverride(overrides, "shellID", fields.shellID);
+            const effLayoutOption = withOverride(overrides, "overrideLayout", fields.layoutOption);
 
             const parsedLayoutOption = effLayoutOption === 0 ? "radial" : effLayoutOption;
 
@@ -291,6 +320,12 @@ export function useLayoutForm({
         }
 
         onBlur(e);
+
+        // onBlur above already commits shellID and triggers recalculation.
+        // Avoid firing a second identical request here.
+        if (name === "shellID") {
+            return;
+        }
 
         let nextPitchRatio = name === "pitchRatio" ? committed : fields.pitchRatio;
         let nextTubeClearance = name === "tubeClearance" ? committed : fields.tubeClearance;
