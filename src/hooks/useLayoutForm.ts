@@ -469,6 +469,12 @@ export function useLayoutForm({
                 field: "actualTubes",
                 value: lastSingleResult.numTubes,
             });
+        } else if (lastSingleResult?.numTubes) {
+            dispatch({
+                type: "SET_FIELD",
+                field: "actualTubes",
+                value: undefined,
+            });
         }
     }, [lastSingleResult]);
 
