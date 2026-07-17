@@ -132,7 +132,6 @@ export class TubeSheet {
     }
 
     private updateGeneratedProps() {
-        // console.log("Updating generated properties");
         this._minID = this.minIDFunc();
         this._numTubes = this.numTubesFunc();
         this._tubeField = this.tubeFieldFunc();
@@ -141,12 +140,6 @@ export class TubeSheet {
 
     private OTLFunc(): number | null {
         if (this._shellID) {
-            // console.log(`getting OTL for:
-            //     shellID: ${this._shellID}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
             return (
                 tubeFieldOTL(
                     this._shellID,
@@ -157,12 +150,6 @@ export class TubeSheet {
                 ) ?? null
             );
         } else if (this._minTubes) {
-            // console.log(`getting OTL for:
-            //     minTubes: ${this._minTubes}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
             return (
                 tubeFieldOTL(
                     this.minIDFunc() as number,
@@ -179,12 +166,6 @@ export class TubeSheet {
 
     private tubeFieldFunc(): TubeField | null {
         if (this._shellID) {
-            // console.log(`getting tubefield for:
-            //     shellID: ${this._shellID}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
             return generateTubeField(
                 this._shellID,
                 this._OTLClearance,
@@ -195,12 +176,6 @@ export class TubeSheet {
         }
 
         if (this._minTubes) {
-            // console.log(`getting tubefield for:
-            //     minTubes: ${this._minTubes}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
             return generateTubeField(
                 this.minIDFunc() as number,
                 this._OTLClearance,
@@ -229,12 +204,6 @@ export class TubeSheet {
                 this._layout,
             );
         } else if (this._shellID) {
-            // console.log(`getting minID for:
-            //     shellID: ${this._shellID}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
             return findMinID(
                 this.numTubesFunc(),
                 this._OTLClearance,
@@ -249,12 +218,6 @@ export class TubeSheet {
 
     private numTubesFunc(): number {
         if (this._shellID) {
-            // console.log(`getting numTubes for:
-            //     shellID: ${this._shellID}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
             return tubeCount(
                 this._shellID,
                 this._OTLClearance,
@@ -263,12 +226,6 @@ export class TubeSheet {
                 this._layout,
             );
         } else if (this._minTubes) {
-            // console.log(`getting numTubes for:
-            //     minTubes: ${this._minTubes}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
             return tubeCount(
                 this.minIDFunc() as number,
                 this._OTLClearance,
@@ -304,7 +261,6 @@ const generateTubeField = memoize(
         layout: TubeSheetLayout,
         offsetOption: boolean | "AUTO" = "AUTO",
     ): TubeField | null => {
-        // console.log("Generating tube field");
         try {
             if (shellID <= 0) {
                 throw new Error("Shell ID must be greater than 0");
@@ -581,7 +537,6 @@ const tubeFieldOTL = (
             return roundUp(D, DECIMAL_PLACES);
         }
     } catch (error) {
-        // console.log((error as Error).message);
         return null;
     }
 };
@@ -845,7 +800,6 @@ const findMinID = memoize(
                         } else {
                             // Average the last two guesses if one is more and one is less
                             D_new = (D_new + D_old) / 2;
-                            // console.log(`Averaging guesses`);
                         }
 
                         numTubes_old = tubeCount(
@@ -877,11 +831,6 @@ const findMinID = memoize(
                                 D_bestGuess = D_new;
                             }
                         }
-
-                        // console.log(
-                        //     `Heuristic Iteration: ${iterations}, D_old: ${D_old}, D_new: ${D_new}, numTubes_old: ${numTubes_old}, numTubes_new: ${numTubes_new}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
-                        // );
-
                         iterations++;
                     }
 
@@ -898,8 +847,6 @@ const findMinID = memoize(
                             DECIMAL_PLACES,
                         );
                     }
-
-                    // console.log("Heuristic failed to converge. Falling back to bisection method.");
 
                     // Bisection fallback if heuristic fails to converge
                     const minValidID = tubeOD + OTLClearance + Math.pow(10, -DECIMAL_PLACES);
@@ -987,18 +934,14 @@ const findMinID = memoize(
                         } else {
                             D_lowerBound = D_mid;
                         }
-                        // console.log(
-                        //     `Bisection Iteration: ${bisectIterations}, D_lowerBound: ${D_lowerBound}, D_upperBound: ${D_upperBound}, numTubesMid: ${numTubesMid}, Min Tubes: ${minTubes}, Layout: ${layout}, offsetOption: ${offsetOption}`,
-                        // );
                         bisectIterations++;
                     }
                     return D_upperBound;
                 }
             } catch (err) {
                 if (retries < MAX_RETRIES) {
-                    retries = retries + 1;
-                    // console.log(`Number of retries: ${retries}`);
-                    minTubes = minTubes + 1;
+                    retries++;
+                    minTubes++;
                 } else {
                     throw new Error("Max number of retries reached. Min ID could not be found.");
                 }
