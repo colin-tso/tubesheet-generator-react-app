@@ -450,7 +450,8 @@ input.calculated-field[type="text"]:read-only {
 
   transition:
     border-color var(--transition),
-    background-color var(--transition);
+    background-color var(--transition),
+    opacity var(--transition);
 }
 
 .layout-row.preferred {

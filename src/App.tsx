@@ -392,7 +392,7 @@ const App = () => {
                             className="layout-list"
                             role="radiogroup"
                             aria-label="Tube layout angle"
-                            aria-busy={isCalculating}
+                            aria-busy={showLoadingBadge}
                         >
                             {layoutOptionRows.map(({ key, id, label, value, required }) => {
                                 const result = layoutResults[key];
@@ -413,7 +413,7 @@ const App = () => {
                                             name="layoutOption"
                                             value={value}
                                             onChange={onLayoutOptionChange}
-                                            disabled={isCalculating}
+                                            disabled={showLoadingBadge}
                                             required={required}
                                         />
                                         <span className="row-angle">
