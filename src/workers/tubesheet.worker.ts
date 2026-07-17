@@ -2,7 +2,7 @@
 import { TubeSheet } from "../plugins/tubesheet-layout-generator";
 
 self.onmessage = (event: MessageEvent) => {
-    const { type, payload } = event.data;
+    const { type, requestId, payload } = event.data;
 
     try {
         if (type === "CALCULATE_ALL") {
@@ -37,6 +37,7 @@ self.onmessage = (event: MessageEvent) => {
             // Package data to send back (Workers cannot send class instances or DOM nodes)
             self.postMessage({
                 type: "ALL_RESULTS",
+                requestId,
                 payload: {
                     30: markPreferred(_30, _30.minID === minID),
                     45: markPreferred(_45, _45.minID === minID),
@@ -60,6 +61,7 @@ self.onmessage = (event: MessageEvent) => {
 
             self.postMessage({
                 type: "SINGLE_RESULT",
+                requestId,
                 payload: {
                     minID: generated.minID,
                     numTubes: generated.numTubes,
@@ -73,7 +75,13 @@ self.onmessage = (event: MessageEvent) => {
             });
         }
     } catch (error) {
-        self.postMessage({ type: "ERROR", payload: (error as Error).message });
+        // Echo back source request/channel to main thread.
+        self.postMessage({
+            type: "ERROR",
+            requestId,
+            requestType: type,
+            payload: (error as Error).message,
+        });
     }
 };
 

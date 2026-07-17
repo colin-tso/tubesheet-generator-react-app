@@ -48,6 +48,13 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     const pendingAllResponsesRef = useRef(0);
     const pendingSingleResponsesRef = useRef(0);
 
+    // Use monotonic request IDs. Apply responses only if their requestId matches the
+    // latest for that channel, discarding older replies so out-of-order results
+    // are not returned.
+    const nextRequestIdRef = useRef(0);
+    const latestAllRequestIdRef = useRef<number | null>(null);
+    const latestSingleRequestIdRef = useRef<number | null>(null);
+
     const beginCalculation = useCallback(() => {
         pendingCompletionsRef.current += 1;
         setCalcError(null);
@@ -78,16 +85,26 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         const w = new Worker(new URL("../workers/tubesheet.worker.ts", import.meta.url));
 
         w.onmessage = (event) => {
-            const { type, payload } = event.data;
+            const { type, requestId, payload } = event.data;
 
             if (type === "ALL_RESULTS") {
-                // Count ALL_RESULTS now; an effect will drain and clear "isCalculating".
+                if (requestId !== latestAllRequestIdRef.current) {
+                    // Discard request if superseded and mark as complete
+                    // (drain "isCalculating").
+                    completeCalculation();
+                    return;
+                }
+                // Count ALL_RESULTS now; an effect will drain and clear isCalculating.
                 pendingAllResponsesRef.current += 1;
                 setLayoutResults(payload);
             }
 
             if (type === "SINGLE_RESULT") {
-                // Count SINGLE_RESULT and set SVG; TubeSheetSVG's "onRendered" clears "isCalculating".
+                if (requestId !== latestSingleRequestIdRef.current) {
+                    completeCalculation();
+                    return;
+                }
+                // Count SINGLE_RESULT and set SVG; TubeSheetSVG's onRendered clears isCalculating.
                 pendingSingleResponsesRef.current += 1;
                 setCalcError(null);
                 setDrawingSVG(generateTubeSheetSVG(payload));
@@ -95,16 +112,22 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
             }
 
             if (type === "ERROR") {
+                const { requestType } = event.data;
+                const latestIdForChannel =
+                    requestType === "CALCULATE_ALL"
+                        ? latestAllRequestIdRef.current
+                        : latestSingleRequestIdRef.current;
+
+                if (requestId !== latestIdForChannel) {
+                    // Discard error if superseded.
+                    completeCalculation();
+                    return;
+                }
+
                 console.error("Worker Error:", payload);
                 setCalcError(typeof payload === "string" ? payload : "Calculation failed.");
                 setAnnouncement(`Calculation failed: ${payload}`);
-                // On ERROR: reset counters, show error, and stop loading.
-                pendingCompletionsRef.current = 0;
-                pendingAllResponsesRef.current = 0;
-                pendingSingleResponsesRef.current = 0;
-                setIsCalculating(false);
-                loadingShownAtRef.current = null;
-                setShowLoadingBadge(false);
+                completeCalculation();
             }
         };
 
@@ -114,7 +137,7 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
             w.terminate();
             workerRef.current = null;
         };
-    }, []);
+    }, [completeCalculation]);
 
     // Debounce showing the loading badge.
     useEffect(() => {
@@ -168,8 +191,10 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     const postCalculateSingle = useCallback(
         (payload: Record<string, unknown>) => {
             if (!workerRef.current) return;
+            const requestId = ++nextRequestIdRef.current;
+            latestSingleRequestIdRef.current = requestId;
             beginCalculation();
-            workerRef.current.postMessage({ type: "CALCULATE_SINGLE", payload });
+            workerRef.current.postMessage({ type: "CALCULATE_SINGLE", requestId, payload });
         },
         [beginCalculation],
     );
@@ -177,8 +202,10 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     const postCalculateAll = useCallback(
         (payload: Record<string, unknown>) => {
             if (!workerRef.current) return;
+            const requestId = ++nextRequestIdRef.current;
+            latestAllRequestIdRef.current = requestId;
             beginCalculation();
-            workerRef.current.postMessage({ type: "CALCULATE_ALL", payload });
+            workerRef.current.postMessage({ type: "CALCULATE_ALL", requestId, payload });
         },
         [beginCalculation],
     );
