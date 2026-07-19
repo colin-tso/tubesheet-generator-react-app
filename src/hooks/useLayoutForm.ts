@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import type React from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, SyntheticEvent } from "react";
-import { TubeSheet } from "../plugins/tubesheet-layout-generator";
 import { utils } from "../utils/";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
 
@@ -52,6 +51,16 @@ type FieldAction =
     | { type: "SET_FIELD"; field: GenericFieldName; value: number | undefined }
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
     | { type: "SET_PITCH_RATIO"; value: number | undefined };
+
+// Distinguish absent override (use fallback) from explicit undefined (clear field)
+// as ?? can't distinguish this difference.
+function withOverride(
+    overrides: Record<string, number | undefined> | undefined,
+    key: string,
+    fallback: number | undefined,
+): number | undefined {
+    return overrides && key in overrides ? overrides[key] : fallback;
+}
 
 // True if "next" rounds to the same displayed value (2dp) as a valid "prev".
 const unchangedAtDisplayPrecision = (prev: number | undefined, next: number) =>
@@ -132,10 +141,10 @@ export function useLayoutForm({
                 Pick<FieldValues, "OTLtoShell" | "tubeOD" | "pitchRatio" | "minTubes">
             >,
         ) => {
-            const effOTLtoShell = overrides?.OTLtoShell ?? fields.OTLtoShell;
-            const effTubeOD = overrides?.tubeOD ?? fields.tubeOD;
-            const effPitchRatio = overrides?.pitchRatio ?? fields.pitchRatio;
-            const effMinTubes = overrides?.minTubes ?? fields.minTubes;
+            const effOTLtoShell = withOverride(overrides, "OTLtoShell", fields.OTLtoShell);
+            const effTubeOD = withOverride(overrides, "tubeOD", fields.tubeOD);
+            const effPitchRatio = withOverride(overrides, "pitchRatio", fields.pitchRatio);
+            const effMinTubes = withOverride(overrides, "minTubes", fields.minTubes);
 
             const valid =
                 utils.isNumber(effOTLtoShell) &&
@@ -165,6 +174,15 @@ export function useLayoutForm({
 
         // Emptied field should stay empty
         if (val.trim() === "") {
+            if (name === "shellID") {
+                // Clearing shellID reverts to the min-tubes layout and recalculates
+                // immediately.
+                setGenericField(name, undefined);
+                if (layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
+                    triggerSingleCalculation({ shellID: undefined });
+                }
+                return;
+            }
             setGenericField(name, undefined);
             return;
         }
@@ -195,6 +213,16 @@ export function useLayoutForm({
             return;
         }
 
+        // shellID: recalculate on change commit
+        if (name === "shellID") {
+            const changed = fields.shellID !== parsed;
+            setGenericField(name, parsed);
+            if (changed && layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
+                triggerSingleCalculation({ shellID: parsed });
+            }
+            return;
+        }
+
         setGenericField(name, parsed);
     };
 
@@ -212,12 +240,12 @@ export function useLayoutForm({
             minTubes?: number;
             shellID?: number;
         }) => {
-            const effOTLtoShell = overrides?.OTLtoShell ?? fields.OTLtoShell;
-            const effTubeOD = overrides?.tubeOD ?? fields.tubeOD;
-            const effPitchRatio = overrides?.pitchRatio ?? fields.pitchRatio;
-            const effMinTubes = overrides?.minTubes ?? fields.minTubes;
-            const effShellID = overrides?.shellID ?? fields.shellID;
-            const effLayoutOption = overrides?.overrideLayout ?? fields.layoutOption;
+            const effOTLtoShell = withOverride(overrides, "OTLtoShell", fields.OTLtoShell);
+            const effTubeOD = withOverride(overrides, "tubeOD", fields.tubeOD);
+            const effPitchRatio = withOverride(overrides, "pitchRatio", fields.pitchRatio);
+            const effMinTubes = withOverride(overrides, "minTubes", fields.minTubes);
+            const effShellID = withOverride(overrides, "shellID", fields.shellID);
+            const effLayoutOption = withOverride(overrides, "overrideLayout", fields.layoutOption);
 
             const parsedLayoutOption = effLayoutOption === 0 ? "radial" : effLayoutOption;
 
@@ -291,6 +319,12 @@ export function useLayoutForm({
         }
 
         onBlur(e);
+
+        // onBlur above already commits shellID and triggers recalculation.
+        // Avoid firing a second identical request here.
+        if (name === "shellID") {
+            return;
+        }
 
         let nextPitchRatio = name === "pitchRatio" ? committed : fields.pitchRatio;
         let nextTubeClearance = name === "tubeClearance" ? committed : fields.tubeClearance;
@@ -389,41 +423,34 @@ export function useLayoutForm({
         validateLayoutOption();
     }, [validateLayoutInputs, validateLayoutOption]);
 
-    // Actual tubes calculation only when layout option is selected and shell ID is defined
+    // Keep "actual tubes" in sync with a custom shell ID whenever a relevant
+    // input changes (e.g. tubeOD/pitch edited via blur only, without Enter).
+    //
+    // This used to construct a `TubeSheet` directly here, which re-ran the
+    // full min-ID bisection and tube-field generation synchronously on the
+    // main thread just to read off `numTubes` - duplicating work the worker
+    // already does and blocking the UI thread for large tube counts. Instead,
+    // ask the worker to recalculate; its response is picked up by the
+    // "lastSingleResult" effect below, which sets/clears actualTubes.
     useEffect(() => {
-        if (!utils.isNumber(fields.layoutOption)) {
+        if (
+            !utils.isNumber(fields.layoutOption) ||
+            !utils.isNumber(fields.shellID) ||
+            fields.shellID <= 0 ||
+            !layoutInputsDefined
+        ) {
             return;
         }
 
-        let selectedLayout: TubeSheet | null = null;
-
-        const parsedLayoutOption = (
-            fields.layoutOption === 0 ? "radial" : fields.layoutOption
-        ) as TubeSheet["layout"];
-
-        if (utils.isNumber(fields.shellID) && fields.shellID > 0) {
-            selectedLayout = layoutInputsDefined
-                ? new TubeSheet(
-                      fields.OTLtoShell!,
-                      fields.tubeOD!,
-                      fields.pitchRatio!,
-                      parsedLayoutOption,
-                      undefined,
-                      fields.shellID,
-                  )
-                : null;
-        }
-
-        if (selectedLayout && selectedLayout.numTubes) {
-            dispatch({ type: "SET_FIELD", field: "actualTubes", value: selectedLayout.numTubes });
-        }
+        triggerSingleCalculation({ shellID: fields.shellID });
     }, [
         fields.OTLtoShell,
-        layoutInputsDefined,
-        fields.layoutOption,
-        fields.pitchRatio,
-        fields.shellID,
         fields.tubeOD,
+        fields.pitchRatio,
+        fields.layoutOption,
+        fields.shellID,
+        layoutInputsDefined,
+        triggerSingleCalculation,
     ]);
 
     // If a SINGLE_RESULT came back for a custom shell ID, sync actual tubes to it.
@@ -433,6 +460,12 @@ export function useLayoutForm({
                 type: "SET_FIELD",
                 field: "actualTubes",
                 value: lastSingleResult.numTubes,
+            });
+        } else if (lastSingleResult?.numTubes) {
+            dispatch({
+                type: "SET_FIELD",
+                field: "actualTubes",
+                value: undefined,
             });
         }
     }, [lastSingleResult]);

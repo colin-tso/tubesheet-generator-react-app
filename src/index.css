@@ -450,7 +450,8 @@ input.calculated-field[type="text"]:read-only {
 
   transition:
     border-color var(--transition),
-    background-color var(--transition);
+    background-color var(--transition),
+    opacity var(--transition);
 }
 
 .layout-row.preferred {
@@ -953,7 +954,13 @@ footer a {
   list-style: none;
 
   background-color: var(--panel);
+  outline: none;
   box-shadow: 0 4px 10px -1px var(--box-shadow-1), 0 15px 20px -1px var(--box-shadow-2);
+}
+
+.context-menu:focus,
+.context-menu:focus-visible {
+  outline: none;
 }
 
 .context-menu > li {

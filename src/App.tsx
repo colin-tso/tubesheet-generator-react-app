@@ -1,13 +1,13 @@
-import React, { useRef } from "react";
+import { useRef, useState } from "react";
 import packageJson from "../package.json";
 import GitHubButton from "react-github-btn";
-import { IMaskInput } from "react-imask";
 import {
     TubeSheet,
     generateTubeSheetSVG,
     ITubeSheetData,
 } from "./plugins/tubesheet-layout-generator";
 import { TubeSheetSVG } from "./components/TubeSheetSVG";
+import { NumericField, NumericFieldProps } from "./components/NumericField";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import { ContextMenu, ContextMenuItem } from "./components/context-menu";
@@ -86,7 +86,77 @@ const App = () => {
     const { copyState, downloadSVG, copySVG } = useSvgExportActions(drawingSVG);
 
     // Show/hide grid state
-    const [showGrid, setShowGrid] = React.useState<boolean>(true);
+    const [showGrid, setShowGrid] = useState<boolean>(true);
+
+    // Input fields
+    const numericFieldConfigs: NumericFieldProps[] = [
+        {
+            id: "minTubes",
+            label: "Minimum number of tubes",
+            placeholder: "e.g. 100",
+            scale: 0,
+            inputMode: "numeric",
+            value: minTubes,
+            required: true,
+        },
+        {
+            id: "tubeOD",
+            label: "Tube OD",
+            placeholder: "> 0",
+            scale: 2,
+            inputMode: "decimal",
+            value: tubeOD,
+            required: true,
+            units: "mm",
+        },
+        {
+            id: "OTLtoShell",
+            label: "OTL to shell diametrical clearance",
+            placeholder: "Shell ID – OTL, ≥ 0",
+            scale: 2,
+            inputMode: "decimal",
+            value: OTLtoShell,
+            required: true,
+            units: "mm",
+        },
+        {
+            id: "tubeClearance",
+            label: "Tube clearance",
+            placeholder: "≥ 0",
+            scale: 2,
+            inputMode: "decimal",
+            value: tubeClearance,
+            required: true,
+            units: "mm",
+        },
+        {
+            id: "pitchRatio",
+            label: "Pitch ratio",
+            placeholder: "≥ 1",
+            scale: 2,
+            inputMode: "decimal",
+            value: pitchRatio,
+            required: true,
+        },
+        {
+            id: "shellID",
+            label: "Custom shell ID",
+            placeholder: "Optional override",
+            scale: 2,
+            inputMode: "decimal",
+            value: shellID,
+            units: "mm",
+        },
+        {
+            id: "actualTubes",
+            label: "Actual number of tubes",
+            placeholder: "Based on custom shell ID",
+            scale: 0,
+            inputMode: "numeric",
+            value: actualTubes,
+            calculated: true,
+        },
+    ];
 
     // Context menu
     const containerRef = useRef<HTMLDivElement>(null);
@@ -154,225 +224,21 @@ const App = () => {
                 <div className="form-scroll">
                     <div className="section">
                         <h2>Calculation Inputs</h2>
-                        <div className="field">
-                            <label className="field-label" htmlFor="minTubes">
-                                Minimum number of tubes
-                                <span className="required-asterisk">*</span>
-                            </label>
-                            <div className="input-group">
-                                <IMaskInput
-                                    className="value-input"
-                                    id="minTubes"
-                                    name="minTubes"
-                                    readOnly={isCalculating}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="e.g. 100"
-                                    mask={Number}
-                                    scale={0}
-                                    min={0}
-                                    radix="."
-                                    thousandsSeparator=","
-                                    value={!utils.isNumber(minTubes) ? "" : minTubes.toString()}
-                                    onBlur={onBlur}
-                                    onKeyDown={onKeyDown}
-                                    onAccept={(value: string) => onAcceptEmpty(value, "minTubes")}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    inputMode="numeric"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="field">
-                            <label className="field-label" htmlFor="tubeOD">
-                                Tube OD
-                                <span className="required-asterisk">*</span>
-                            </label>
-                            <div className="input-group">
-                                <IMaskInput
-                                    className="value-input"
-                                    id="tubeOD"
-                                    name="tubeOD"
-                                    readOnly={isCalculating}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="> 0"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    value={!utils.isNumber(tubeOD) ? "" : tubeOD.toString()}
-                                    onBlur={onBlur}
-                                    onKeyDown={onKeyDown}
-                                    onAccept={(value: string) => onAcceptEmpty(value, "tubeOD")}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    inputMode="decimal"
-                                    required
-                                />
-                                <span className="units">mm</span>
-                            </div>
-                        </div>
-
-                        <div className="field">
-                            <label className="field-label" htmlFor="OTLtoShell">
-                                OTL to shell diametrical clearance
-                                <span className="required-asterisk">*</span>
-                            </label>
-                            <div className="input-group">
-                                <IMaskInput
-                                    className="value-input"
-                                    id="OTLtoShell"
-                                    name="OTLtoShell"
-                                    readOnly={isCalculating}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="Shell ID – OTL, ≥ 0"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onKeyDown={onKeyDown}
-                                    onAccept={(value: string) => onAcceptEmpty(value, "OTLtoShell")}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={!utils.isNumber(OTLtoShell) ? "" : OTLtoShell.toString()}
-                                    inputMode="decimal"
-                                    required
-                                />
-                                <span className="units">mm</span>
-                            </div>
-                        </div>
-
-                        <div className="field">
-                            <label className="field-label" htmlFor="tubeClearance">
-                                Tube clearance
-                                <span className="required-asterisk">*</span>
-                            </label>
-                            <div className="input-group">
-                                <IMaskInput
-                                    className="value-input"
-                                    id="tubeClearance"
-                                    name="tubeClearance"
-                                    readOnly={isCalculating}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="≥ 0"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onKeyDown={onKeyDown}
-                                    onAccept={(value: string) =>
-                                        onAcceptEmpty(value, "tubeClearance")
-                                    }
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={
-                                        !utils.isNumber(tubeClearance)
-                                            ? ""
-                                            : tubeClearance.toString()
-                                    }
-                                    inputMode="decimal"
-                                    required
-                                />
-                                <span className="units">mm</span>
-                            </div>
-                        </div>
-
-                        <div className="field">
-                            <label className="field-label" htmlFor="pitchRatio">
-                                Pitch ratio
-                                <span className="required-asterisk">*</span>
-                            </label>
-                            <div className="input-group">
-                                <IMaskInput
-                                    className="value-input"
-                                    id="pitchRatio"
-                                    name="pitchRatio"
-                                    readOnly={isCalculating}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="≥ 1"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onKeyDown={onKeyDown}
-                                    onAccept={(value: string) => onAcceptEmpty(value, "pitchRatio")}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={!utils.isNumber(pitchRatio) ? "" : pitchRatio.toString()}
-                                    inputMode="decimal"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="field">
-                            <label className="field-label" htmlFor="shellID">
-                                Custom shell ID
-                            </label>
-                            <div className="input-group">
-                                <IMaskInput
-                                    className="value-input"
-                                    id="shellID"
-                                    name="shellID"
-                                    readOnly={isCalculating}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="Optional override"
-                                    mask={Number}
-                                    scale={2}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    onBlur={onBlur}
-                                    onKeyDown={onKeyDown}
-                                    onAccept={(value: string) => onAcceptEmpty(value, "shellID")}
-                                    onChange={(e) => {}}
-                                    onSubmit={inputOnSubmitHandler}
-                                    value={!utils.isNumber(shellID) ? "" : shellID.toString()}
-                                    inputMode="decimal"
-                                />
-                                <span className="units">mm</span>
-                            </div>
-                        </div>
-
-                        <div className="field">
-                            <label className="field-label" htmlFor="actualTubes">
-                                Actual number of tubes
-                            </label>
-                            <div className="input-group">
-                                <IMaskInput
-                                    className="value-input calculated-field"
-                                    id={"actualTubes"}
-                                    name={"actualTubes"}
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="Based on custom shell ID"
-                                    mask={Number}
-                                    scale={0}
-                                    min={0}
-                                    radix={"."}
-                                    thousandsSeparator=","
-                                    value={
-                                        !utils.isNumber(actualTubes) ? "" : actualTubes.toString()
-                                    }
-                                    inputMode="numeric"
-                                    readOnly
-                                />
-                            </div>
-                        </div>
+                        {numericFieldConfigs.map((cfg) => (
+                            <NumericField
+                                key={cfg.id}
+                                {...cfg}
+                                readOnly={cfg.calculated || isCalculating}
+                                onBlur={cfg.calculated ? undefined : onBlur}
+                                onKeyDown={cfg.calculated ? undefined : onKeyDown}
+                                onAccept={
+                                    cfg.calculated
+                                        ? undefined
+                                        : (value) => onAcceptEmpty(value, cfg.id)
+                                }
+                                onSubmit={cfg.calculated ? undefined : inputOnSubmitHandler}
+                            />
+                        ))}
                     </div>
 
                     <div className="divider" />
@@ -392,7 +258,7 @@ const App = () => {
                             className="layout-list"
                             role="radiogroup"
                             aria-label="Tube layout angle"
-                            aria-busy={isCalculating}
+                            aria-busy={showLoadingBadge}
                         >
                             {layoutOptionRows.map(({ key, id, label, value, required }) => {
                                 const result = layoutResults[key];
@@ -413,7 +279,7 @@ const App = () => {
                                             name="layoutOption"
                                             value={value}
                                             onChange={onLayoutOptionChange}
-                                            disabled={isCalculating}
+                                            disabled={showLoadingBadge}
                                             required={required}
                                         />
                                         <span className="row-angle">
