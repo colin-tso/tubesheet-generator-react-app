@@ -1,94 +1,69 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateTubeSheetSVG, ITubeSheetData } from "../plugins/tubesheet-layout-generator";
-
-export type LayoutResults = {
-    30: (ITubeSheetData & { preferred: boolean }) | null;
-    45: (ITubeSheetData & { preferred: boolean }) | null;
-    60: (ITubeSheetData & { preferred: boolean }) | null;
-    90: (ITubeSheetData & { preferred: boolean }) | null;
-    radial: (ITubeSheetData & { preferred: boolean }) | null;
-};
-
-export type SingleResultPayload = (ITubeSheetData & { shellID?: number; numTubes?: number }) | null;
-
-const emptyLayoutResults: LayoutResults = {
+import { generateTubeSheetSVG } from "../plugins/tubesheet-layout-generator";
+const emptyLayoutResults = {
     "30": null,
     "45": null,
     "60": null,
     "90": null,
     radial: null,
 };
-
 // Loading badge is debounced so brief calculations don't cause a flash
 // and is held visible for a minimum duration once shown.
 const SHOW_DELAY_MS = 150;
 const MIN_VISIBLE_MS = 300;
-
 // Owns the tubesheet.worker.ts Web Worker.
 // Request/response handling, error/loading state, and announcements.
 // Supports concurrent CALCULATE_ALL/CALCULATE_SINGLE requests.
 // "isCalculating" only clears once all finish.
-export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
-    const [layoutResults, setLayoutResults] = useState<LayoutResults>(emptyLayoutResults);
-    const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
-    const [lastSingleResult, setLastSingleResult] = useState<SingleResultPayload>(null);
+export function useTubeSheetWorker(placeholderSVG) {
+    const [layoutResults, setLayoutResults] = useState(emptyLayoutResults);
+    const [drawingSVG, setDrawingSVG] = useState(placeholderSVG);
+    const [lastSingleResult, setLastSingleResult] = useState(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [showLoadingBadge, setShowLoadingBadge] = useState(false);
-    const [calcError, setCalcError] = useState<string | null>(null);
+    const [calcError, setCalcError] = useState(null);
     const [announcement, setAnnouncement] = useState("");
-
-    const workerRef = useRef<Worker | null>(null);
-    const loadingShownAtRef = useRef<number | null>(null);
+    const workerRef = useRef(null);
+    const loadingShownAtRef = useRef(null);
     const hasRenderedOnceRef = useRef(false);
-
     // Track outstanding calculations so "isCalculating" clears only when all finish.
     const pendingCompletionsRef = useRef(0);
     // Worker responses increment below refs synchronously. Effects drain them
     // once the corresponding state update has actually committed.
     const pendingAllResponsesRef = useRef(0);
     const pendingSingleResponsesRef = useRef(0);
-
     // Use monotonic request IDs. Apply responses only if their requestId matches the
     // latest for that channel, discarding older replies so out-of-order results
     // are not returned.
     const nextRequestIdRef = useRef(0);
-    const latestAllRequestIdRef = useRef<number | null>(null);
-    const latestSingleRequestIdRef = useRef<number | null>(null);
-
+    const latestAllRequestIdRef = useRef(null);
+    const latestSingleRequestIdRef = useRef(null);
     const beginCalculation = useCallback(() => {
         pendingCompletionsRef.current += 1;
         setCalcError(null);
         setIsCalculating(true);
     }, []);
-
     const completeCalculation = useCallback(() => {
         pendingCompletionsRef.current = Math.max(0, pendingCompletionsRef.current - 1);
         if (pendingCompletionsRef.current === 0) {
             setIsCalculating(false);
         }
     }, []);
-
     // Drain counter and call completeCalculation per recorded response.
-    const drainCompletions = useCallback(
-        (counterRef: { current: number }) => {
-            const count = counterRef.current;
-            counterRef.current = 0;
-            for (let i = 0; i < count; i++) {
-                completeCalculation();
-            }
-        },
-        [completeCalculation],
-    );
-
+    const drainCompletions = useCallback((counterRef) => {
+        const count = counterRef.current;
+        counterRef.current = 0;
+        for (let i = 0; i < count; i++) {
+            completeCalculation();
+        }
+    }, [completeCalculation]);
     // Create the worker once and wire up its message handler.
     useEffect(() => {
         const w = new Worker(new URL("../workers/tubesheet.worker.ts", import.meta.url), {
             type: "module",
         });
-
         w.onmessage = (event) => {
             const { type, requestId, payload } = event.data;
-
             if (type === "ALL_RESULTS") {
                 if (requestId !== latestAllRequestIdRef.current) {
                     // Discard request if superseded and mark as complete
@@ -100,7 +75,6 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
                 pendingAllResponsesRef.current += 1;
                 setLayoutResults(payload);
             }
-
             if (type === "SINGLE_RESULT") {
                 if (requestId !== latestSingleRequestIdRef.current) {
                     completeCalculation();
@@ -112,106 +86,82 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
                 setDrawingSVG(generateTubeSheetSVG(payload));
                 setLastSingleResult(payload);
             }
-
             if (type === "ERROR") {
                 const { requestType } = event.data;
-                const latestIdForChannel =
-                    requestType === "CALCULATE_ALL"
-                        ? latestAllRequestIdRef.current
-                        : latestSingleRequestIdRef.current;
-
+                const latestIdForChannel = requestType === "CALCULATE_ALL"
+                    ? latestAllRequestIdRef.current
+                    : latestSingleRequestIdRef.current;
                 if (requestId !== latestIdForChannel) {
                     // Discard error if superseded.
                     completeCalculation();
                     return;
                 }
-
                 console.error("Worker Error:", payload);
                 setCalcError(typeof payload === "string" ? payload : "Calculation failed.");
                 setAnnouncement(`Calculation failed: ${payload}`);
                 completeCalculation();
             }
         };
-
         workerRef.current = w;
-
         return () => {
             w.terminate();
             workerRef.current = null;
         };
     }, [completeCalculation]);
-
     // Debounce showing the loading badge.
     useEffect(() => {
         if (isCalculating) {
             setAnnouncement("Calculating layout…");
-
             const showTimer = window.setTimeout(() => {
                 loadingShownAtRef.current = Date.now();
                 setShowLoadingBadge(true);
             }, SHOW_DELAY_MS);
-
             return () => clearTimeout(showTimer);
         }
-
         // Calculation finished. If the badge never actually became visible
         // the cleanup above already cancelled the timer.
         if (loadingShownAtRef.current === null) {
             return;
         }
-
         const elapsed = Date.now() - loadingShownAtRef.current;
         const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
-
         const hideTimer = window.setTimeout(() => {
             setShowLoadingBadge(false);
             loadingShownAtRef.current = null;
         }, remaining);
-
         return () => clearTimeout(hideTimer);
     }, [isCalculating]);
-
     // After layoutResults commit: drain pending ALL_RESULTS count.
     useEffect(() => {
         drainCompletions(pendingAllResponsesRef);
     }, [layoutResults, drainCompletions]);
-
     // Stable callback for TubeSheetSVG render.
     const onDrawingRendered = useCallback(() => {
         // Drain pending SINGLE_RESULT count.
         drainCompletions(pendingSingleResponsesRef);
-
         // Skip initial placeholder announcement
         if (!hasRenderedOnceRef.current) {
             hasRenderedOnceRef.current = true;
             return;
         }
-
         setAnnouncement("Layout updated.");
     }, [drainCompletions]);
-
-    const postCalculateSingle = useCallback(
-        (payload: Record<string, unknown>) => {
-            if (!workerRef.current) return;
-            const requestId = ++nextRequestIdRef.current;
-            latestSingleRequestIdRef.current = requestId;
-            beginCalculation();
-            workerRef.current.postMessage({ type: "CALCULATE_SINGLE", requestId, payload });
-        },
-        [beginCalculation],
-    );
-
-    const postCalculateAll = useCallback(
-        (payload: Record<string, unknown>) => {
-            if (!workerRef.current) return;
-            const requestId = ++nextRequestIdRef.current;
-            latestAllRequestIdRef.current = requestId;
-            beginCalculation();
-            workerRef.current.postMessage({ type: "CALCULATE_ALL", requestId, payload });
-        },
-        [beginCalculation],
-    );
-
+    const postCalculateSingle = useCallback((payload) => {
+        if (!workerRef.current)
+            return;
+        const requestId = ++nextRequestIdRef.current;
+        latestSingleRequestIdRef.current = requestId;
+        beginCalculation();
+        workerRef.current.postMessage({ type: "CALCULATE_SINGLE", requestId, payload });
+    }, [beginCalculation]);
+    const postCalculateAll = useCallback((payload) => {
+        if (!workerRef.current)
+            return;
+        const requestId = ++nextRequestIdRef.current;
+        latestAllRequestIdRef.current = requestId;
+        beginCalculation();
+        workerRef.current.postMessage({ type: "CALCULATE_ALL", requestId, payload });
+    }, [beginCalculation]);
     return {
         layoutResults,
         drawingSVG,
