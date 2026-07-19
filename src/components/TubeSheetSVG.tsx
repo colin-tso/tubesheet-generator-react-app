@@ -7,33 +7,19 @@ type SVGProps = {
 };
 
 export function TubeSheetSVG({ src, className, onRendered }: SVGProps) {
-    const svg = useRef<SVGSVGElement | null>(null); // defining useRef inside component
+    const containerRef = useRef<HTMLDivElement | null>(null);
+
     useEffect(() => {
-        if (svg.current) {
-            // Clear SVG component
-            svg.current.innerHTML = "";
-
-            // Get the children from SVG source and append them to the SVG component
-            Array.from(src.childNodes).forEach((child) => {
-                if (child instanceof SVGElement) {
-                    if (svg.current) {
-                        svg.current.appendChild(child.cloneNode(true));
-                    }
-                }
-            });
-
-            // Copy required attributes
-            svg.current.setAttribute("viewBox", `${src.getAttribute("viewBox")}`);
-            svg.current.setAttribute("title", `${src.getAttribute("title")}`);
-            svg.current.setAttribute("desc", `${src.getAttribute("desc")}`);
-            svg.current.setAttribute("role", `${src.getAttribute("role")}`);
+        const container = containerRef.current;
+        if (container) {
+            if (className) {
+                src.setAttribute("class", className);
+            }
+            container.replaceChildren(src);
         }
 
         onRendered?.();
-    }, [src, onRendered]);
-    return (
-        <>
-            <svg ref={svg} className={className} />
-        </>
-    );
+    }, [src, className, onRendered]);
+
+    return <div ref={containerRef} style={{ display: "contents" }} />;
 }
