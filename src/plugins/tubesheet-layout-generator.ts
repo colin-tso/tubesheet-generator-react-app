@@ -1,4 +1,5 @@
 import memoize from "lodash.memoize";
+import { LRUCache } from "../utils/LRUCache";
 
 export interface Tube {
     x: number;
@@ -254,6 +255,7 @@ const round = (num: number, decimalPlaces = 0) => {
 };
 
 const memoKey = (...args: Array<number | string | boolean | undefined>): string => args.join("|");
+const MEMO_CACHE_SIZE = 1000;
 
 const generateTubeField = memoize(
     (
@@ -421,6 +423,9 @@ const generateTubeField = memoize(
     },
     memoKey,
 );
+generateTubeField.cache = new LRUCache(
+    MEMO_CACHE_SIZE,
+) as unknown as typeof generateTubeField.cache;
 
 const radialFunc = (
     shellID: number,
@@ -953,6 +958,7 @@ const findMinID = memoize(
     },
     memoKey,
 );
+findMinID.cache = new LRUCache(MEMO_CACHE_SIZE) as unknown as typeof findMinID.cache;
 
 const generateSVGCircles = <T extends { x: number; y: number }>(
     circles: T[],
