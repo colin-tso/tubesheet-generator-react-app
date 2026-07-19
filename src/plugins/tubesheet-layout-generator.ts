@@ -1,7 +1,10 @@
 import memoize from "lodash.memoize";
 
-export type Tube = { x: number; y: number };
-export type TubeField = Array<Tube>;
+export interface Tube {
+    x: number;
+    y: number;
+}
+export interface TubeField extends Array<Tube> {}
 export type TubeSheetLayout = 30 | 45 | 60 | 90 | "radial";
 
 export interface ITubeSheetData {
@@ -473,7 +476,7 @@ const getLayoutConstants = (pitch: number, layout: TubeSheetLayout) => {
         },
         radial: { dx: NaN, dy: NaN, C: NaN },
     };
-    return layoutConstants[layout.toString() as keyof typeof layoutConstants];
+    return layoutConstants[layout as keyof typeof layoutConstants];
 };
 
 const tubeCount = (
