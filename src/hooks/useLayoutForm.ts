@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import type React from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, SyntheticEvent } from "react";
-import { TubeSheet } from "../plugins/tubesheet-layout-generator";
 import { utils } from "../utils/";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
 
@@ -424,41 +423,34 @@ export function useLayoutForm({
         validateLayoutOption();
     }, [validateLayoutInputs, validateLayoutOption]);
 
-    // Actual tubes calculation only when layout option is selected and shell ID is defined
+    // Keep "actual tubes" in sync with a custom shell ID whenever a relevant
+    // input changes (e.g. tubeOD/pitch edited via blur only, without Enter).
+    //
+    // This used to construct a `TubeSheet` directly here, which re-ran the
+    // full min-ID bisection and tube-field generation synchronously on the
+    // main thread just to read off `numTubes` - duplicating work the worker
+    // already does and blocking the UI thread for large tube counts. Instead,
+    // ask the worker to recalculate; its response is picked up by the
+    // "lastSingleResult" effect below, which sets/clears actualTubes.
     useEffect(() => {
-        if (!utils.isNumber(fields.layoutOption)) {
+        if (
+            !utils.isNumber(fields.layoutOption) ||
+            !utils.isNumber(fields.shellID) ||
+            fields.shellID <= 0 ||
+            !layoutInputsDefined
+        ) {
             return;
         }
 
-        let selectedLayout: TubeSheet | null = null;
-
-        const parsedLayoutOption = (
-            fields.layoutOption === 0 ? "radial" : fields.layoutOption
-        ) as TubeSheet["layout"];
-
-        if (utils.isNumber(fields.shellID) && fields.shellID > 0) {
-            selectedLayout = layoutInputsDefined
-                ? new TubeSheet(
-                      fields.OTLtoShell!,
-                      fields.tubeOD!,
-                      fields.pitchRatio!,
-                      parsedLayoutOption,
-                      undefined,
-                      fields.shellID,
-                  )
-                : null;
-        }
-
-        if (selectedLayout && selectedLayout.numTubes) {
-            dispatch({ type: "SET_FIELD", field: "actualTubes", value: selectedLayout.numTubes });
-        }
+        triggerSingleCalculation({ shellID: fields.shellID });
     }, [
         fields.OTLtoShell,
-        layoutInputsDefined,
-        fields.layoutOption,
-        fields.pitchRatio,
-        fields.shellID,
         fields.tubeOD,
+        fields.pitchRatio,
+        fields.layoutOption,
+        fields.shellID,
+        layoutInputsDefined,
+        triggerSingleCalculation,
     ]);
 
     // If a SINGLE_RESULT came back for a custom shell ID, sync actual tubes to it.
