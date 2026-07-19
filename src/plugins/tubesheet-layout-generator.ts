@@ -253,7 +253,7 @@ const round = (num: number, decimalPlaces = 0) => {
     return Math.round(n) / p;
 };
 
-const memoHash = (...args: any[]) => JSON.stringify(Array.from(args));
+const memoKey = (...args: Array<number | string | boolean | undefined>): string => args.join("|");
 
 const generateTubeField = memoize(
     (
@@ -419,7 +419,7 @@ const generateTubeField = memoize(
             return null;
         }
     },
-    memoHash,
+    memoKey,
 );
 
 const radialFunc = (
@@ -951,7 +951,7 @@ const findMinID = memoize(
             }
         }
     },
-    memoHash,
+    memoKey,
 );
 
 const generateSVGCircles = <T extends { x: number; y: number }>(
