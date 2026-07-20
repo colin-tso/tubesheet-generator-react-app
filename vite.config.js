@@ -6,6 +6,7 @@ export default defineConfig({
     plugins: [react(), svgr()],
     build: {
         outDir: "build",
+        target: "es2023",
     },
     server: {
         open: false,
