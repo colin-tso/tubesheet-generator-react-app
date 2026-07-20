@@ -223,6 +223,16 @@ export function useLayoutForm({
             return;
         }
 
+        // minTubes/tubeOD/OTLtoShell: recalculate on change commit
+        if (name === "minTubes" || name === "tubeOD" || name === "OTLtoShell") {
+            const changed = fields[name] !== parsed;
+            setGenericField(name, parsed);
+            if (changed) {
+                requestAllLayoutResults({ [name]: parsed });
+            }
+            return;
+        }
+
         setGenericField(name, parsed);
     };
 
