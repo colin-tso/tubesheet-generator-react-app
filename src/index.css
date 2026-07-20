@@ -738,13 +738,19 @@ footer a {
   background-image: none;
 }
 
-.grid-toggle {
-  cursor: pointer;
-
+.viewport-options {
   position: absolute;
   z-index: 3;
-  top: 16px;
-  right: 52px;
+  top: 28px;
+  right: 28px;
+
+  display: flex;
+  gap: 10px;
+}
+
+.grid-toggle,
+.table-toggle {
+  cursor: pointer;
 
   display: flex;
   gap: 6px;
@@ -771,28 +777,33 @@ footer a {
     opacity var(--transition);
 }
 
-.grid-toggle::after {
+.grid-toggle::after,
+.table-toggle::after {
   content: "OFF";
 }
 
-.grid-toggle:hover {
+.grid-toggle:hover,
+.table-toggle::hover {
   border-color: var(--blue);
   color: var(--blue);
   opacity: 1;
 }
 
-.grid-toggle.active {
+.grid-toggle.active,
+.table-toggle.active {
   border-color: var(--blue);
   color: var(--blue);
   opacity: 1;
   background-color: var(--blue-tint);
 }
 
-.grid-toggle.active::after {
+.grid-toggle.active::after,
+.table-toggle.active::after {
   content: "ON";
 }
 
-.grid-toggle svg {
+.grid-toggle svg,
+.table-toggle svg {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.3;

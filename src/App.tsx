@@ -12,6 +12,7 @@ import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import { ContextMenu, ContextMenuItem } from "./components/context-menu";
 import StarIcon from "./assets/star.svg?react";
+import TableIcon from "./assets/table-icon.svg?react";
 import GridIcon from "./assets/grid-icon.svg?react";
 import SaveIcon from "./assets/save-icon.svg?react";
 import CopyIcon from "./assets/copy-icon.svg?react";
@@ -87,6 +88,9 @@ const App = () => {
 
     // Show/hide grid state
     const [showGrid, setShowGrid] = useState<boolean>(true);
+
+    // Show/hide table state
+    const [showTable, setShowTable] = useState<boolean>(true);
 
     // Input fields
     const numericFieldConfigs: NumericFieldProps[] = [
@@ -410,16 +414,28 @@ const App = () => {
                     <span className="reg-tr" aria-hidden="true" />
                     <span className="reg-bl" aria-hidden="true" />
                     <span className="reg-br" aria-hidden="true" />
-                    <button
-                        type="button"
-                        className={`grid-toggle ${showGrid ? "active" : ""}`}
-                        onClick={() => setShowGrid((v) => !v)}
-                        aria-pressed={showGrid}
-                        title={showGrid ? "Hide Grid" : "Show Grid"}
-                    >
-                        <GridIcon width="13" height="13" aria-hidden="true" />
-                        Grid
-                    </button>
+                    <div className="viewport-options">
+                        <button
+                            type="button"
+                            className={`table-toggle ${showTable ? "active" : ""}`}
+                            onClick={() => setShowTable((v) => !v)}
+                            aria-pressed={showTable}
+                            title={showTable ? "Hide Table" : "Show Table"}
+                        >
+                            <TableIcon width="13" height="13" aria-hidden="true" />
+                            Table
+                        </button>
+                        <button
+                            type="button"
+                            className={`grid-toggle ${showGrid ? "active" : ""}`}
+                            onClick={() => setShowGrid((v) => !v)}
+                            aria-pressed={showGrid}
+                            title={showGrid ? "Hide Grid" : "Show Grid"}
+                        >
+                            <GridIcon width="13" height="13" aria-hidden="true" />
+                            Grid
+                        </button>
+                    </div>
                     <TubeSheetSVG
                         src={drawingSVG}
                         className="tubesheet-svg"
