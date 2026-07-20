@@ -82,7 +82,9 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
 
     // Create the worker once and wire up its message handler.
     useEffect(() => {
-        const w = new Worker(new URL("../workers/tubesheet.worker.ts", import.meta.url));
+        const w = new Worker(new URL("../workers/tubesheet.worker.ts", import.meta.url), {
+            type: "module",
+        });
 
         w.onmessage = (event) => {
             const { type, requestId, payload } = event.data;

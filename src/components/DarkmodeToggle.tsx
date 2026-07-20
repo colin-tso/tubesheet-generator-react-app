@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./darkmode-toggle.css";
 import "../index.css";
-import { ReactComponent as MoonIcon } from "../assets/moon.svg";
-import { ReactComponent as SunIcon } from "../assets/sun.svg";
+import MoonIcon from "../assets/moon.svg?react";
+import SunIcon from "../assets/sun.svg?react";
 
 const updateTheme = (isDarkEnabled: Boolean) => {
     const docEl = document.documentElement;
