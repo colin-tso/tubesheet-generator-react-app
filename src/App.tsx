@@ -261,7 +261,8 @@ const App = () => {
                             aria-busy={showLoadingBadge}
                         >
                             {layoutOptionRows.map(({ key, id, label, value, required }) => {
-                                const result = layoutResults[key];
+                                // Hide stale values while calculating
+                                const result = showLoadingBadge ? undefined : layoutResults[key];
                                 const minIDValue =
                                     result && result.minID !== null
                                         ? (result.minID as number)
