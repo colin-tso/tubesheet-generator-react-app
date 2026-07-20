@@ -10,6 +10,7 @@
         {
             "type": "npm",
             "script": "start",
+            "label": "npm: start",
             "group": {
                 "kind": "test",
                 "isDefault": true
@@ -22,8 +23,35 @@
                 },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "Compiling...", // Signals the begin of the Task
-                    "endsPattern": "Compiled .*" // Signals that now the initialization of the task is complete
+                    "beginsPattern": "VITE v[\\d.]+", // printed once when the dev server boots
+                    "endsPattern": "ready in \\d+ ?ms" // signals the server is up and listening
+                }
+            }
+        },
+        {
+            "type": "npm",
+            "script": "build",
+            "label": "npm: build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$tsc"] // tsc -b runs first; surface its errors in the Problems panel
+        },
+        {
+            "type": "npm",
+            "script": "test",
+            "label": "npm: test",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "custom",
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "RUN\\s+v[\\d.]+", // a new test run starting (initial run or on file change)
+                    "endsPattern": "Waiting for file changes" // vitest watch mode idle state
                 }
             }
         }
