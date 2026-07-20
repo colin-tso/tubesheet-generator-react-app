@@ -6,13 +6,20 @@ self.onmessage = (event: MessageEvent) => {
 
     try {
         if (type === "CALCULATE_ALL") {
-            const { OTLtoShell, tubeOD, pitchRatio, minTubes } = payload;
+            const { OTLtoShell, tubeOD, pitchRatio, minTubes, shellID } = payload;
 
-            const _30 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 30, minTubes);
-            const _45 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 45, minTubes);
-            const _60 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 60, minTubes);
-            const _90 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 90, minTubes);
-            const radial = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, "radial", minTubes);
+            const _30 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 30, minTubes, shellID);
+            const _45 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 45, minTubes, shellID);
+            const _60 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 60, minTubes, shellID);
+            const _90 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 90, minTubes, shellID);
+            const radial = new TubeSheet(
+                OTLtoShell,
+                tubeOD,
+                pitchRatio,
+                "radial",
+                minTubes,
+                shellID,
+            );
 
             const minID = Math.min(
                 _30.minID ?? Infinity,
