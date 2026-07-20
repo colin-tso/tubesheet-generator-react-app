@@ -254,8 +254,21 @@ const round = (num: number, decimalPlaces = 0) => {
     return Math.round(n) / p;
 };
 
-const memoKey = (...args: Array<number | string | boolean | undefined>): string => args.join("|");
+const createMemoKey = (...defaults: Array<number | string | boolean | undefined>) => {
+    return (...args: Array<number | string | boolean | undefined>): string => {
+        const normalised = defaults.map((def, i) => (args[i] === undefined ? def : args[i]));
+        return normalised.map((v) => `${typeof v}:${String(v)}`).join("|");
+    };
+};
 const MEMO_CACHE_SIZE = 1000;
+const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    "AUTO",
+];
 
 const generateTubeField = memoize(
     (
@@ -421,7 +434,7 @@ const generateTubeField = memoize(
             return null;
         }
     },
-    memoKey,
+    createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
 );
 generateTubeField.cache = new LRUCache(
     MEMO_CACHE_SIZE,
@@ -956,7 +969,7 @@ const findMinID = memoize(
             }
         }
     },
-    memoKey,
+    createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
 );
 findMinID.cache = new LRUCache(MEMO_CACHE_SIZE) as unknown as typeof findMinID.cache;
 
