@@ -136,110 +136,61 @@ export class TubeSheet {
     }
 
     private updateGeneratedProps() {
-        this._minID = this.minIDFunc();
-        this._numTubes = this.numTubesFunc();
-        this._tubeField = this.tubeFieldFunc();
-        this._OTL = this.OTLFunc();
+        const props = this.computeGeneratedProps();
+        this._minID = props.minID;
+        this._numTubes = props.numTubes;
+        this._tubeField = props.tubeField;
+        this._OTL = props.OTL;
     }
 
-    private OTLFunc(): number | null {
+    private computeGeneratedProps(): {
+        minID: number | null;
+        numTubes: number;
+        tubeField: TubeField | null;
+        OTL: number | null;
+    } {
+        let minID: number | null = null;
+        let effectiveShellID: number | null = null;
+
         if (this._shellID) {
-            return (
-                tubeFieldOTL(
-                    this._shellID,
-                    this._OTLClearance,
-                    this._tubeOD,
-                    this._pitchRatio,
-                    this._layout,
-                ) ?? null
-            );
+            effectiveShellID = this._shellID;
         } else if (this._minTubes) {
-            return (
-                tubeFieldOTL(
-                    this.minIDFunc() as number,
-                    this._OTLClearance,
-                    this._tubeOD,
-                    this._pitchRatio,
-                    this._layout,
-                ) ?? null
-            );
-        } else {
-            return null;
-        }
-    }
-
-    private tubeFieldFunc(): TubeField | null {
-        if (this._shellID) {
-            return generateTubeField(
-                this._shellID,
-                this._OTLClearance,
-                this._tubeOD,
-                this._pitchRatio,
-                this._layout,
-            );
-        }
-
-        if (this._minTubes) {
-            return generateTubeField(
-                this.minIDFunc() as number,
-                this._OTLClearance,
-                this._tubeOD,
-                this._pitchRatio,
-                this._layout,
-            );
-        }
-
-        return null;
-    }
-
-    private minIDFunc(): number | null {
-        if (this._minTubes) {
-            // console.log(`getting minID for:
-            //     minTubes: ${this._minTubes}
-            //     OTLClearance: ${this._OTLClearance}
-            //     tubeOD: ${this._tubeOD}
-            //     pitchRatio: ${this._pitchRatio}
-            //     layout: ${this._layout}`);
-            return findMinID(
+            minID = findMinID(
                 this._minTubes,
                 this._OTLClearance,
                 this._tubeOD,
                 this._pitchRatio,
                 this._layout,
             );
-        } else if (this._shellID) {
-            return findMinID(
-                this.numTubesFunc(),
-                this._OTLClearance,
-                this._tubeOD,
-                this._pitchRatio,
-                this._layout,
-            );
-        } else {
-            return null;
+            effectiveShellID = minID;
         }
-    }
 
-    private numTubesFunc(): number {
-        if (this._shellID) {
-            return tubeCount(
-                this._shellID,
-                this._OTLClearance,
-                this._tubeOD,
-                this._pitchRatio,
-                this._layout,
-            );
-        } else if (this._minTubes) {
-            return tubeCount(
-                this.minIDFunc() as number,
-                this._OTLClearance,
-                this._tubeOD,
-                this._pitchRatio,
-                this._layout,
-            );
-        } else {
-            return 0;
+        if (effectiveShellID === null) {
+            return { minID, numTubes: 0, tubeField: null, OTL: null };
         }
+
+        const tubeField = generateTubeField(
+            effectiveShellID,
+            this._OTLClearance,
+            this._tubeOD,
+            this._pitchRatio,
+            this._layout,
+        );
+        const numTubes = tubeField ? tubeField.length : 0;
+
+        if (this._shellID) {
+            minID = findMinID(
+                numTubes,
+                this._OTLClearance,
+                this._tubeOD,
+                this._pitchRatio,
+                this._layout,
+            );
+        }
+
+        const OTL = tubeField ? OTLFromTubeField(tubeField, this._tubeOD) : null;
+
+        return { minID, numTubes, tubeField, OTL };
     }
 }
 
@@ -516,6 +467,29 @@ const tubeCount = (
     return tubeField ? tubeField.length : 0;
 };
 
+const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null => {
+    if (!tubeField || tubeField.length === 0) {
+        return null;
+    }
+    const DECIMAL_PLACES = 11;
+    let maxDistSq = 0;
+    let found = false;
+    tubeField.forEach((tube) => {
+        if ("x" in tube && "y" in tube) {
+            found = true;
+            const distSq = tube.x * tube.x + tube.y * tube.y;
+            if (distSq > maxDistSq) {
+                maxDistSq = distSq;
+            }
+        }
+    });
+    if (!found) {
+        return null;
+    }
+    const D = Math.sqrt(maxDistSq) * 2 + tubeOD;
+    return roundUp(D, DECIMAL_PLACES);
+};
+
 const tubeFieldOTL = (
     shellID: number,
     OTLClearance: number,
@@ -528,7 +502,6 @@ const tubeFieldOTL = (
         if (tubeOD > shellID - OTLClearance) {
             throw new Error("Tube OD cannot be greater than max allowable OTL.");
         }
-        const DECIMAL_PLACES = 11;
         const tubeField = generateTubeField(
             shellID,
             OTLClearance,
@@ -538,24 +511,11 @@ const tubeFieldOTL = (
             offsetOption,
         );
         if (tubeField && tubeField.length > 0) {
-            let D = 0;
-            let D_new = 0;
-            tubeField.forEach((tube) => {
-                if ("x" in tube && "y" in tube) {
-                    let x = tube.x;
-                    let y = tube.y;
-                    // Calculate the new diameter
-                    D_new = Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD;
-                    if (D_new > D) {
-                        D = D_new;
-                    }
-                }
-            });
-            // Round up and return the OTL
-            if (D === 0) {
+            const OTL = OTLFromTubeField(tubeField, tubeOD);
+            if (OTL === null) {
                 throw new Error("Invalid tube field array.");
             }
-            return roundUp(D, DECIMAL_PLACES);
+            return OTL;
         }
     } catch (error) {
         return null;
