@@ -54,28 +54,51 @@
   --box-shadow-dark-1: hsla(0, 0%, 0%, 0.7);
   --box-shadow-dark-2: hsla(0, 0%, 0%, 0.5);
 
-  /* Color palette — resolved (follows light-dark(), see DarkmodeToggle) */
-  --paper: light-dark(var(--paper-light), var(--paper-dark));
-  --panel: light-dark(var(--panel-light), var(--panel-dark));
-  --ink: light-dark(var(--ink-light), var(--ink-dark));
-  --muted: light-dark(var(--muted-light), var(--muted-dark));
-  --line: light-dark(var(--line-light), var(--line-dark));
-  --grid-minor: light-dark(var(--grid-minor-light), var(--grid-minor-dark));
-  --grid-major: light-dark(var(--grid-major-light), var(--grid-major-dark));
-  --input-background: light-dark(var(--input-bg-light), var(--input-bg-dark));
-  --input-readonly-background: light-dark(var(--input-readonly-bg-light), var(--input-readonly-bg-dark));
-  --input-readonly-text: light-dark(var(--input-readonly-text-light), var(--input-readonly-text-dark));
-  --viewport-bg: light-dark(var(--viewport-bg-light), var(--viewport-bg-dark));
-  --blue: light-dark(var(--blue-light), var(--blue-dark));
-  --blue-bright: light-dark(var(--blue-bright-light), var(--blue-bright-dark));
-  --blue-tint: light-dark(var(--blue-tint-light), var(--blue-tint-dark));
-  --blue-glow: light-dark(var(--blue-glow-light), var(--blue-glow-dark));
-  --redline: light-dark(var(--redline-light), var(--redline-dark));
-  --preferred: light-dark(var(--preferred-light), var(--preferred-dark));
-  --box-shadow-1: light-dark(var(--box-shadow-light-1), var(--box-shadow-dark-1));
-  --box-shadow-2: light-dark(var(--box-shadow-light-2), var(--box-shadow-dark-2));
+  /* Light theme color palette */
+  --paper: var(--paper-light);
+  --panel: var(--panel-light);
+  --ink: var(--ink-light);
+  --muted: var(--muted-light);
+  --line: var(--line-light);
+  --grid-minor: var(--grid-minor-light);
+  --grid-major: var(--grid-major-light);
+  --input-background: var(--input-bg-light);
+  --input-readonly-background: var(--input-readonly-bg-light);
+  --input-readonly-text: var(--input-readonly-text-light);
+  --viewport-bg: var(--viewport-bg-light);
+  --blue: var(--blue-light);
+  --blue-bright: var(--blue-bright-light);
+  --blue-tint: var(--blue-tint-light);
+  --blue-glow: var(--blue-glow-light);
+  --redline: var(--redline-light);
+  --preferred: var(--preferred-light);
+  --box-shadow-1: var(--box-shadow-light-1);
+  --box-shadow-2: var(--box-shadow-light-2);
 
   margin: 0;
+}
+
+/* Dark theme color palette */
+[data-theme="dark"] {
+  --paper: var(--paper-dark);
+  --panel: var(--panel-dark);
+  --ink: var(--ink-dark);
+  --muted: var(--muted-dark);
+  --line: var(--line-dark);
+  --grid-minor: var(--grid-minor-dark);
+  --grid-major: var(--grid-major-dark);
+  --input-background: var(--input-bg-dark);
+  --input-readonly-background: var(--input-readonly-bg-dark);
+  --input-readonly-text: var(--input-readonly-text-dark);
+  --viewport-bg: var(--viewport-bg-dark);
+  --blue: var(--blue-dark);
+  --blue-bright: var(--blue-bright-dark);
+  --blue-tint: var(--blue-tint-dark);
+  --blue-glow: var(--blue-glow-dark);
+  --redline: var(--redline-dark);
+  --preferred: var(--preferred-dark);
+  --box-shadow-1: var(--box-shadow-dark-1);
+  --box-shadow-2: var(--box-shadow-dark-2);
 }
 
 * {

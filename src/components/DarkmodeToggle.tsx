@@ -6,11 +6,8 @@ import SunIcon from "../assets/sun.svg?react";
 
 const updateTheme = (isDarkEnabled: Boolean) => {
     const docEl = document.documentElement;
-    if (isDarkEnabled) {
-        docEl.style.setProperty("color-scheme", "dark");
-    } else {
-        docEl.style.setProperty("color-scheme", "light");
-    }
+    docEl.setAttribute("data-theme", isDarkEnabled ? "dark" : "light");
+    docEl.style.setProperty("color-scheme", isDarkEnabled ? "dark" : "light");
 };
 
 export default function ThemeToggle() {
