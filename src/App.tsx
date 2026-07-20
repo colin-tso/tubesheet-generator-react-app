@@ -147,15 +147,6 @@ const App = () => {
             value: shellID,
             units: "mm",
         },
-        {
-            id: "actualTubes",
-            label: "Actual number of tubes",
-            placeholder: "Based on custom shell ID",
-            scale: 0,
-            inputMode: "numeric",
-            value: actualTubes,
-            calculated: true,
-        },
     ];
 
     // Context menu
@@ -173,6 +164,11 @@ const App = () => {
         .filter((v): v is number => utils.isNumber(v));
     const minIDFloor = definedMinIDs.length ? Math.min(...definedMinIDs) : undefined;
     const minIDCeiling = definedMinIDs.length ? Math.max(...definedMinIDs) : undefined;
+
+    // The shell ID basis of the last completed calculation
+    const layoutResultsUseCustomShellID = layoutOptionRows.some((row) =>
+        utils.isNumber(layoutResults[row.key]?.shellID),
+    );
 
     // Convert minID to bar width percent (symlog scale, min 12%).
     const minIDBarLogPercent = (value: number | undefined) => {
@@ -250,7 +246,9 @@ const App = () => {
                             <span />
                             <span />
                             <span className="header-stats">
-                                <span className="header-minid">ID (mm)</span>
+                                <span className="header-minid">
+                                    {layoutResultsUseCustomShellID ? "Min " : ""}ID (mm)
+                                </span>
                                 <span className="header-tubes">Tubes</span>
                             </span>
                         </div>
