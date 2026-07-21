@@ -34,17 +34,19 @@ export class TubeSheet {
     /**
      * Construct a new TubeSheet object.
      *
-     * @param {number} OTLClearance     OTL = Outer Tube Limit.
-     *                                  The minimum diametrical clearance from the tube outer
-     *                                  diameter to the shell ID.
+     * @param {number} OTLClearance     OTL = Outer Tube Limit. The minimum
+     *                                  diametrical clearance from the tube
+     *                                  outer diameter to the shell ID.
      * @param {number} tubeOD           The tube outer diameter.
      * @param {number} pitchRatio       The tube pitch ratio.
      * @param {TubeSheetLayout} layout  The tube layout angle.
-     * @param {number} [minTubes]       The minimum number of tubes required. If specified,
-     *                                  the shell ID will be calculated to achieve this number
-     *                                  of tubes.
-     * @param {number} [shellID]        The shell ID. If specified, the number of tubes will be
-     *                                  the maximum allowable for this shell ID.
+     * @param {number} [minTubes]       The minimum number of tubes required. If
+     *                                  specified, the shell ID will be
+     *                                  calculated to achieve this number of
+     *                                  tubes.
+     * @param {number} [shellID]        The shell ID. If specified, the number
+     *                                  of tubes will be the maximum allowable
+     *                                  for this shell ID.
      */
     public constructor(
         OTLClearance: number,
@@ -208,8 +210,10 @@ const round = (num: number, decimalPlaces = 0) => {
 /**
  * Creates a memo key for a given set of arguments based on a set of defaults.
  *
- * @param {...number | string | boolean | undefined} defaults                    The default values for the memo key.
- * @returns {(...args: Array<number | string | boolean | undefined>) => string}  A memo key generator function.
+ * @param {...number | string | boolean | undefined} defaults
+ * The default values for the memo key.
+ * @returns {(...args: Array<number | string | boolean | undefined>) => string}
+ * A memo key generator function.
  */
 const createMemoKey = (...defaults: Array<number | string | boolean | undefined>) => {
     return (...args: Array<number | string | boolean | undefined>): string => {
@@ -236,7 +240,8 @@ const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
  * @param {number} pitchRatio                       The pitch ratio.
  * @param {TubeSheetLayout} layout                  The tube sheet layout.
  * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
- * @returns {TubeField | null}                      The generated tube field, or null if an error occurred.
+ * @returns {TubeField | null}                      The generated tube field, or
+ *                                                  null if an error occurred.
  */
 const generateTubeField = memoize(
     (
@@ -314,7 +319,8 @@ const generateTubeField = memoize(
                     x = C * cMult + i * dx - offset;
                     i++;
                     if (x * x + y * y <= maxCentreDistSq) {
-                        // same as Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <= maxOTL
+                        // same as Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <=
+                        // maxOTL
                         quarterTubeField.push({ x: x, y: y });
                     } else {
                         break;
@@ -484,16 +490,21 @@ const getLayoutConstants = (pitch: number, layout: TubeSheetLayout) => {
  * Calculates the number of tubes in a tube sheet based on the shell ID, OTL
  * clearance, tube outer diameter, pitch ratio, layout, and offset option.
  *
- * @param {number} shellID                          The shell ID of the tube sheet.
- * @param {number} OTLClearance                     The minimum diametrical clearance from the
- *                                                  tube outer diameter to the shell ID.
+ * @param {number} shellID                          The shell ID of the tube
+ *                                                  sheet.
+ * @param {number} OTLClearance                     The minimum diametrical
+ *                                                  clearance from the tube
+ *                                                  outer diameter to the shell
+ *                                                  ID.
  * @param {number} tubeOD                           The tube outer diameter.
  * @param {number} pitchRatio                       The tube pitch ratio.
- * @param {TubeSheetLayout} layout                  The layout of the tube sheet.
+ * @param {TubeSheetLayout} layout                  The layout of the tube
+ * sheet.
  * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option for the
  *                                                  tube field generation.
  *                                                  Defaults to "AUTO".
- * @returns {number}                                The number of tubes in the tube sheet.
+ * @returns {number}                                The number of tubes in the
+ * tube sheet.
  */
 const tubeCount = (
     shellID: number,
@@ -522,7 +533,8 @@ const tubeCount = (
  * @param {number} [offsetOption=0]        The offset option.
  * @returns {number | null | undefined}    The calculated OTL value, or null if
  *                                         an error occurred.
- * @throws {Error}                         If the tube OD is greater than the max allowable OTL.
+ * @throws {Error}                         If the tube OD is greater than the
+ *                                         max allowable OTL.
  * @throws {Error}                         If the tube field array is invalid.
  */
 const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null => {
@@ -557,11 +569,12 @@ const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null =
  * @param {number} pitchRatio                       The pitch ratio.
  * @param {TubeSheetLayout} layout                  The tube sheet layout.
  * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
- * @returns {number | null | undefined}             The calculated OTL value, or null
- *                                                  if an error occurred.
- * @throws {Error}                                  If the tube OD is greater than the
- *                                                  max allowable OTL.
- * @throws {Error}                                  If the tube field array is invalid.
+ * @returns {number | null | undefined}             The calculated OTL value, or
+ *                                                  null if an error occurred.
+ * @throws {Error}                                  If the tube OD is greater
+ *                                                  than the max allowable OTL.
+ * @throws {Error}                                  If the tube field array is
+ * invalid.
  */
 const tubeFieldOTL = (
     shellID: number,
@@ -599,23 +612,28 @@ const tubeFieldOTL = (
  * Finds the minimum shell ID for a given set of parameters.
  *
  * @param {number} minTubes                         The minimum number of tubes.
- * @param {number} OTLClearance                     The outer tube length clearance.
- * @param {number} tubeOD                           The outer diameter of the tube.
+ * @param {number} OTLClearance                     The outer tube length
+ *                                                  clearance.
+ * @param {number} tubeOD                           The outer diameter of the
+ *                                                  tube.
  * @param {number} pitchRatio                       The pitch ratio.
- * @param {string | TubeSheetLayout} layout         The layout type. Can be a string
- *                                                  or a TubeSheetLayout object.
+ * @param {string | TubeSheetLayout} layout         The layout type. Can be a
+ *                                                  string or a TubeSheetLayout
+ *                                                  object.
  * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option. Can be a
  *                                                  boolean or "AUTO".
- * @returns {Promise<number | null>}                The minimum shell ID, or null if
- *                                                  the maximum number of retries is
- *                                                  reached.
- * @throws {Error}                                  If the tube outer diameter is less
- *                                                  than or equal to 0, the pitch ratio
- *                                                  is less than 1, or the OTL clearance
- *                                                  is less than 0.
- * @throws {Error}                                  If the maximum number of retries is
- *                                                  reached and the minimum shell ID
- *                                                  could not be found.
+ * @returns {Promise<number | null>}                The minimum shell ID, or
+ *                                                  null if the maximum number
+ *                                                  of retries is reached.
+ * @throws {Error}                                  If the tube outer diameter
+ *                                                  is less than or equal to 0,
+ *                                                  the pitch ratio is less than
+ *                                                  1, or the OTL clearance is
+ *                                                  less than 0.
+ * @throws {Error}                                  If the maximum number of
+ *                                                   retries is reached and the
+ *                                                   minimum shell ID could not
+ *                                                   be found.
  */
 const findMinID = memoize(
     (
@@ -692,7 +710,8 @@ const findMinID = memoize(
                     }
                     return Math.min(minID_offsetTrue, minID_offsetFalse);
                 } else {
-                    // Track bounds for bisection fallback if heuristic fails to converge
+                    // Track bounds for bisection fallback if heuristic fails to
+                    // converge
                     let D_lowerBound = 0;
                     let D_upperBound = 0;
                     let haveLowerBound = false;
@@ -797,7 +816,8 @@ const findMinID = memoize(
                         offsetOption,
                     );
 
-                    // Increment diameter, save second guess of tube count into memory
+                    // Increment diameter, save second guess of tube count into
+                    // memory
                     D_new = D_old * BETA;
                     D_new =
                         tubeFieldOTL(
@@ -821,7 +841,8 @@ const findMinID = memoize(
                     updateBounds(D_new, numTubes_new, minTubes);
 
                     while (numTubes_new !== minTubes && iterations < HEURISTIC_MAX_ITERATIONS) {
-                        // Re-initialise guesses. if there has been a previous attempt, use that as a starting point.
+                        // Re-initialise guesses. if there has been a previous
+                        // attempt, use that as a starting point.
                         if (!D_bestGuess) {
                             D_old = D_new;
                         } else {
@@ -829,8 +850,10 @@ const findMinID = memoize(
                         }
 
                         if (iterations > 1) {
-                            // Shortcircuit by reducing the diameter by a small amount to see whether the predicted number of tubes goes below the target.
-                            // if tube count reduces, then min ID has been found.
+                            // Shortcircuit by reducing the diameter by a small
+                            // amount to see whether the predicted number of
+                            // tubes goes below the target. if tube count
+                            // reduces, then min ID has been found.
                             if (numTubes_new > minTubes) {
                                 D_check = roundUp(
                                     tubeFieldOTL(
@@ -866,15 +889,18 @@ const findMinID = memoize(
                             }
                         }
 
-                        // Adjust the diameter guess based on the tube count comparisons
+                        // Adjust the diameter guess based on the tube count
+                        // comparisons
                         if (numTubes_new < minTubes && numTubes_old < minTubes) {
-                            // Increment diameter guess by beta factor if both are less
+                            // Increment diameter guess by beta factor if both
+                            // are less
                             D_new = D_old * BETA;
                         } else if (numTubes_new > minTubes && numTubes_old > minTubes) {
                             // Decrease diameter by beta factor if both are more
                             D_new = D_old / BETA;
                         } else {
-                            // Average the last two guesses if one is more and one is less
+                            // Average the last two guesses if one is more and
+                            // one is less
                             D_new = (D_new + D_old) / 2;
                         }
 
@@ -1031,10 +1057,12 @@ findMinID.cache = new LRUCache(MEMO_CACHE_SIZE) as unknown as typeof findMinID.c
 /**
  * Returns the effective shell ID for a given TubeSheetData object.
  *
- * @param {Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">} ts  The TubeSheetData object.
- * @returns {number}                                                            The effective shell ID. Returns 0 if both `ts.tubeField` and `ts.OTL` are null.
- * If `ts.shellID` is defined or `ts.minID` is not null, undefined, or 0, returns `ts.shellID`.
- * Otherwise, returns `ts.minID`.
+ * @param {Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">} ts
+ * The TubeSheetData object.
+ * @returns {number}
+ * The effective shell ID. Returns 0 if both `ts.tubeField` and `ts.OTL` are
+ * null. If `ts.shellID` is defined or `ts.minID` is not null, undefined, or 0,
+ * returns `ts.shellID`. Otherwise, returns `ts.minID`.
  */
 export const getEffectiveShellID = (
     ts: Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">,
@@ -1064,7 +1092,8 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
     /**
      * Generates an SVG element containing circles based on the provided data.
      *
-     * @param {T[]} circles        An array of objects representing the coordinates of the circles.
+     * @param {T[]} circles        An array of objects representing the
+     *                             coordinates of the circles.
      * @param {number} diameter    The diameter of the circles.
      * @param {string} svgStyles   The styles to apply to the circles.
      * @param {boolean} [id=false] The whether to assign an ID to each circle.
@@ -1079,7 +1108,8 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         // Create an SVG element
         const svgNamespace = "http://www.w3.org/2000/svg";
 
-        // Create variables to define bounding box based on coordinates and diameter
+        // Create variables to define bounding box based on coordinates and
+        // diameter
         let minX = Infinity,
             minY = Infinity,
             maxX = -Infinity,
@@ -1100,8 +1130,8 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         const radius = diameter / 2;
         const radiusStr = radius.toString();
 
-        // Build circles in a detached DocumentFragment and append it once, rather
-        // than appending to `svg` one tube at a time.
+        // Build circles in a detached DocumentFragment and append it once,
+        // rather than appending to `svg` one tube at a time.
         const fragment = document.createDocumentFragment();
 
         // Loop through each tube to create circles
@@ -1226,14 +1256,16 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
             maxY = -Infinity;
 
         svgs.forEach((svg) => {
-            // Get the child circles from each SVG and append them to the merged SVG
+            // Get the child circles from each SVG and append them to the merged
+            // SVG
             Array.from(svg.childNodes).forEach((child) => {
                 if (child instanceof SVGElement) {
                     mergedSVG.appendChild(child.cloneNode(true));
                 }
             });
 
-            // Calculate the bounding box for the current SVG to adjust the viewBox
+            // Calculate the bounding box for the current SVG to adjust the
+            // viewBox
             const viewBox = svg.getAttribute("viewBox");
             if (viewBox) {
                 const [x, y, width, height] = viewBox.split(" ").map(Number);
