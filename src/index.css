@@ -119,6 +119,7 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* font-size: 16px; */
 }
 
 html {
@@ -205,18 +206,24 @@ a,
   position: relative;
 
   overflow-y: auto;
-  flex: 0 0 380px;
+  flex: 0 0 24rem;
   flex-direction: column;
   align-items: normal;
 
   border-right: 1px solid var(--line);
 
-  background-color: var(--panel);
+  background-color: color-mix(in srgb, var(--panel), transparent 30%);
   background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
     linear-gradient(var(--grid-minor) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
   background-position: -1px -1px;
-  background-size: 16px 16px;
+  background-size:
+    5rem 5rem,
+    5rem 5rem,
+    1rem 1rem,
+    1rem 1rem;
 }
 
 .left.grid-hidden {
@@ -243,7 +250,7 @@ form.column-pane.left {
   align-items: flex-start;
   justify-content: space-between;
 
-  padding: 22px 24px 16px;
+  padding: 1.375rem 1.5rem 1rem;
 
   background-color: var(--panel);
 }
@@ -329,7 +336,7 @@ hr {
 
 .field {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .field:last-child {
@@ -498,7 +505,10 @@ input.calculated-field[type="text"]:read-only {
 
 .layout-row:has(input:disabled) {
   cursor: default;
-  opacity: 0.4;
+}
+
+.layout-row:has(input:disabled) > * {
+  color: var(--muted);
 }
 
 .layout-row:has(input:checked) {
@@ -680,10 +690,10 @@ footer a {
     linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
   background-position: -1px -1px;
   background-size:
-    80px 80px,
-    80px 80px,
-    16px 16px,
-    16px 16px;
+    5rem 5rem,
+    5rem 5rem,
+    1rem 1rem,
+    1rem 1rem;
 }
 
 .viewport::before,
@@ -789,6 +799,13 @@ footer a {
 .table-toggle:hover {
   border-color: var(--blue);
   color: var(--blue);
+  opacity: 1;
+}
+
+.grid-toggle.active:hover,
+.table-toggle.active:hover {
+  border-color: hsl(from var(--blue) h calc(s + 30) calc(l + 20));
+  color: hsl(from var(--blue) h calc(s + 30) calc(l + 20));
   opacity: 1;
 }
 
@@ -935,6 +952,7 @@ footer a {
   left: 28px;
 
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   gap: 16px;
   align-items: flex-end;
@@ -959,7 +977,7 @@ footer a {
   font-family: var(--font-mono);
   font-size: 11px;
 
-  background-color: var(--panel);
+  background-color: color-mix(in srgb, var(--panel), transparent 30%);
   box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
 }
 
@@ -1117,7 +1135,7 @@ footer a {
 /* ============================================================
    Responsive layout - stack panels on narrow viewports
    ============================================================ */
-@media screen and (max-width: 1250px) {
+@media screen and (max-width: 78rem) {
   /* Stack the option buttons so they narrow to a single column instead
      of a wide row that can reach into the centered label. */
   .viewport-options {
@@ -1127,7 +1145,7 @@ footer a {
   }
 }
 
-@media screen and (max-width: 1014px) {
+@media screen and (max-width: 64rem) {
   .viewport.has-table .viewport-actions {
     flex-direction: column;
     gap: 8px;
@@ -1135,7 +1153,7 @@ footer a {
   }
 }
 
-@media screen and (max-width: 900px) {
+@media screen and (max-width: 56.25rem) {
   .row-pane {
     flex-direction: column;
   }
@@ -1149,11 +1167,13 @@ footer a {
     overflow-y: visible;
   }
   .viewport {
-    height: 70vh;
+    overflow: visible;
+    height: auto;
     padding: 28px;
   }
   .tubesheet-svg {
-    max-height: calc(70vh - 56px);
+    height: 70vh;
+    max-height: none;
   }
   /* Move the badge up under the "Layout Preview" */
   .loading-overlay {
@@ -1164,16 +1184,9 @@ footer a {
   /* When the table is shown, stack the footer below the drawing instead of
      overlaying it, and let the viewport grow to fit both. */
   .viewport.has-table {
-    overflow: visible;
     flex-direction: column;
     gap: 16px;
-
-    height: auto;
-    min-height: 70vh;
     padding-bottom: 24px;
-  }
-  .viewport.has-table .tubesheet-svg {
-    max-height: calc(70vh - 96px);
   }
   .viewport.has-table .viewport-overlay-footer {
     position: static;
@@ -1187,7 +1200,7 @@ footer a {
   }
 }
 
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 30rem) {
   .layout-row,
   .layout-list-header {
     grid-template-columns: 16px 44px 1fr auto;
