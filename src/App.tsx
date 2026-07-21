@@ -1,10 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import packageJson from "../package.json";
 import GitHubButton from "react-github-btn";
 import {
     TubeSheet,
     generateTubeSheetSVG,
     ITubeSheetData,
+    DRAWING_SAFE_CONTENT_RADIUS_FRACTION,
 } from "./plugins/tubesheet-layout-generator";
 import { TubeSheetSVG } from "./components/TubeSheetSVG";
 import { TubeSheetDataTable } from "./components/TubeSheetDataTable";
@@ -34,6 +36,9 @@ const emptyData: ITubeSheetData = {
     numTubes: emptyTubeSheet.numTubes,
 };
 const placeholderSVG = generateTubeSheetSVG(emptyData);
+
+// Must match .viewport's base padding in index.css (desktop breakpoint).
+const VIEWPORT_BASE_PADDING = 48;
 
 // Layout options for displaying min ID and tube counts.
 const layoutOptionRows: {
@@ -168,6 +173,72 @@ const App = () => {
     const drawingTableLabel =
         layoutOptionRows.find((row) => row.key === lastSingleResult?.layout)?.label ?? "—";
     const drawingTableRequestedTubes = utils.isNumber(shellID) ? undefined : minTubes;
+
+    // The table and action buttons sit in the bottom corners of the viewport.
+    // The drawing is a circle inscribed in a centered square, so those corners
+    // are normally empty space even when the drawing is rendered as large as
+    // possible. Only reserve space if the table overlaps the drawing.
+    const footerRef = useRef<HTMLDivElement>(null);
+    const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
+    const [viewportBottomReserve, setViewportBottomReserve] = useState(VIEWPORT_BASE_PADDING);
+    useEffect(() => {
+        const viewportEl = containerRef.current;
+        const footerEl = footerRef.current;
+        if (!viewportEl || !footerEl || !tableEl) {
+            return;
+        }
+
+        const recompute = () => {
+            const viewportRect = viewportEl.getBoundingClientRect();
+            if (viewportRect.width <= 0 || viewportRect.height <= 0) {
+                return;
+            }
+
+            // Size + center the drawing would have if left unshrunk (i.e.
+            // reserving only the viewport's normal padding on every side).
+            const contentWidth = viewportRect.width - 2 * VIEWPORT_BASE_PADDING;
+            const contentHeight = viewportRect.height - 2 * VIEWPORT_BASE_PADDING;
+            const drawingSize = Math.max(0, Math.min(contentWidth, contentHeight));
+            const safeRadius = drawingSize * DRAWING_SAFE_CONTENT_RADIUS_FRACTION;
+            const centerX = viewportRect.left + viewportRect.width / 2;
+            const centerY = viewportRect.top + viewportRect.height / 2;
+
+            const tableRect = tableEl?.getBoundingClientRect();
+            const tableClearsDrawing =
+                !tableRect || (tableRect.width === 0 && tableRect.height === 0)
+                    ? true
+                    : (() => {
+                          const dx = centerX - tableRect.right;
+                          const dy = centerY - tableRect.top;
+                          return dx * dx + dy * dy >= safeRadius * safeRadius;
+                      })();
+
+            const footerRect = footerEl.getBoundingClientRect();
+            setViewportBottomReserve(
+                tableClearsDrawing
+                    ? VIEWPORT_BASE_PADDING
+                    : Math.max(VIEWPORT_BASE_PADDING, Math.ceil(footerRect.height) + 44),
+            );
+        };
+
+        recompute();
+
+        const observer =
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(recompute);
+        observer?.observe(viewportEl);
+        observer?.observe(footerEl);
+        if (tableEl) {
+            observer?.observe(tableEl);
+        }
+        window.addEventListener("resize", recompute);
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", recompute);
+        };
+    }, [tableEl]);
+    const viewportStyle = {
+        "--viewport-footer-reserve": `${viewportBottomReserve}px`,
+    } as CSSProperties;
 
     const definedMinIDs = layoutOptionRows
         .map((row) => layoutResults[row.key]?.minID)
@@ -379,6 +450,7 @@ const App = () => {
                     className={`viewport ${showGrid ? "" : "grid-hidden"}${
                         showTable && lastSingleResult ? " has-table" : ""
                     }`}
+                    style={viewportStyle}
                     ref={containerRef}
                     onContextMenu={openContextMenu}
                 >
@@ -449,27 +521,30 @@ const App = () => {
                         className="tubesheet-svg"
                         onRendered={onDrawingRendered}
                     />
-                    <TubeSheetDataTable
-                        data={lastSingleResult}
-                        layoutLabel={drawingTableLabel}
-                        requestedTubes={drawingTableRequestedTubes}
-                        visible={showTable}
-                    />
-                    <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
-                        <button className="copy-button" onClick={copySVG} type="button">
-                            <CopyIcon width="15" height="15" aria-hidden="true" />
-                            {copyState === "copied"
-                                ? "Copied!"
-                                : copyState === "error"
-                                  ? "Copy failed"
-                                  : copyState === "unsupported"
-                                    ? "Copy unsupported"
-                                    : "Copy Image"}
-                        </button>
-                        <button className="save-button" onClick={downloadSVG} type="button">
-                            <SaveIcon width="15" height="15" aria-hidden="true" />
-                            Save Image
-                        </button>
+                    <div className="viewport-overlay-footer" ref={footerRef}>
+                        <TubeSheetDataTable
+                            ref={setTableEl}
+                            data={lastSingleResult}
+                            layoutLabel={drawingTableLabel}
+                            requestedTubes={drawingTableRequestedTubes}
+                            visible={showTable}
+                        />
+                        <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
+                            <button className="copy-button" onClick={copySVG} type="button">
+                                <CopyIcon width="15" height="15" aria-hidden="true" />
+                                {copyState === "copied"
+                                    ? "Copied!"
+                                    : copyState === "error"
+                                      ? "Copy failed"
+                                      : copyState === "unsupported"
+                                        ? "Copy unsupported"
+                                        : "Copy Image"}
+                            </button>
+                            <button className="save-button" onClick={downloadSVG} type="button">
+                                <SaveIcon width="15" height="15" aria-hidden="true" />
+                                Save Image
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

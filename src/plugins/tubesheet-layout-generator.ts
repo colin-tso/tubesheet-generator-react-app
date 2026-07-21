@@ -574,7 +574,7 @@ const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null =
  * @throws {Error}                                  If the tube OD is greater
  *                                                  than the max allowable OTL.
  * @throws {Error}                                  If the tube field array is
- * invalid.
+ *                                                  invalid.
  */
 const tubeFieldOTL = (
     shellID: number,
@@ -631,9 +631,9 @@ const tubeFieldOTL = (
  *                                                  1, or the OTL clearance is
  *                                                  less than 0.
  * @throws {Error}                                  If the maximum number of
- *                                                   retries is reached and the
- *                                                   minimum shell ID could not
- *                                                   be found.
+ *                                                  retries is reached and the
+ *                                                  minimum shell ID could not
+ *                                                  be found.
  */
 const findMinID = memoize(
     (
@@ -1055,6 +1055,17 @@ const findMinID = memoize(
 findMinID.cache = new LRUCache(MEMO_CACHE_SIZE) as unknown as typeof findMinID.cache;
 
 /**
+ * Extra margin around the final SVG viewBox.
+ */
+export const VIEWBOX_PADDING_AS_FRACTION = 0.1;
+
+/**
+ * SVG viewBox is padded by `VIEWBOX_PADDING_AS_FRACTION`, and the crosshair
+ * extends 10% beyond the shell circle.
+ */
+export const DRAWING_SAFE_CONTENT_RADIUS_FRACTION = 0.5 / (1 + VIEWBOX_PADDING_AS_FRACTION);
+
+/**
  * Returns the effective shell ID for a given TubeSheetData object.
  *
  * @param {Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">} ts
@@ -1130,8 +1141,8 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         const radius = diameter / 2;
         const radiusStr = radius.toString();
 
-        // Build circles in a detached DocumentFragment and append it once,
-        // rather than appending to `svg` one tube at a time.
+        // Build circles in a detached DocumentFragment and append it once, to
+        // the final svg.
         const fragment = document.createDocumentFragment();
 
         // Loop through each tube to create circles
@@ -1294,7 +1305,6 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
 
     const shellIDForSVG = () => getEffectiveShellID(ts);
 
-    const VIEWBOX_PADDING_AS_FRACTION = 0.1;
     const TUBE_STYLE = "stroke:black; fill:none; stroke-width:1; vector-effect:non-scaling-stroke;";
     const SHELL_STYLE =
         "stroke:black; fill:none; stroke-width:2; vector-effect:non-scaling-stroke;";

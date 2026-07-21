@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
-import type React from "react";
-import type { ChangeEvent, FormEvent, KeyboardEvent, SyntheticEvent } from "react";
+import type { ChangeEvent, SubmitEvent, KeyboardEvent, SyntheticEvent } from "react";
 import { utils } from "../utils/";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
 
@@ -52,8 +51,7 @@ type FieldAction =
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
     | { type: "SET_PITCH_RATIO"; value: number | undefined };
 
-// Distinguish absent override (use fallback) from explicit undefined (clear field)
-// as ?? can't distinguish this difference.
+// Distinguish absent override (use fallback) from explicit undefined (clea// field) as ?? can't distinguish this difference.
 function withOverride(
     overrides: Record<string, number | undefined> | undefined,
     key: string,
@@ -105,8 +103,8 @@ function fieldsReducer(state: FieldValues, action: FieldAction): FieldValues {
 
 // --- Hook ----------------------------------------------------------------
 
-// Owns every calculation input, validation, input handlers, and triggers
-// worker recalculation on commit
+// Owns every calculation input, validation, input handlers, and triggers worker
+// recalculation on commit
 export function useLayoutForm({
     lastSingleResult,
     postCalculateSingle,
@@ -148,7 +146,8 @@ export function useLayoutForm({
             const effShellID = withOverride(overrides, "shellID", fields.shellID);
 
             // A custom shell ID stands in for minTubes: when given, each layout
-            // option is calculated for that shell ID instead of a minimum tube count.
+            // option is calculated for that shell ID instead of a minimum tube
+            // count.
             const hasShellID = utils.isNumber(effShellID) && effShellID !== 0;
 
             const valid =
@@ -187,8 +186,8 @@ export function useLayoutForm({
         // Emptied field should stay empty
         if (val.trim() === "") {
             if (name === "shellID") {
-                // Clearing shellID reverts to the min-tubes layout and recalculates
-                // immediately.
+                // Clearing shellID reverts to the min-tubes layout and
+                // recalculates immediately.
                 setGenericField(name, undefined);
                 requestAllLayoutResults({ shellID: undefined });
                 if (layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
@@ -252,7 +251,7 @@ export function useLayoutForm({
         setGenericField(name, parsed);
     };
 
-    const inputOnSubmitHandler = (e: React.SubmitEvent<HTMLInputElement>) => {
+    const inputOnSubmitHandler = (e: SubmitEvent<HTMLInputElement>) => {
         e.preventDefault();
     };
 
@@ -295,7 +294,7 @@ export function useLayoutForm({
         ],
     );
 
-    const formOnSubmitHandler = (e: FormEvent<HTMLFormElement>) => {
+    const formOnSubmitHandler = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         // Fallback: If form submits, trigger a single calc request
         if (utils.isNumber(fields.layoutOption) && layoutInputsDefined) {

@@ -141,8 +141,8 @@ body {
   height: 100dvh;
 }
 
-/* Visually hides content while keeping it in the accessibility tree
-   (e.g. screen-reader-only status text). */
+/* Visually hides content while keeping it in the accessibility tree (e.g.
+   screen-reader-only status text). */
 .hidden {
   position: absolute;
 
@@ -667,7 +667,10 @@ footer a {
   justify-content: center;
 
   height: 100vh;
-  padding: 48px;
+  padding-top: 48px;
+  padding-right: 48px;
+  padding-bottom: var(--viewport-footer-reserve, 48px);
+  padding-left: 48px;
 
   background-color: var(--viewport-bg);
   background-image:
@@ -912,7 +915,7 @@ footer a {
   position: relative;
   z-index: 2;
   max-width: 100%;
-  max-height: calc(100vh - 96px);
+  max-height: calc(100vh - 48px - var(--viewport-footer-reserve, 48px));
 }
 
 .tubesheet-svg > * {
@@ -920,28 +923,36 @@ footer a {
   transition: stroke var(--transition);
 }
 
-.viewport-actions {
+/* ============================================================
+   Footer (table + actions) uses flexbox to prevent overlap. Viewport reserves
+   space (--viewport-footer-reserve) for it. Stacks below drawing on mobile.
+   ============================================================ */
+.viewport-overlay-footer {
   position: absolute;
   z-index: 3;
   right: 28px;
   bottom: 28px;
-
-  display: flex;
-  gap: 10px;
-}
-
-/* ============================================================
-   Data table (overlaid on the drawing; stacked below it on mobile)
-   ============================================================ */
-.tubesheet-data-table {
-  position: absolute;
-  z-index: 3;
-  bottom: 28px;
   left: 28px;
 
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.viewport-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.tubesheet-data-table {
   overflow: hidden;
   border-collapse: collapse;
 
+  max-width: 100%;
   border: 1.5px solid var(--line);
   border-radius: var(--radius-md);
 
@@ -1091,7 +1102,8 @@ footer a {
   background-color: var(--redline);
 }
 
-/* When the first/last selectable item is focused, preserve menu corner radius */
+/* When the first/last selectable item is focused, preserve menu corner radius
+*/
 .context-menu-item:first-child {
   border-top-left-radius: var(--radius-md);
   border-top-right-radius: var(--radius-md);
@@ -1131,7 +1143,7 @@ footer a {
     bottom: auto;
   }
 
-  /* When the table is shown, stack it below the drawing instead of
+  /* When the table is shown, stack the footer below the drawing instead of
      overlaying it, and let the viewport grow to fit both. */
   .viewport.has-table {
     overflow: visible;
@@ -1145,9 +1157,13 @@ footer a {
   .viewport.has-table .tubesheet-svg {
     max-height: calc(70vh - 96px);
   }
-  .viewport.has-table .tubesheet-data-table {
+  .viewport.has-table .viewport-overlay-footer {
     position: static;
     z-index: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+  .viewport.has-table .tubesheet-data-table {
     overflow-x: auto;
     max-width: 100%;
   }
@@ -1204,10 +1220,12 @@ footer a {
   }
 
   /* Stack the action buttons on mobile */
-  .viewport-actions {
+  .viewport-overlay-footer {
     right: 14px;
     bottom: 14px;
-
+    left: 14px;
+  }
+  .viewport-actions {
     flex-direction: column;
     gap: 8px;
     align-items: stretch;
