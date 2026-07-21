@@ -1117,6 +1117,24 @@ footer a {
 /* ============================================================
    Responsive layout - stack panels on narrow viewports
    ============================================================ */
+@media screen and (max-width: 1250px) {
+  /* Stack the option buttons so they narrow to a single column instead
+     of a wide row that can reach into the centered label. */
+  .viewport-options {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+  }
+}
+
+@media screen and (max-width: 1014px) {
+  .viewport.has-table .viewport-actions {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+}
+
 @media screen and (max-width: 900px) {
   .row-pane {
     flex-direction: column;
@@ -1183,14 +1201,6 @@ footer a {
     top: 14px;
     font-size: 9.5px;
   }
-
-  .grid-toggle {
-    top: 12px;
-    right: 12px;
-    padding: 4px 7px;
-    font-size: 9.5px;
-  }
-
   .reg-tl,
   .reg-tr,
   .reg-bl,
