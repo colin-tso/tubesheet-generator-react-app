@@ -783,7 +783,7 @@ footer a {
 }
 
 .grid-toggle:hover,
-.table-toggle::hover {
+.table-toggle:hover {
   border-color: var(--blue);
   color: var(--blue);
   opacity: 1;
@@ -928,6 +928,57 @@ footer a {
 
   display: flex;
   gap: 10px;
+}
+
+/* ============================================================
+   Data table (overlaid on the drawing; stacked below it on mobile)
+   ============================================================ */
+.tubesheet-data-table {
+  position: absolute;
+  z-index: 3;
+  bottom: 28px;
+  left: 28px;
+
+  overflow: hidden;
+  border-collapse: collapse;
+
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+
+  font-family: var(--font-mono);
+  font-size: 11px;
+
+  background-color: var(--panel);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
+}
+
+.tubesheet-data-table[hidden] {
+  display: none;
+}
+
+.tubesheet-data-table tr + tr th,
+.tubesheet-data-table tr + tr td {
+  border-top: 1px solid var(--line);
+}
+
+.tubesheet-data-table th,
+.tubesheet-data-table td {
+  padding: 6px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tubesheet-data-table th {
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tubesheet-data-table td {
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
 }
 
 .save-button,
@@ -1079,6 +1130,27 @@ footer a {
     top: 52px;
     bottom: auto;
   }
+
+  /* When the table is shown, stack it below the drawing instead of
+     overlaying it, and let the viewport grow to fit both. */
+  .viewport.has-table {
+    overflow: visible;
+    flex-direction: column;
+    gap: 16px;
+
+    height: auto;
+    min-height: 70vh;
+    padding-bottom: 24px;
+  }
+  .viewport.has-table .tubesheet-svg {
+    max-height: calc(70vh - 96px);
+  }
+  .viewport.has-table .tubesheet-data-table {
+    position: static;
+    z-index: auto;
+    overflow-x: auto;
+    max-width: 100%;
+  }
 }
 
 @media screen and (max-width: 480px) {
@@ -1145,5 +1217,13 @@ footer a {
   .copy-button {
     padding: 8px 12px;
     font-size: 11.5px;
+  }
+
+  .tubesheet-data-table {
+    font-size: 10px;
+  }
+  .tubesheet-data-table th,
+  .tubesheet-data-table td {
+    padding: 5px 9px;
   }
 }

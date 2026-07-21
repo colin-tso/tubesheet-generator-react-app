@@ -7,6 +7,7 @@ import {
     ITubeSheetData,
 } from "./plugins/tubesheet-layout-generator";
 import { TubeSheetSVG } from "./components/TubeSheetSVG";
+import { TubeSheetDataTable } from "./components/TubeSheetDataTable";
 import { NumericField, NumericFieldProps } from "./components/NumericField";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
@@ -162,6 +163,11 @@ const App = () => {
         requestClose,
         onAnimationEnd,
     } = useContextMenu(containerRef);
+
+    // Drawing table
+    const drawingTableLabel =
+        layoutOptionRows.find((row) => row.key === lastSingleResult?.layout)?.label ?? "—";
+    const drawingTableRequestedTubes = utils.isNumber(shellID) ? undefined : minTubes;
 
     const definedMinIDs = layoutOptionRows
         .map((row) => layoutResults[row.key]?.minID)
@@ -370,7 +376,9 @@ const App = () => {
             </form>
             <div className="column-pane right">
                 <div
-                    className={`viewport ${showGrid ? "" : "grid-hidden"}`}
+                    className={`viewport ${showGrid ? "" : "grid-hidden"}${
+                        showTable && lastSingleResult ? " has-table" : ""
+                    }`}
                     ref={containerRef}
                     onContextMenu={openContextMenu}
                 >
@@ -440,6 +448,12 @@ const App = () => {
                         src={drawingSVG}
                         className="tubesheet-svg"
                         onRendered={onDrawingRendered}
+                    />
+                    <TubeSheetDataTable
+                        data={lastSingleResult}
+                        layoutLabel={drawingTableLabel}
+                        requestedTubes={drawingTableRequestedTubes}
+                        visible={showTable}
                     />
                     <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
                         <button className="copy-button" onClick={copySVG} type="button">

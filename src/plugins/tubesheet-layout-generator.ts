@@ -941,6 +941,30 @@ const generateSVGCircles = <T extends { x: number; y: number }>(
 ): SVGSVGElement => {
     // Create an SVG element
     const svgNamespace = "http://www.w3.org/2000/svg";
+ * Returns the effective shell ID for a given TubeSheetData object.
+ *
+ * @param {Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">} ts - The TubeSheetData object.
+ * @returns {number} The effective shell ID. Returns 0 if both `ts.tubeField` and `ts.OTL` are null.
+ * If `ts.shellID` is defined or `ts.minID` is not null, undefined, or 0, returns `ts.shellID`.
+ * Otherwise, returns `ts.minID`.
+ */
+export const getEffectiveShellID = (
+    ts: Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">,
+): number => {
+    if (ts.tubeField === null && ts.OTL === null) {
+        return 0;
+    }
+
+    if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
+        return ts.shellID;
+    }
+
+    if (ts.shellID === 0 || isNaN(ts.shellID)) {
+        return ts.minID;
+    }
+
+    return 0;
+};
 
     // Create variables to define bounding box based on coordinates and diameter
     let minX = Infinity,
@@ -1114,21 +1138,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         return document.createElementNS(SVG_NAMESPACE, "svg");
     }
 
-    const shellIDForSVG = () => {
-        if (ts.tubeField === null && ts.OTL === null) {
-            return 0;
-        }
-
-        if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
-            return ts.shellID;
-        }
-
-        if (ts.shellID === 0 || isNaN(ts.shellID)) {
-            return ts.minID;
-        }
-
-        return 0;
-    };
+    const shellIDForSVG = () => getEffectiveShellID(ts);
 
     const VIEWBOX_PADDING_AS_FRACTION = 0.1;
     const TUBE_STYLE = "stroke:black; fill:none; stroke-width:1; vector-effect:non-scaling-stroke;";
