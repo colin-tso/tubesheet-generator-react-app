@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import packageJson from "../package.json";
 import GitHubButton from "react-github-btn";
@@ -181,7 +181,7 @@ const App = () => {
     const labelRef = useRef<HTMLSpanElement>(null);
     const optionsRef = useRef<HTMLDivElement>(null);
     const [optionsStacked, setOptionsStacked] = useState(false);
-    useEffect(() => {
+    useLayoutEffect(() => {
         const labelEl = labelRef.current;
         const optionsEl = optionsRef.current;
         if (!labelEl || !optionsEl) {
@@ -237,7 +237,7 @@ const App = () => {
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
     const [actionsStacked, setActionsStacked] = useState(false);
     const [viewportBottomReserve, setViewportBottomReserve] = useState(VIEWPORT_BASE_PADDING);
-    useEffect(() => {
+    useLayoutEffect(() => {
         const viewportEl = containerRef.current;
         const footerEl = footerRef.current;
         const actionsEl = actionsRef.current;
@@ -319,7 +319,7 @@ const App = () => {
             observer?.disconnect();
             window.removeEventListener("resize", recompute);
         };
-    }, [tableEl]);
+    }, [showTable, tableEl, lastSingleResult]);
 
     const viewportStyle = {
         "--viewport-footer-reserve": `${viewportBottomReserve}px`,
