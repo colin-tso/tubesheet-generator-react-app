@@ -955,6 +955,8 @@ footer a {
    space (--viewport-footer-reserve) for it. Stacks below drawing on mobile.
    ============================================================ */
 .viewport-overlay-footer {
+  --footer-row-gap: 16px;
+
   position: absolute;
   z-index: 3;
   right: 28px;
@@ -964,7 +966,7 @@ footer a {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--footer-row-gap);
   align-items: flex-end;
   justify-content: flex-start;
 }
@@ -976,12 +978,29 @@ footer a {
    of always sizing it to fit both buttons; that's what lets auto-fit's
    collapse ever engage in the first place. */
 .viewport-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
-  gap: 10px;
+  --actions-row-gap: 10px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--actions-row-gap);
+  align-items: center;
+  justify-content: flex-end;
 
   min-width: 0;
   margin-left: auto;
+}
+
+.viewport-actions.stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.viewport-actions.stacked > button {
+  width: 100%;
+}
+
+.viewport-actions > button {
+  flex: 0 0 auto;
 }
 
 .tubesheet-data-table {

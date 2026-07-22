@@ -196,6 +196,7 @@ const App = () => {
             const buttonRects = Array.from(optionsEl.children)
                 .map((child) => child.getBoundingClientRect())
                 .filter((rect) => rect.width > 0 || rect.height > 0);
+
             if (labelRect.width <= 0 || optionsRect.width <= 0 || buttonRects.length === 0) {
                 return;
             }
@@ -232,20 +233,47 @@ const App = () => {
     // are normally empty space even when the drawing is rendered as large as
     // possible. Only reserve space if the table overlaps the drawing.
     const footerRef = useRef<HTMLDivElement>(null);
+    const actionsRef = useRef<HTMLDivElement>(null);
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
+    const [actionsStacked, setActionsStacked] = useState(false);
     const [viewportBottomReserve, setViewportBottomReserve] = useState(VIEWPORT_BASE_PADDING);
     useEffect(() => {
         const viewportEl = containerRef.current;
         const footerEl = footerRef.current;
-        if (!viewportEl || !footerEl || !tableEl) {
+        const actionsEl = actionsRef.current;
+        if (!viewportEl || !footerEl || !actionsEl) {
             return;
         }
 
+        const SAFETY_MARGIN = 12; //px
+
         const recompute = () => {
             const viewportRect = viewportEl.getBoundingClientRect();
-            if (viewportRect.width <= 0 || viewportRect.height <= 0) {
+            const actionsRect = actionsEl?.getBoundingClientRect();
+            const buttonRects = Array.from(actionsEl.children)
+                .map((child) => child.getBoundingClientRect())
+                .filter((rect) => rect.width > 0 || rect.height > 0);
+            const tableRect = tableEl?.getBoundingClientRect();
+            const tableVisible =
+                !tableEl ||
+                (!!tableRect &&
+                    tableRect.width > 0 &&
+                    tableRect.height > 0 &&
+                    !tableEl.hasAttribute("hidden"));
+            if (buttonRects.length === 0 || viewportRect.width <= 0 || viewportRect.height <= 0) {
                 return;
             }
+
+            const actionsRowGap =
+                parseFloat(getComputedStyle(actionsEl).getPropertyValue("--actions-row-gap")) || 0;
+            const footerRowGap =
+                parseFloat(getComputedStyle(actionsEl).getPropertyValue("--footer-row-gap")) || 0;
+
+            const buttonsWidth = buttonRects.reduce((sum, rect) => sum + rect.width, 0);
+            const rowWidth = buttonsWidth + actionsRowGap * (buttonRects.length - 1) + footerRowGap;
+            const rowLeftEdge = actionsRect.right - rowWidth;
+
+            const footerRect = footerEl.getBoundingClientRect();
 
             // Size + center the drawing would have if left unshrunk (i.e.
             // reserving only the viewport's normal padding on every side).
@@ -256,9 +284,8 @@ const App = () => {
             const centerX = viewportRect.left + viewportRect.width / 2;
             const centerY = viewportRect.top + viewportRect.height / 2;
 
-            const tableRect = tableEl?.getBoundingClientRect();
             const tableClearsDrawing =
-                !tableRect || (tableRect.width === 0 && tableRect.height === 0)
+                !tableRect || !tableVisible || (tableRect.width === 0 && tableRect.height === 0)
                     ? true
                     : (() => {
                           const dx = centerX - tableRect.right;
@@ -266,7 +293,7 @@ const App = () => {
                           return dx * dx + dy * dy >= safeRadius * safeRadius;
                       })();
 
-            const footerRect = footerEl.getBoundingClientRect();
+            setActionsStacked(rowLeftEdge < (tableRect ? tableRect.right : 0) + SAFETY_MARGIN);
             setViewportBottomReserve(
                 tableClearsDrawing
                     ? VIEWPORT_BASE_PADDING
@@ -283,12 +310,17 @@ const App = () => {
         if (tableEl) {
             observer?.observe(tableEl);
         }
+
+        observer?.observe(actionsEl);
+        Array.from(actionsEl.children).forEach((child) => observer?.observe(child));
+
         window.addEventListener("resize", recompute);
         return () => {
             observer?.disconnect();
             window.removeEventListener("resize", recompute);
         };
     }, [tableEl]);
+
     const viewportStyle = {
         "--viewport-footer-reserve": `${viewportBottomReserve}px`,
     } as CSSProperties;
@@ -587,7 +619,11 @@ const App = () => {
                             requestedTubes={drawingTableRequestedTubes}
                             visible={showTable}
                         />
-                        <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
+                        <div
+                            className={`viewport-actions${actionsStacked ? " stacked" : ""}`}
+                            ref={actionsRef}
+                            hidden={drawingSVG === placeholderSVG}
+                        >
                             <button className="copy-button" onClick={copySVG} type="button">
                                 <CopyIcon width="15" height="15" aria-hidden="true" />
                                 {copyState === "copied"
