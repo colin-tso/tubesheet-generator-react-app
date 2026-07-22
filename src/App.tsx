@@ -174,6 +174,59 @@ const App = () => {
         layoutOptionRows.find((row) => row.key === lastSingleResult?.layout)?.label ?? "—";
     const drawingTableRequestedTubes = utils.isNumber(shellID) ? undefined : minTubes;
 
+    // Keep the "Layout Preview" label centered while the option buttons move
+    // from a row to a stacked column only when their actual rendered width
+    // would overlap the label, using real measured child widths instead of a
+    // fixed viewport threshold.
+    const labelRef = useRef<HTMLSpanElement>(null);
+    const optionsRef = useRef<HTMLDivElement>(null);
+    const [optionsStacked, setOptionsStacked] = useState(false);
+    useEffect(() => {
+        const labelEl = labelRef.current;
+        const optionsEl = optionsRef.current;
+        if (!labelEl || !optionsEl) {
+            return;
+        }
+
+        const SAFETY_MARGIN = 12; //px
+
+        const recompute = () => {
+            const labelRect = labelEl.getBoundingClientRect();
+            const optionsRect = optionsEl.getBoundingClientRect();
+            const buttonRects = Array.from(optionsEl.children)
+                .map((child) => child.getBoundingClientRect())
+                .filter((rect) => rect.width > 0 || rect.height > 0);
+            if (labelRect.width <= 0 || optionsRect.width <= 0 || buttonRects.length === 0) {
+                return;
+            }
+
+            // Use --options-row-gap for row spacing even when stacked, so the
+            // gap stays correct without duplicating the value. see
+            // .viewport-options in index.css
+            const rowGap =
+                parseFloat(getComputedStyle(optionsEl).getPropertyValue("--options-row-gap")) || 0;
+
+            const buttonsWidth = buttonRects.reduce((sum, rect) => sum + rect.width, 0);
+            const rowWidth = buttonsWidth + rowGap * (buttonRects.length - 1);
+            const rowLeftEdge = optionsRect.right - rowWidth;
+
+            setOptionsStacked(rowLeftEdge < labelRect.right + SAFETY_MARGIN);
+        };
+
+        recompute();
+
+        const observer =
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(recompute);
+        observer?.observe(labelEl);
+        observer?.observe(optionsEl);
+        Array.from(optionsEl.children).forEach((child) => observer?.observe(child));
+        window.addEventListener("resize", recompute);
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", recompute);
+        };
+    }, []);
+
     // The table and action buttons sit in the bottom corners of the viewport.
     // The drawing is a circle inscribed in a centered square, so those corners
     // are normally empty space even when the drawing is rendered as large as
@@ -468,7 +521,9 @@ const App = () => {
                             onRequestClose={requestClose}
                         />
                     )}
-                    <span className="viewport-label noselect">Layout Preview</span>
+                    <span className="viewport-label noselect" ref={labelRef}>
+                        Layout Preview
+                    </span>
                     {calcError ? (
                         <span className="loading-overlay error visible noselect" aria-hidden="true">
                             Calculation failed
@@ -494,7 +549,10 @@ const App = () => {
                     <span className="reg-tr" aria-hidden="true" />
                     <span className="reg-bl" aria-hidden="true" />
                     <span className="reg-br" aria-hidden="true" />
-                    <div className="viewport-options">
+                    <div
+                        className={`viewport-options${optionsStacked ? " stacked" : ""}`}
+                        ref={optionsRef}
+                    >
                         <button
                             type="button"
                             className={`table-toggle ${showTable ? "active" : ""}`}

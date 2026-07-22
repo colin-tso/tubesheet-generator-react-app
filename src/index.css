@@ -752,13 +752,23 @@ footer a {
 }
 
 .viewport-options {
+  --options-row-gap: 10px;
+
   position: absolute;
   z-index: 3;
   top: 28px;
   right: 28px;
 
   display: flex;
-  gap: 10px;
+  gap: var(--options-row-gap);
+}
+
+/* Applied via JS (measured collision with .viewport-label) rather than
+   a width breakpoint — see the effect around optionsStacked in App.tsx. */
+.viewport-options.stacked {
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
 }
 
 .grid-toggle,
@@ -959,16 +969,25 @@ footer a {
   justify-content: flex-start;
 }
 
+/* Auto-fit collapses this from 2 columns to 1 (a clean stacked column)
+   purely from its own available width — no breakpoint, container query,
+   or JS needed. min-width:0 lets the flex parent above actually hand it
+   less-than-natural width (e.g. when the table needs the room) instead
+   of always sizing it to fit both buttons; that's what lets auto-fit's
+   collapse ever engage in the first place. */
 .viewport-actions {
-  display: flex;
-  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
   gap: 10px;
+
+  min-width: 0;
   margin-left: auto;
 }
 
 .tubesheet-data-table {
   overflow: hidden;
   border-collapse: collapse;
+  flex-shrink: 0;
 
   max-width: 100%;
   border: 1.5px solid var(--line);
@@ -1135,23 +1154,6 @@ footer a {
 /* ============================================================
    Responsive layout - stack panels on narrow viewports
    ============================================================ */
-@media screen and (max-width: 78rem) {
-  /* Stack the option buttons so they narrow to a single column instead
-     of a wide row that can reach into the centered label. */
-  .viewport-options {
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-end;
-  }
-}
-
-@media screen and (max-width: 64rem) {
-  .viewport.has-table .viewport-actions {
-    flex-direction: column;
-    gap: 8px;
-    align-items: stretch;
-  }
-}
 
 @media screen and (max-width: 56.25rem) {
   .row-pane {
@@ -1242,16 +1244,11 @@ footer a {
     top: 40px;
   }
 
-  /* Stack the action buttons on mobile */
+  /* Tighten insets on mobile */
   .viewport-overlay-footer {
     right: 14px;
     bottom: 14px;
     left: 14px;
-  }
-  .viewport-actions {
-    flex-direction: column;
-    gap: 8px;
-    align-items: stretch;
   }
 
   .save-button,
