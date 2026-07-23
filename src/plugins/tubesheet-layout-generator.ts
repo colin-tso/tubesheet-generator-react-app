@@ -34,17 +34,19 @@ export class TubeSheet {
     /**
      * Construct a new TubeSheet object.
      *
-     * @param OTLClearance  OTL = Outer Tube Limit.
-     *                      The minimum diametrical clearance from the tube outer
-     *                      diameter to the shell ID.
-     * @param tubeOD        The tube outer diameter.
-     * @param pitchRatio    The tube pitch ratio.
-     * @param layout        The tube layout angle.
-     * @param minTubes      The minimum number of tubes required. If specified,
-     *                      the shell ID will be calculated to achieve this number
-     *                      of tubes.
-     * @param shellID       The shell ID. If specified, the number of tubes will be
-     *                      the maximum allowable for this shell ID.
+     * @param {number} OTLClearance     OTL = Outer Tube Limit. The minimum
+     *                                  diametrical clearance from the tube
+     *                                  outer diameter to the shell ID.
+     * @param {number} tubeOD           The tube outer diameter.
+     * @param {number} pitchRatio       The tube pitch ratio.
+     * @param {TubeSheetLayout} layout  The tube layout angle.
+     * @param {number} [minTubes]       The minimum number of tubes required. If
+     *                                  specified, the shell ID will be
+     *                                  calculated to achieve this number of
+     *                                  tubes.
+     * @param {number} [shellID]        The shell ID. If specified, the number
+     *                                  of tubes will be the maximum allowable
+     *                                  for this shell ID.
      */
     public constructor(
         OTLClearance: number,
@@ -205,6 +207,14 @@ const round = (num: number, decimalPlaces = 0) => {
     return Math.round(n) / p;
 };
 
+/**
+ * Creates a memo key for a given set of arguments based on a set of defaults.
+ *
+ * @param {...number | string | boolean | undefined} defaults
+ * The default values for the memo key.
+ * @returns {(...args: Array<number | string | boolean | undefined>) => string}
+ * A memo key generator function.
+ */
 const createMemoKey = (...defaults: Array<number | string | boolean | undefined>) => {
     return (...args: Array<number | string | boolean | undefined>): string => {
         const normalised = defaults.map((def, i) => (args[i] === undefined ? def : args[i]));
@@ -221,6 +231,18 @@ const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
     "AUTO",
 ];
 
+/**
+ * Generates a tube field based on the provided parameters.
+ *
+ * @param {number} shellID                          The shell ID.
+ * @param {number} OTLClearance                     The OTL clearance.
+ * @param {number} tubeOD                           The tube OD.
+ * @param {number} pitchRatio                       The pitch ratio.
+ * @param {TubeSheetLayout} layout                  The tube sheet layout.
+ * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
+ * @returns {TubeField | null}                      The generated tube field, or
+ *                                                  null if an error occurred.
+ */
 const generateTubeField = memoize(
     (
         shellID: number,
@@ -253,7 +275,7 @@ const generateTubeField = memoize(
             const MAX_ITERATIONS = 999999;
 
             if (layout === "radial") {
-                return radialFunc(shellID, OTLClearance, tubeOD, pitchRatio);
+                return radialTubeField(shellID, OTLClearance, tubeOD, pitchRatio);
             }
 
             const pitch = tubeOD * pitchRatio;
@@ -297,7 +319,8 @@ const generateTubeField = memoize(
                     x = C * cMult + i * dx - offset;
                     i++;
                     if (x * x + y * y <= maxCentreDistSq) {
-                        // same as Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <= maxOTL
+                        // same as Math.sqrt(x ** 2 + y ** 2) * 2 + tubeOD <=
+                        // maxOTL
                         quarterTubeField.push({ x: x, y: y });
                     } else {
                         break;
@@ -391,7 +414,15 @@ generateTubeField.cache = new LRUCache(
     MEMO_CACHE_SIZE,
 ) as unknown as typeof generateTubeField.cache;
 
-const radialFunc = (
+/**
+ * Generates a radial tube field.
+ *
+ * @param {number} r1      The radius of the first point.
+ * @param {number} r2      The radius of the second point.
+ * @param {number} theta   The angle between the two points in radians.
+ * @returns {number}       The distance between the two points.
+ */
+const radialTubeField = (
     shellID: number,
     OTLClearance: number,
     tubeOD: number,
@@ -420,6 +451,13 @@ const radialFunc = (
     return tubeField;
 };
 
+/**
+ * Returns the layout constants based on the pitch and layout.
+ *
+ * @param {number} pitch             The pitch value.
+ * @param {TubeSheetLayout} layout   The layout value.
+ * @returns {{ dx: number; dy: number; C: number }}  The layout constants.
+ */
 const getLayoutConstants = (pitch: number, layout: TubeSheetLayout) => {
     const sin60 = Math.sqrt(3) / 2;
     const cos45 = 1 / Math.sqrt(2);
@@ -448,6 +486,26 @@ const getLayoutConstants = (pitch: number, layout: TubeSheetLayout) => {
     return layoutConstants[layout as keyof typeof layoutConstants];
 };
 
+/**
+ * Calculates the number of tubes in a tube sheet based on the shell ID, OTL
+ * clearance, tube outer diameter, pitch ratio, layout, and offset option.
+ *
+ * @param {number} shellID                          The shell ID of the tube
+ *                                                  sheet.
+ * @param {number} OTLClearance                     The minimum diametrical
+ *                                                  clearance from the tube
+ *                                                  outer diameter to the shell
+ *                                                  ID.
+ * @param {number} tubeOD                           The tube outer diameter.
+ * @param {number} pitchRatio                       The tube pitch ratio.
+ * @param {TubeSheetLayout} layout                  The layout of the tube
+ * sheet.
+ * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option for the
+ *                                                  tube field generation.
+ *                                                  Defaults to "AUTO".
+ * @returns {number}                                The number of tubes in the
+ * tube sheet.
+ */
 const tubeCount = (
     shellID: number,
     OTLClearance: number,
@@ -467,6 +525,18 @@ const tubeCount = (
     return tubeField ? tubeField.length : 0;
 };
 
+/**
+ * Calculates the OTL (Outer Tube Limit) for a given tube field.
+ *
+ * @param {TubeField} tubeField            The tube field object.
+ * @param {TubeSheetLayout} layout         The tube sheet layout.
+ * @param {number} [offsetOption=0]        The offset option.
+ * @returns {number | null | undefined}    The calculated OTL value, or null if
+ *                                         an error occurred.
+ * @throws {Error}                         If the tube OD is greater than the
+ *                                         max allowable OTL.
+ * @throws {Error}                         If the tube field array is invalid.
+ */
 const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null => {
     if (!tubeField || tubeField.length === 0) {
         return null;
@@ -490,6 +560,22 @@ const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null =
     return roundUp(D, DECIMAL_PLACES);
 };
 
+/**
+ * Calculates the OTL (Outer Tube Limit) based on tube field parameters.
+ *
+ * @param {number} shellID                          The shell ID.
+ * @param {number} OTLClearance                     The OTL clearance.
+ * @param {number} tubeOD                           The tube OD.
+ * @param {number} pitchRatio                       The pitch ratio.
+ * @param {TubeSheetLayout} layout                  The tube sheet layout.
+ * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
+ * @returns {number | null | undefined}             The calculated OTL value, or
+ *                                                  null if an error occurred.
+ * @throws {Error}                                  If the tube OD is greater
+ *                                                  than the max allowable OTL.
+ * @throws {Error}                                  If the tube field array is
+ *                                                  invalid.
+ */
 const tubeFieldOTL = (
     shellID: number,
     OTLClearance: number,
@@ -522,6 +608,33 @@ const tubeFieldOTL = (
     }
 };
 
+/**
+ * Finds the minimum shell ID for a given set of parameters.
+ *
+ * @param {number} minTubes                         The minimum number of tubes.
+ * @param {number} OTLClearance                     The outer tube length
+ *                                                  clearance.
+ * @param {number} tubeOD                           The outer diameter of the
+ *                                                  tube.
+ * @param {number} pitchRatio                       The pitch ratio.
+ * @param {string | TubeSheetLayout} layout         The layout type. Can be a
+ *                                                  string or a TubeSheetLayout
+ *                                                  object.
+ * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option. Can be a
+ *                                                  boolean or "AUTO".
+ * @returns {Promise<number | null>}                The minimum shell ID, or
+ *                                                  null if the maximum number
+ *                                                  of retries is reached.
+ * @throws {Error}                                  If the tube outer diameter
+ *                                                  is less than or equal to 0,
+ *                                                  the pitch ratio is less than
+ *                                                  1, or the OTL clearance is
+ *                                                  less than 0.
+ * @throws {Error}                                  If the maximum number of
+ *                                                  retries is reached and the
+ *                                                  minimum shell ID could not
+ *                                                  be found.
+ */
 const findMinID = memoize(
     (
         minTubes: number,
@@ -597,7 +710,8 @@ const findMinID = memoize(
                     }
                     return Math.min(minID_offsetTrue, minID_offsetFalse);
                 } else {
-                    // Track bounds for bisection fallback if heuristic fails to converge
+                    // Track bounds for bisection fallback if heuristic fails to
+                    // converge
                     let D_lowerBound = 0;
                     let D_upperBound = 0;
                     let haveLowerBound = false;
@@ -702,7 +816,8 @@ const findMinID = memoize(
                         offsetOption,
                     );
 
-                    // Increment diameter, save second guess of tube count into memory
+                    // Increment diameter, save second guess of tube count into
+                    // memory
                     D_new = D_old * BETA;
                     D_new =
                         tubeFieldOTL(
@@ -726,7 +841,8 @@ const findMinID = memoize(
                     updateBounds(D_new, numTubes_new, minTubes);
 
                     while (numTubes_new !== minTubes && iterations < HEURISTIC_MAX_ITERATIONS) {
-                        // Re-initialise guesses. if there has been a previous attempt, use that as a starting point.
+                        // Re-initialise guesses. if there has been a previous
+                        // attempt, use that as a starting point.
                         if (!D_bestGuess) {
                             D_old = D_new;
                         } else {
@@ -734,8 +850,10 @@ const findMinID = memoize(
                         }
 
                         if (iterations > 1) {
-                            // Shortcircuit by reducing the diameter by a small amount to see whether the predicted number of tubes goes below the target.
-                            // if tube count reduces, then min ID has been found.
+                            // Shortcircuit by reducing the diameter by a small
+                            // amount to see whether the predicted number of
+                            // tubes goes below the target. if tube count
+                            // reduces, then min ID has been found.
                             if (numTubes_new > minTubes) {
                                 D_check = roundUp(
                                     tubeFieldOTL(
@@ -771,15 +889,18 @@ const findMinID = memoize(
                             }
                         }
 
-                        // Adjust the diameter guess based on the tube count comparisons
+                        // Adjust the diameter guess based on the tube count
+                        // comparisons
                         if (numTubes_new < minTubes && numTubes_old < minTubes) {
-                            // Increment diameter guess by beta factor if both are less
+                            // Increment diameter guess by beta factor if both
+                            // are less
                             D_new = D_old * BETA;
                         } else if (numTubes_new > minTubes && numTubes_old > minTubes) {
                             // Decrease diameter by beta factor if both are more
                             D_new = D_old / BETA;
                         } else {
-                            // Average the last two guesses if one is more and one is less
+                            // Average the last two guesses if one is more and
+                            // one is less
                             D_new = (D_new + D_old) / 2;
                         }
 
@@ -933,204 +1054,257 @@ const findMinID = memoize(
 );
 findMinID.cache = new LRUCache(MEMO_CACHE_SIZE) as unknown as typeof findMinID.cache;
 
-const generateSVGCircles = <T extends { x: number; y: number }>(
-    circles: T[],
-    diameter: number,
-    svgStyles: string,
-    id: boolean = false,
-): SVGSVGElement => {
-    // Create an SVG element
-    const svgNamespace = "http://www.w3.org/2000/svg";
+/**
+ * Extra margin around the final SVG viewBox.
+ */
+export const VIEWBOX_PADDING_AS_FRACTION = 0.1;
 
-    // Create variables to define bounding box based on coordinates and diameter
-    let minX = Infinity,
-        minY = Infinity,
-        maxX = -Infinity,
-        maxY = -Infinity;
+/**
+ * SVG viewBox is padded by `VIEWBOX_PADDING_AS_FRACTION`, and the crosshair
+ * extends 10% beyond the shell circle.
+ */
+export const DRAWING_SAFE_CONTENT_RADIUS_FRACTION = 0.5 / (1 + VIEWBOX_PADDING_AS_FRACTION);
 
-    const svg = document.createElementNS(svgNamespace, "svg");
+/**
+ * Returns the effective shell ID for a given TubeSheetData object.
+ *
+ * @param {Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">} ts
+ * The TubeSheetData object.
+ * @returns {number}
+ * The effective shell ID. Returns 0 if both `ts.tubeField` and `ts.OTL` are
+ * null. If `ts.shellID` is defined or `ts.minID` is not null, undefined, or 0,
+ * returns `ts.shellID`. Otherwise, returns `ts.minID`.
+ */
+export const getEffectiveShellID = (
+    ts: Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">,
+): number => {
+    if (ts.tubeField === null && ts.OTL === null) {
+        return 0;
+    }
 
-    // Predefine tube style
-    const styles = svgStyles.split(";").reduce(
-        (acc, style) => {
-            const [key, value] = style.split(":");
-            if (key && value) acc[key.trim()] = value.trim();
-            return acc;
-        },
-        {} as { [key: string]: string },
-    );
-    const styleEntries = Object.entries(styles);
-    const radius = diameter / 2;
-    const radiusStr = radius.toString();
+    if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
+        return ts.shellID;
+    }
 
-    // Build circles in a detached DocumentFragment and append it once, rather
-    // than appending to `svg` one tube at a time.
-    const fragment = document.createDocumentFragment();
+    if (ts.shellID === 0 || isNaN(ts.shellID)) {
+        return ts.minID;
+    }
 
-    // Loop through each tube to create circles
-    circles.forEach((c, i) => {
-        const circle = document.createElementNS(svgNamespace, "circle");
-        circle.setAttribute("cx", c.x.toString());
-        circle.setAttribute("cy", c.y.toString());
-        circle.setAttribute("r", radiusStr);
-        if (id) {
-            circle.setAttribute("id", (i + 1).toString());
-        }
-
-        // Apply the SVG path styles
-        for (const [key, value] of styleEntries) {
-            circle.setAttribute(key, value);
-        }
-
-        // Calculate bounding box based on coordinates and diameter
-        minX = Math.min(minX, c.x - radius);
-        minY = Math.min(minY, c.y - radius);
-        maxX = Math.max(maxX, c.x + radius);
-        maxY = Math.max(maxY, c.y + radius);
-
-        // Append each circle to the SVG fragment
-        fragment.appendChild(circle);
-    });
-
-    svg.appendChild(fragment);
-
-    const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
-
-    // Set SVG attributes
-    svg.setAttribute("xmlns", svgNamespace);
-    svg.setAttribute("height", "100dvh");
-    svg.setAttribute("viewBox", viewBox);
-
-    return svg;
+    return 0;
 };
 
-const generateSVGCenteredCross = (diameter: number, svgStyles: string): SVGSVGElement => {
-    // Create an SVG element
-    const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+/**
+ * Generates an SVG element containing circles based on the provided data.
+ *
+ * @param {ITubeSheetData} ts  The TubeSheetData object.
+ * @returns {SVGSVGElement}    The generated SVG element.
+ */
+export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
+    /**
+     * Generates an SVG element containing circles based on the provided data.
+     *
+     * @param {T[]} circles        An array of objects representing the
+     *                             coordinates of the circles.
+     * @param {number} diameter    The diameter of the circles.
+     * @param {string} svgStyles   The styles to apply to the circles.
+     * @param {boolean} [id=false] The whether to assign an ID to each circle.
+     * @returns {SVGSVGElement}    The generated SVG element.
+     */
+    const generateSVGCircles = <T extends { x: number; y: number }>(
+        circles: T[],
+        diameter: number,
+        svgStyles: string,
+        id: boolean = false,
+    ): SVGSVGElement => {
+        // Create an SVG element
+        const svgNamespace = "http://www.w3.org/2000/svg";
 
-    // Create variables to define bounding box based on coordinates and diameter
-    let minX = (-diameter / 2) * 1.1,
-        minY = (-diameter / 2) * 1.1,
-        maxX = (diameter / 2) * 1.1,
-        maxY = (diameter / 2) * 1.1;
+        // Create variables to define bounding box based on coordinates and
+        // diameter
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
 
-    // Interpret SVG styles
-    const styles = svgStyles.split(";").reduce(
-        (acc, style) => {
-            const [key, value] = style.split(":");
-            if (key && value) acc[key.trim()] = value.trim();
-            return acc;
-        },
-        {} as { [key: string]: string },
-    );
+        const svg = document.createElementNS(svgNamespace, "svg");
 
-    const svg = document.createElementNS(SVG_NAMESPACE, "svg");
+        // Predefine tube style
+        const styles = svgStyles.split(";").reduce(
+            (acc, style) => {
+                const [key, value] = style.split(":");
+                if (key && value) acc[key.trim()] = value.trim();
+                return acc;
+            },
+            {} as { [key: string]: string },
+        );
+        const styleEntries = Object.entries(styles);
+        const radius = diameter / 2;
+        const radiusStr = radius.toString();
 
-    // Horizontal line
-    const horzLine = document.createElementNS(SVG_NAMESPACE, "line");
-    horzLine.setAttribute("x1", minX.toString());
-    horzLine.setAttribute("y1", "0");
-    horzLine.setAttribute("x2", maxX.toString());
-    horzLine.setAttribute("y2", "0");
+        // Build circles in a detached DocumentFragment and append it once, to
+        // the final svg.
+        const fragment = document.createDocumentFragment();
 
-    Object.entries(styles).forEach(([key, value]) => {
-        horzLine.setAttribute(key, value);
-    });
-    svg.appendChild(horzLine);
+        // Loop through each tube to create circles
+        circles.forEach((c, i) => {
+            const circle = document.createElementNS(svgNamespace, "circle");
+            circle.setAttribute("cx", c.x.toString());
+            circle.setAttribute("cy", c.y.toString());
+            circle.setAttribute("r", radiusStr);
+            if (id) {
+                circle.setAttribute("id", (i + 1).toString());
+            }
 
-    // Vertical line
-    const vertLine = document.createElementNS(SVG_NAMESPACE, "line");
-    vertLine.setAttribute("x1", "0");
-    vertLine.setAttribute("y1", minY.toString());
-    vertLine.setAttribute("x2", "0");
-    vertLine.setAttribute("y2", maxY.toString());
+            // Apply the SVG path styles
+            for (const [key, value] of styleEntries) {
+                circle.setAttribute(key, value);
+            }
 
-    Object.entries(styles).forEach(([key, value]) => {
-        vertLine.setAttribute(key, value);
-    });
-    svg.appendChild(vertLine);
+            // Calculate bounding box based on coordinates and diameter
+            minX = Math.min(minX, c.x - radius);
+            minY = Math.min(minY, c.y - radius);
+            maxX = Math.max(maxX, c.x + radius);
+            maxY = Math.max(maxY, c.y + radius);
 
-    const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
+            // Append each circle to the SVG fragment
+            fragment.appendChild(circle);
+        });
 
-    // Set SVG attributes
-    svg.setAttribute("xmlns", SVG_NAMESPACE);
-    svg.setAttribute("height", "100dvh");
-    svg.setAttribute("viewBox", viewBox);
+        svg.appendChild(fragment);
 
-    return svg;
-};
+        const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
-const mergeSVGs = (svgs: SVGSVGElement[], viewBoxPaddingAsFraction: number): SVGSVGElement => {
-    const VIEWBOX_PADDING = 1 + viewBoxPaddingAsFraction;
-    const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+        // Set SVG attributes
+        svg.setAttribute("xmlns", svgNamespace);
+        svg.setAttribute("height", "100dvh");
+        svg.setAttribute("viewBox", viewBox);
 
-    // Create a new SVG element to serve as the container
-    const mergedSVG = document.createElementNS(SVG_NAMESPACE, "svg");
-    mergedSVG.setAttribute("xmlns", SVG_NAMESPACE);
-    mergedSVG.setAttribute("height", "100dvh");
-    mergedSVG.setAttribute("class", "tubesheet-svg");
-    mergedSVG.setAttribute("margin", "0");
-    mergedSVG.setAttribute("padding", "0");
+        return svg;
+    };
 
-    // Calculate the bounding box to set the viewBox of the merged SVG
-    let minX = Infinity,
-        minY = Infinity,
-        maxX = -Infinity,
-        maxY = -Infinity;
+    /**
+     * Generates an SVG element containing a centered cross.
+     *
+     * @returns {SVGSVGElement}    The generated SVG element.
+     */
+    const generateSVGCenteredCross = (diameter: number, svgStyles: string): SVGSVGElement => {
+        // Create an SVG element
+        const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
-    svgs.forEach((svg) => {
-        // Get the child circles from each SVG and append them to the merged SVG
-        Array.from(svg.childNodes).forEach((child) => {
-            if (child instanceof SVGElement) {
-                mergedSVG.appendChild(child.cloneNode(true));
+        // Create variables to define bounding box based on coordinates and diameter
+        let minX = (-diameter / 2) * 1.1,
+            minY = (-diameter / 2) * 1.1,
+            maxX = (diameter / 2) * 1.1,
+            maxY = (diameter / 2) * 1.1;
+
+        // Interpret SVG styles
+        const styles = svgStyles.split(";").reduce(
+            (acc, style) => {
+                const [key, value] = style.split(":");
+                if (key && value) acc[key.trim()] = value.trim();
+                return acc;
+            },
+            {} as { [key: string]: string },
+        );
+
+        const svg = document.createElementNS(SVG_NAMESPACE, "svg");
+
+        // Horizontal line
+        const horzLine = document.createElementNS(SVG_NAMESPACE, "line");
+        horzLine.setAttribute("x1", minX.toString());
+        horzLine.setAttribute("y1", "0");
+        horzLine.setAttribute("x2", maxX.toString());
+        horzLine.setAttribute("y2", "0");
+
+        Object.entries(styles).forEach(([key, value]) => {
+            horzLine.setAttribute(key, value);
+        });
+        svg.appendChild(horzLine);
+
+        // Vertical line
+        const vertLine = document.createElementNS(SVG_NAMESPACE, "line");
+        vertLine.setAttribute("x1", "0");
+        vertLine.setAttribute("y1", minY.toString());
+        vertLine.setAttribute("x2", "0");
+        vertLine.setAttribute("y2", maxY.toString());
+
+        Object.entries(styles).forEach(([key, value]) => {
+            vertLine.setAttribute(key, value);
+        });
+        svg.appendChild(vertLine);
+
+        const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
+
+        // Set SVG attributes
+        svg.setAttribute("xmlns", SVG_NAMESPACE);
+        svg.setAttribute("height", "100dvh");
+        svg.setAttribute("viewBox", viewBox);
+
+        return svg;
+    };
+
+    /**
+     * Merges multiple SVG elements into a single SVG element.
+     * @param {SVGSVGElement[]} svgs The SVG elements to merge.
+     * @returns {SVGSVGElement} The merged SVG element.
+     */
+    const mergeSVGs = (svgs: SVGSVGElement[], viewBoxPaddingAsFraction: number): SVGSVGElement => {
+        const VIEWBOX_PADDING = 1 + viewBoxPaddingAsFraction;
+        const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+
+        // Create a new SVG element to serve as the container
+        const mergedSVG = document.createElementNS(SVG_NAMESPACE, "svg");
+        mergedSVG.setAttribute("xmlns", SVG_NAMESPACE);
+        mergedSVG.setAttribute("height", "100dvh");
+        mergedSVG.setAttribute("class", "tubesheet-svg");
+        mergedSVG.setAttribute("margin", "0");
+        mergedSVG.setAttribute("padding", "0");
+
+        // Calculate the bounding box to set the viewBox of the merged SVG
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+
+        svgs.forEach((svg) => {
+            // Get the child circles from each SVG and append them to the merged
+            // SVG
+            Array.from(svg.childNodes).forEach((child) => {
+                if (child instanceof SVGElement) {
+                    mergedSVG.appendChild(child.cloneNode(true));
+                }
+            });
+
+            // Calculate the bounding box for the current SVG to adjust the
+            // viewBox
+            const viewBox = svg.getAttribute("viewBox");
+            if (viewBox) {
+                const [x, y, width, height] = viewBox.split(" ").map(Number);
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x + width);
+                maxY = Math.max(maxY, y + height);
             }
         });
 
-        // Calculate the bounding box for the current SVG to adjust the viewBox
-        const viewBox = svg.getAttribute("viewBox");
-        if (viewBox) {
-            const [x, y, width, height] = viewBox.split(" ").map(Number);
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x + width);
-            maxY = Math.max(maxY, y + height);
-        }
-    });
+        // Set the viewBox of the merged SVG to encompass all contained SVGs
+        mergedSVG.setAttribute(
+            "viewBox",
+            `${minX * VIEWBOX_PADDING} ${minY * VIEWBOX_PADDING} ${(maxX - minX) * VIEWBOX_PADDING} ${
+                (maxY - minY) * VIEWBOX_PADDING
+            }`,
+        );
 
-    // Set the viewBox of the merged SVG to encompass all contained SVGs
-    mergedSVG.setAttribute(
-        "viewBox",
-        `${minX * VIEWBOX_PADDING} ${minY * VIEWBOX_PADDING} ${(maxX - minX) * VIEWBOX_PADDING} ${
-            (maxY - minY) * VIEWBOX_PADDING
-        }`,
-    );
+        return mergedSVG;
+    };
 
-    return mergedSVG;
-};
-
-export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
     const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
     if (!ts.tubeField || !ts.OTL) {
         return document.createElementNS(SVG_NAMESPACE, "svg");
     }
 
-    const shellIDForSVG = () => {
-        if (ts.tubeField === null && ts.OTL === null) {
-            return 0;
-        }
+    const shellIDForSVG = () => getEffectiveShellID(ts);
 
-        if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
-            return ts.shellID;
-        }
-
-        if (ts.shellID === 0 || isNaN(ts.shellID)) {
-            return ts.minID;
-        }
-
-        return 0;
-    };
-
-    const VIEWBOX_PADDING_AS_FRACTION = 0.1;
     const TUBE_STYLE = "stroke:black; fill:none; stroke-width:1; vector-effect:non-scaling-stroke;";
     const SHELL_STYLE =
         "stroke:black; fill:none; stroke-width:2; vector-effect:non-scaling-stroke;";

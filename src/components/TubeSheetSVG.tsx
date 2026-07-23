@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 type SVGProps = {
     src: SVGSVGElement;
@@ -9,7 +9,7 @@ type SVGProps = {
 export function TubeSheetSVG({ src, className, onRendered }: SVGProps) {
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const container = containerRef.current;
         if (container) {
             if (className) {
