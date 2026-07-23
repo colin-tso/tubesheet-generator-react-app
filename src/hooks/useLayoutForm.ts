@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
-import type React from "react";
-import type { ChangeEvent, FormEvent, KeyboardEvent, SyntheticEvent } from "react";
+import type { ChangeEvent, SubmitEvent, KeyboardEvent, SyntheticEvent } from "react";
 import { utils } from "../utils/";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
 
@@ -52,8 +51,7 @@ type FieldAction =
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
     | { type: "SET_PITCH_RATIO"; value: number | undefined };
 
-// Distinguish absent override (use fallback) from explicit undefined (clear field)
-// as ?? can't distinguish this difference.
+// Distinguish absent override (use fallback) from explicit undefined (clea// field) as ?? can't distinguish this difference.
 function withOverride(
     overrides: Record<string, number | undefined> | undefined,
     key: string,
@@ -105,8 +103,8 @@ function fieldsReducer(state: FieldValues, action: FieldAction): FieldValues {
 
 // --- Hook ----------------------------------------------------------------
 
-// Owns every calculation input, validation, input handlers, and triggers
-// worker recalculation on commit
+// Owns every calculation input, validation, input handlers, and triggers worker
+// recalculation on commit
 export function useLayoutForm({
     lastSingleResult,
     postCalculateSingle,
@@ -138,23 +136,28 @@ export function useLayoutForm({
     const requestAllLayoutResults = useCallback(
         (
             overrides?: Partial<
-                Pick<FieldValues, "OTLtoShell" | "tubeOD" | "pitchRatio" | "minTubes">
+                Pick<FieldValues, "OTLtoShell" | "tubeOD" | "pitchRatio" | "minTubes" | "shellID">
             >,
         ) => {
             const effOTLtoShell = withOverride(overrides, "OTLtoShell", fields.OTLtoShell);
             const effTubeOD = withOverride(overrides, "tubeOD", fields.tubeOD);
             const effPitchRatio = withOverride(overrides, "pitchRatio", fields.pitchRatio);
             const effMinTubes = withOverride(overrides, "minTubes", fields.minTubes);
+            const effShellID = withOverride(overrides, "shellID", fields.shellID);
+
+            // A custom shell ID stands in for minTubes: when given, each layout
+            // option is calculated for that shell ID instead of a minimum tube
+            // count.
+            const hasShellID = utils.isNumber(effShellID) && effShellID !== 0;
 
             const valid =
                 utils.isNumber(effOTLtoShell) &&
                 utils.isNumber(effTubeOD) &&
                 utils.isNumber(effPitchRatio) &&
-                utils.isNumber(effMinTubes) &&
                 effOTLtoShell >= 0 &&
                 effTubeOD > 0 &&
                 effPitchRatio >= 1 &&
-                effMinTubes > 0;
+                (hasShellID || (utils.isNumber(effMinTubes) && effMinTubes > 0));
 
             if (!valid) return;
 
@@ -162,10 +165,18 @@ export function useLayoutForm({
                 OTLtoShell: effOTLtoShell,
                 tubeOD: effTubeOD,
                 pitchRatio: effPitchRatio,
-                minTubes: effMinTubes,
+                minTubes: hasShellID ? undefined : effMinTubes,
+                shellID: hasShellID ? effShellID : undefined,
             });
         },
-        [fields.OTLtoShell, fields.tubeOD, fields.pitchRatio, fields.minTubes, postCalculateAll],
+        [
+            fields.OTLtoShell,
+            fields.tubeOD,
+            fields.pitchRatio,
+            fields.minTubes,
+            fields.shellID,
+            postCalculateAll,
+        ],
     );
 
     const onBlur = (e: SyntheticEvent<HTMLInputElement>) => {
@@ -175,9 +186,10 @@ export function useLayoutForm({
         // Emptied field should stay empty
         if (val.trim() === "") {
             if (name === "shellID") {
-                // Clearing shellID reverts to the min-tubes layout and recalculates
-                // immediately.
+                // Clearing shellID reverts to the min-tubes layout and
+                // recalculates immediately.
                 setGenericField(name, undefined);
+                requestAllLayoutResults({ shellID: undefined });
                 if (layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
                     triggerSingleCalculation({ shellID: undefined });
                 }
@@ -217,6 +229,9 @@ export function useLayoutForm({
         if (name === "shellID") {
             const changed = fields.shellID !== parsed;
             setGenericField(name, parsed);
+            if (changed) {
+                requestAllLayoutResults({ shellID: parsed });
+            }
             if (changed && layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
                 triggerSingleCalculation({ shellID: parsed });
             }
@@ -236,7 +251,7 @@ export function useLayoutForm({
         setGenericField(name, parsed);
     };
 
-    const inputOnSubmitHandler = (e: React.SubmitEvent<HTMLInputElement>) => {
+    const inputOnSubmitHandler = (e: SubmitEvent<HTMLInputElement>) => {
         e.preventDefault();
     };
 
@@ -279,7 +294,7 @@ export function useLayoutForm({
         ],
     );
 
-    const formOnSubmitHandler = (e: FormEvent<HTMLFormElement>) => {
+    const formOnSubmitHandler = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         // Fallback: If form submits, trigger a single calc request
         if (utils.isNumber(fields.layoutOption) && layoutInputsDefined) {
@@ -433,15 +448,9 @@ export function useLayoutForm({
         validateLayoutOption();
     }, [validateLayoutInputs, validateLayoutOption]);
 
-    // Keep "actual tubes" in sync with a custom shell ID whenever a relevant
-    // input changes (e.g. tubeOD/pitch edited via blur only, without Enter).
-    //
-    // This used to construct a `TubeSheet` directly here, which re-ran the
-    // full min-ID bisection and tube-field generation synchronously on the
-    // main thread just to read off `numTubes` - duplicating work the worker
-    // already does and blocking the UI thread for large tube counts. Instead,
-    // ask the worker to recalculate; its response is picked up by the
-    // "lastSingleResult" effect below, which sets/clears actualTubes.
+    // Keep actualTubes synced with a custom shell ID via the worker instead
+    // of rebuilding TubeSheet on the main thread. The worker response is
+    // handled by the lastSingleResult effect below.
     useEffect(() => {
         if (
             !utils.isNumber(fields.layoutOption) ||

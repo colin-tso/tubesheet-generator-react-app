@@ -4,6 +4,8 @@ import "../index.css";
 import MoonIcon from "../assets/moon.svg?react";
 import SunIcon from "../assets/sun.svg?react";
 
+const THEME_STORAGE_KEY = "theme-preference";
+
 const updateTheme = (isDarkEnabled: Boolean) => {
     const docEl = document.documentElement;
     docEl.setAttribute("data-theme", isDarkEnabled ? "dark" : "light");
@@ -11,24 +13,24 @@ const updateTheme = (isDarkEnabled: Boolean) => {
 };
 
 export default function ThemeToggle() {
-    const [isEnabled, setIsEnabled] = useState(false);
+    // Initialize from localStorage if present, otherwise fall back to system preference
+    const [isEnabled, setIsEnabled] = useState<boolean>(() => {
+        const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+        if (stored === "dark") return true;
+        if (stored === "light") return false;
+        return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    });
 
-    // User system dark mode detection
+    // Only follow system dark mode changes if the user hasn't set an explicit preference
     useEffect(() => {
-        // Add listener to update styles
-        window
-            .matchMedia("(prefers-color-scheme: dark)")
-            .addEventListener("change", (e) => setIsEnabled(e.matches));
-
-        // Setup dark/light mode for the first time
-        setIsEnabled(window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-        // Remove listener
-        return () => {
-            window
-                .matchMedia("(prefers-color-scheme: dark)")
-                .removeEventListener("change", () => {});
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        const handleChange = (e: MediaQueryListEvent) => {
+            if (window.localStorage.getItem(THEME_STORAGE_KEY) === null) {
+                setIsEnabled(e.matches);
+            }
         };
+        mediaQuery.addEventListener("change", handleChange);
+        return () => mediaQuery.removeEventListener("change", handleChange);
     }, []);
 
     useEffect(() => {
@@ -36,7 +38,11 @@ export default function ThemeToggle() {
     }, [isEnabled]);
 
     const toggleState = () => {
-        setIsEnabled((prevState) => !prevState);
+        setIsEnabled((prevState) => {
+            const next = !prevState;
+            window.localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
+            return next;
+        });
     };
 
     return (
