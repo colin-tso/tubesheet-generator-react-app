@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import packageJson from "../package.json";
 import GitHubButton from "react-github-btn";
@@ -92,11 +92,25 @@ const App = () => {
     // Copy-to-clipboard / download-as-file actions for the drawing.
     const { copyState, downloadSVG, copySVG } = useSvgExportActions(drawingSVG);
 
-    // Show/hide grid state
-    const [showGrid, setShowGrid] = useState<boolean>(true);
+    // Show/hide grid state (persisted)
+    const [showGrid, setShowGrid] = useState<boolean>(() => {
+        const stored = window.localStorage.getItem("view-options.showGrid");
+        return stored === null ? true : stored === "true";
+    });
 
-    // Show/hide table state
-    const [showTable, setShowTable] = useState<boolean>(true);
+    // Show/hide table state (persisted)
+    const [showTable, setShowTable] = useState<boolean>(() => {
+        const stored = window.localStorage.getItem("view-options.showTable");
+        return stored === null ? true : stored === "true";
+    });
+
+    useEffect(() => {
+        window.localStorage.setItem("view-options.showGrid", String(showGrid));
+    }, [showGrid]);
+
+    useEffect(() => {
+        window.localStorage.setItem("view-options.showTable", String(showTable));
+    }, [showTable]);
 
     // Input fields
     const numericFieldConfigs: NumericFieldProps[] = [
