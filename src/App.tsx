@@ -228,15 +228,19 @@ const App = () => {
         };
     }, []);
 
-    // The table and action buttons sit in the bottom corners of the viewport.
-    // The drawing is a circle inscribed in a centered square, so those corners
-    // are normally empty space even when the drawing is rendered as large as
-    // possible. Only reserve space if the table overlaps the drawing.
+    // Reserve table space only if it overlaps the drawing. The drawing is a
+    // circle in a centered square, so corners are normally empty.
     const footerRef = useRef<HTMLDivElement>(null);
     const actionsRef = useRef<HTMLDivElement>(null);
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
     const [actionsStacked, setActionsStacked] = useState(false);
     const [viewportBottomReserve, setViewportBottomReserve] = useState(VIEWPORT_BASE_PADDING);
+    // Track sticky-reserve state. Reserve space for the footer as the viewport
+    // shrinks, rather than re-testing clearance every resize. Release when the
+    // viewport widens past its initial engagement or the table stops showing.
+    const reservedRef = useRef(false);
+    const reservedAtWidthRef = useRef(0);
+    const RESERVE_RELEASE_BUFFER = 24; // px the viewport must widen past the engage point before releasing
     useLayoutEffect(() => {
         const viewportEl = containerRef.current;
         const footerEl = footerRef.current;
@@ -246,6 +250,10 @@ const App = () => {
         }
 
         const SAFETY_MARGIN = 12; //px
+
+        // Fresh data or table visibility means a fresh evaluation baseline;
+        // stickiness (see below) should only persist across pure resizing.
+        reservedRef.current = false;
 
         const recompute = () => {
             const viewportRect = viewportEl.getBoundingClientRect();
@@ -284,20 +292,43 @@ const App = () => {
             const centerX = viewportRect.left + viewportRect.width / 2;
             const centerY = viewportRect.top + viewportRect.height / 2;
 
-            const tableClearsDrawing =
+            const tableClearsDrawingRaw =
                 !tableRect || !tableVisible || (tableRect.width === 0 && tableRect.height === 0)
                     ? true
                     : (() => {
                           const dx = centerX - tableRect.right;
                           const dy = centerY - tableRect.top;
-                          return dx * dx + dy * dy >= safeRadius * safeRadius;
+                          const safeRadiusWithMargin = safeRadius + SAFETY_MARGIN;
+                          return dx * dx + dy * dy >= safeRadiusWithMargin * safeRadiusWithMargin;
                       })();
+
+            // Latch: decide whether to actually reserve space, using the raw
+            // clearance result plus the sticky behavior described above.
+            let needsReserve: boolean;
+            if (!tableVisible) {
+                reservedRef.current = false;
+                needsReserve = false;
+            } else if (!tableClearsDrawingRaw) {
+                if (!reservedRef.current) {
+                    reservedRef.current = true;
+                    reservedAtWidthRef.current = viewportRect.width;
+                }
+                needsReserve = true;
+            } else if (
+                reservedRef.current &&
+                viewportRect.width <= reservedAtWidthRef.current + RESERVE_RELEASE_BUFFER
+            ) {
+                needsReserve = true;
+            } else {
+                reservedRef.current = false;
+                needsReserve = false;
+            }
 
             setActionsStacked(rowLeftEdge < (tableRect ? tableRect.right : 0) + SAFETY_MARGIN);
             setViewportBottomReserve(
-                tableClearsDrawing
-                    ? VIEWPORT_BASE_PADDING
-                    : Math.max(VIEWPORT_BASE_PADDING, Math.ceil(footerRect.height) + 44),
+                needsReserve
+                    ? Math.max(VIEWPORT_BASE_PADDING, Math.ceil(footerRect.height) + 44)
+                    : VIEWPORT_BASE_PADDING,
             );
         };
 

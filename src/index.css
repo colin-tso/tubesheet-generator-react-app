@@ -694,6 +694,8 @@ footer a {
     5rem 5rem,
     1rem 1rem,
     1rem 1rem;
+
+  /* transition: padding-bottom 0.2s ease; */
 }
 
 .viewport::before,
@@ -943,6 +945,8 @@ footer a {
   z-index: 2;
   max-width: 100%;
   max-height: calc(100vh - 48px - var(--viewport-footer-reserve, 48px));
+
+  /* transition: max-height 0.2s ease; */
 }
 
 .tubesheet-svg > * {
@@ -951,8 +955,7 @@ footer a {
 }
 
 /* ============================================================
-   Footer (table + actions) uses flexbox to prevent overlap. Viewport reserves
-   space (--viewport-footer-reserve) for it. Stacks below drawing on mobile.
+   Footer (table + actions)
    ============================================================ */
 .viewport-overlay-footer {
   --footer-row-gap: 16px;
@@ -971,12 +974,6 @@ footer a {
   justify-content: flex-start;
 }
 
-/* Auto-fit collapses this from 2 columns to 1 (a clean stacked column)
-   purely from its own available width — no breakpoint, container query,
-   or JS needed. min-width:0 lets the flex parent above actually hand it
-   less-than-natural width (e.g. when the table needs the room) instead
-   of always sizing it to fit both buttons; that's what lets auto-fit's
-   collapse ever engage in the first place. */
 .viewport-actions {
   --actions-row-gap: 10px;
 
