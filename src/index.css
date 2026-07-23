@@ -694,8 +694,6 @@ footer a {
     5rem 5rem,
     1rem 1rem,
     1rem 1rem;
-
-  /* transition: padding-bottom 0.2s ease; */
 }
 
 .viewport::before,
@@ -945,8 +943,6 @@ footer a {
   z-index: 2;
   max-width: 100%;
   max-height: calc(100vh - 48px - var(--viewport-footer-reserve, 48px));
-
-  /* transition: max-height 0.2s ease; */
 }
 
 .tubesheet-svg > * {
