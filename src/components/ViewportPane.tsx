@@ -155,7 +155,8 @@ export function ViewportPane({
                             <span
                                 className={`copy-status-badge noselect${
                                     copyState !== "idle" ? " visible" : ""
-                                }${copyState === "error" || copyState === "unsupported" ? " error" : ""}`}
+                                }${copyState === "error" || copyState === "unsupported" ? " error" : ""}
+                                ${copyState === "copied" ? " success" : ""}`}
                                 role="status"
                                 aria-live="polite"
                                 aria-hidden={copyState === "idle"}
