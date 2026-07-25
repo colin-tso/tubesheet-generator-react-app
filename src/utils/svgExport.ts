@@ -29,9 +29,30 @@ export const sizedSvgString = (svg: SVGSVGElement, scale = 2) => {
     return { svgString: new XMLSerializer().serializeToString(clone), width, height };
 };
 
-// Rasterise SVG to a PNG blob.
-export const svgToPngBlob = (svg: SVGSVGElement, scale = 2): Promise<Blob> => {
+// Rasterisation to fixed size.
+const MAX_RASTER_DIMENSION = 4096; // px
+const MIN_RASTER_SCALE = 1; // never render below the SVG's native units
+const MAX_RASTER_SCALE = 4; // cap upscaling on very small drawings
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+// Rasterise SVG to a PNG blob. The render scale is derived dynamically to
+// "maxDimension"and bounded by MAX_RASTER_SCALE
+export const svgToPngBlob = (
+    svg: SVGSVGElement,
+    maxDimension = MAX_RASTER_DIMENSION,
+): Promise<Blob> => {
     return new Promise((resolve, reject) => {
+        const viewBox = svg.getAttribute("viewBox");
+        const parts = viewBox ? viewBox.split(" ").map(Number) : [0, 0, 300, 150];
+        const vbWidth = parts[2] || 300;
+        const vbHeight = parts[3] || 300;
+        const largestDimension = Math.max(vbWidth, vbHeight);
+        const scale =
+            largestDimension > 0
+                ? clamp(maxDimension / largestDimension, MIN_RASTER_SCALE, MAX_RASTER_SCALE)
+                : MIN_RASTER_SCALE;
+
         const { svgString, width, height } = sizedSvgString(svg, scale);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(svgBlob);

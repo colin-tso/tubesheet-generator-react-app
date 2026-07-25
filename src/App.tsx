@@ -16,7 +16,6 @@ import { useTubeSheetWorker } from "./hooks/useTubeSheetWorker";
 import { useLayoutForm } from "./hooks/useLayoutForm";
 import { useSvgExportActions } from "./hooks/useSvgExportActions";
 import { useContextMenu } from "./hooks/useContextMenu";
-import { useOptionsStackLayout } from "./hooks/useOptionsStackLayout";
 import { useViewportFooterReserve } from "./hooks/useViewportFooterReserve";
 import { LayoutOptionsList } from "./components/LayoutOptionsList";
 import { ViewportPane } from "./components/ViewportPane";
@@ -121,21 +120,12 @@ const App = () => {
         layoutOptionRows.find((row) => row.key === lastSingleResult?.layout)?.label ?? "—";
     const drawingTableRequestedTubes = utils.isNumber(shellID) ? undefined : minTubes;
 
-    // Keep the "Layout Preview" label centered while the option buttons move
-    // from a row to a stacked column only when their actual rendered width
-    // would overlap the label.
-    const labelRef = useRef<HTMLSpanElement>(null);
-    const optionsRef = useRef<HTMLDivElement>(null);
-    const optionsStacked = useOptionsStackLayout(labelRef, optionsRef);
-
     // Reserve table space only if it overlaps the drawing.
     const footerRef = useRef<HTMLDivElement>(null);
-    const actionsRef = useRef<HTMLDivElement>(null);
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
-    const { actionsStacked, viewportBottomReserve } = useViewportFooterReserve({
+    const { viewportBottomReserve } = useViewportFooterReserve({
         containerRef,
         footerRef,
-        actionsRef,
         tableEl,
         showTable,
         lastSingleResult,
@@ -219,16 +209,11 @@ const App = () => {
             </form>
             <ViewportPane
                 containerRef={containerRef}
-                labelRef={labelRef}
-                optionsRef={optionsRef}
                 footerRef={footerRef}
-                actionsRef={actionsRef}
                 showGrid={showGrid}
                 showTable={showTable}
                 onToggleGrid={() => setShowGrid((v) => !v)}
                 onToggleTable={() => setShowTable((v) => !v)}
-                optionsStacked={optionsStacked}
-                actionsStacked={actionsStacked}
                 viewportStyle={viewportStyle}
                 onContextMenu={openContextMenu}
                 contextMenuAnimationState={contextMenuAnimationState}

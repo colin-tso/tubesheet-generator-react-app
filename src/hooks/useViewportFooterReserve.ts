@@ -9,7 +9,6 @@ const RESERVE_RELEASE_BUFFER = 0;
 interface UseViewportFooterReserveOptions {
     containerRef: RefObject<HTMLDivElement | null>;
     footerRef: RefObject<HTMLDivElement | null>;
-    actionsRef: RefObject<HTMLDivElement | null>;
     tableEl: HTMLTableElement | null;
     showTable: boolean;
     lastSingleResult: SingleResultPayload;
@@ -24,13 +23,11 @@ interface UseViewportFooterReserveOptions {
 export function useViewportFooterReserve({
     containerRef,
     footerRef,
-    actionsRef,
     tableEl,
     showTable,
     lastSingleResult,
     basePadding,
 }: UseViewportFooterReserveOptions) {
-    const [actionsStacked, setActionsStacked] = useState(false);
     const [viewportBottomReserve, setViewportBottomReserve] = useState(basePadding);
 
     const reservedRef = useRef(false);
@@ -39,8 +36,7 @@ export function useViewportFooterReserve({
     useLayoutEffect(() => {
         const viewportEl = containerRef.current;
         const footerEl = footerRef.current;
-        const actionsEl = actionsRef.current;
-        if (!viewportEl || !footerEl || !actionsEl) {
+        if (!viewportEl || !footerEl) {
             return;
         }
 
@@ -52,10 +48,6 @@ export function useViewportFooterReserve({
 
         const recompute = () => {
             const viewportRect = viewportEl.getBoundingClientRect();
-            const actionsRect = actionsEl?.getBoundingClientRect();
-            const buttonRects = Array.from(actionsEl.children)
-                .map((child) => child.getBoundingClientRect())
-                .filter((rect) => rect.width > 0 || rect.height > 0);
             const tableRect = tableEl?.getBoundingClientRect();
             const tableVisible =
                 !tableEl ||
@@ -63,18 +55,9 @@ export function useViewportFooterReserve({
                     tableRect.width > 0 &&
                     tableRect.height > 0 &&
                     !tableEl.hasAttribute("hidden"));
-            if (buttonRects.length === 0 || viewportRect.width <= 0 || viewportRect.height <= 0) {
+            if (viewportRect.width <= 0 || viewportRect.height <= 0) {
                 return;
             }
-
-            const actionsRowGap =
-                parseFloat(getComputedStyle(actionsEl).getPropertyValue("--actions-row-gap")) || 0;
-            const footerRowGap =
-                parseFloat(getComputedStyle(actionsEl).getPropertyValue("--footer-row-gap")) || 0;
-
-            const buttonsWidth = buttonRects.reduce((sum, rect) => sum + rect.width, 0);
-            const rowWidth = buttonsWidth + actionsRowGap * (buttonRects.length - 1) + footerRowGap;
-            const rowLeftEdge = actionsRect.right - rowWidth;
 
             const footerRect = footerEl.getBoundingClientRect();
 
@@ -119,7 +102,6 @@ export function useViewportFooterReserve({
                 needsReserve = false;
             }
 
-            setActionsStacked(rowLeftEdge < (tableRect ? tableRect.right : 0) + SAFETY_MARGIN);
             setViewportBottomReserve(
                 needsReserve
                     ? Math.max(basePadding, Math.ceil(footerRect.height) + 44)
@@ -137,15 +119,12 @@ export function useViewportFooterReserve({
             observer?.observe(tableEl);
         }
 
-        observer?.observe(actionsEl);
-        Array.from(actionsEl.children).forEach((child) => observer?.observe(child));
-
         window.addEventListener("resize", recompute);
         return () => {
             observer?.disconnect();
             window.removeEventListener("resize", recompute);
         };
-    }, [containerRef, footerRef, actionsRef, tableEl, showTable, lastSingleResult, basePadding]);
+    }, [containerRef, footerRef, tableEl, showTable, lastSingleResult, basePadding]);
 
-    return { actionsStacked, viewportBottomReserve };
+    return { viewportBottomReserve };
 }
