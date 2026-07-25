@@ -11,6 +11,7 @@
   --radius-sm: 3px;
   --radius-md: 5px;
   --transition: 0.15s ease;
+  --fast-transition: 0.05 ease;
 
   /* Color palette — light */
   --paper-light: hsl(48, 20%, 97%);
@@ -212,8 +213,8 @@ a,
 
   border-right: 1px solid var(--line);
 
-  background-color: color-mix(in srgb, var(--panel), transparent 30%);
-  background-image:
+  background-color: var(--panel);
+  /* background-image:
     linear-gradient(var(--grid-major) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
     linear-gradient(var(--grid-minor) 1px, transparent 1px),
@@ -223,7 +224,7 @@ a,
     5rem 5rem,
     5rem 5rem,
     1rem 1rem,
-    1rem 1rem;
+    1rem 1rem; */
 }
 
 .left.grid-hidden {
@@ -940,14 +941,21 @@ footer a {
 
 .tubesheet-svg {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   max-width: 100%;
   max-height: calc(100vh - 48px - var(--viewport-footer-reserve, 48px));
 }
 
 .tubesheet-svg > * {
+  pointer-events: visible;
   stroke: var(--ink);
-  transition: stroke var(--transition);
+  transition: stroke var(--fast-transition), filter var(--fast-transition);
+}
+
+.tubesheet-svg > circle:hover {
+  filter:
+    drop-shadow(5px 5px 0 var(--blue-bright)) drop-shadow(-5px 5px 0 var(--blue-bright))
+    drop-shadow(-5px -5px 0 var(--blue-bright)) drop-shadow(5px -5px 0 var(--blue-bright));
 }
 
 /* ============================================================
@@ -957,7 +965,7 @@ footer a {
   --footer-row-gap: 16px;
 
   position: absolute;
-  z-index: 3;
+  z-index: 2;
   right: 28px;
   bottom: 28px;
   left: 28px;
