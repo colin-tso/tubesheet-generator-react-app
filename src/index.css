@@ -41,8 +41,8 @@
   --ink-dark: hsl(210, 40%, 94%);
   --muted-dark: hsl(212, 16%, 62%);
   --line-dark: hsl(212, 24%, 22%);
-  --grid-minor-dark: hsl(212, 26%, 16%);
-  --grid-major-dark: hsl(212, 26%, 20%);
+  --grid-minor-dark: hsl(212, 26%, 10%);
+  --grid-major-dark: hsl(212, 26%, 14%);
   --input-bg-dark: hsl(212, 30%, 10%);
   --input-readonly-bg-dark: hsl(212, 24%, 17%);
   --input-readonly-text-dark: hsl(212, 12%, 55%);
