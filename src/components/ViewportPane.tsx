@@ -12,16 +12,11 @@ import type { SingleResultPayload } from "../hooks/useTubeSheetWorker";
 
 interface ViewportPaneProps {
     containerRef: RefObject<HTMLDivElement | null>;
-    labelRef: RefObject<HTMLSpanElement | null>;
-    optionsRef: RefObject<HTMLDivElement | null>;
     footerRef: RefObject<HTMLDivElement | null>;
-    actionsRef: RefObject<HTMLDivElement | null>;
     showGrid: boolean;
     showTable: boolean;
     onToggleGrid: () => void;
     onToggleTable: () => void;
-    optionsStacked: boolean;
-    actionsStacked: boolean;
     viewportStyle: CSSProperties;
     onContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void;
     contextMenuAnimationState: AnimationLifecycle;
@@ -46,16 +41,11 @@ interface ViewportPaneProps {
 
 export function ViewportPane({
     containerRef,
-    labelRef,
-    optionsRef,
     footerRef,
-    actionsRef,
     showGrid,
     showTable,
     onToggleGrid,
     onToggleTable,
-    optionsStacked,
-    actionsStacked,
     viewportStyle,
     onContextMenu,
     contextMenuAnimationState,
@@ -99,9 +89,7 @@ export function ViewportPane({
                         onRequestClose={onContextMenuRequestClose}
                     />
                 )}
-                <span className="viewport-label noselect" ref={labelRef}>
-                    Layout Preview
-                </span>
+                <span className="viewport-label noselect">Layout Preview</span>
                 {calcError ? (
                     <span className="loading-overlay error visible noselect" aria-hidden="true">
                         Calculation failed
@@ -127,10 +115,7 @@ export function ViewportPane({
                 <span className="reg-tr" aria-hidden="true" />
                 <span className="reg-bl" aria-hidden="true" />
                 <span className="reg-br" aria-hidden="true" />
-                <div
-                    className={`viewport-options${optionsStacked ? " stacked" : ""}`}
-                    ref={optionsRef}
-                >
+                <div className="viewport-options">
                     <button
                         type="button"
                         className={`table-toggle ${showTable ? "active" : ""}`}
@@ -139,7 +124,7 @@ export function ViewportPane({
                         title={showTable ? "Hide Table" : "Show Table"}
                     >
                         <TableIcon width="13" height="13" aria-hidden="true" />
-                        Table
+                        <span className="btn-label">Table</span>
                     </button>
                     <button
                         type="button"
@@ -149,7 +134,7 @@ export function ViewportPane({
                         title={showGrid ? "Hide Grid" : "Show Grid"}
                     >
                         <GridIcon width="13" height="13" aria-hidden="true" />
-                        Grid
+                        <span className="btn-label">Grid</span>
                     </button>
                 </div>
                 <TubeSheetSVG
@@ -165,24 +150,56 @@ export function ViewportPane({
                         requestedTubes={drawingTableRequestedTubes}
                         visible={showTable}
                     />
-                    <div
-                        className={`viewport-actions${actionsStacked ? " stacked" : ""}`}
-                        ref={actionsRef}
-                        hidden={drawingSVG === placeholderSVG}
-                    >
-                        <button className="copy-button" onClick={onCopySVG} type="button">
-                            <CopyIcon width="15" height="15" aria-hidden="true" />
-                            {copyState === "copied"
-                                ? "Copied!"
-                                : copyState === "error"
-                                  ? "Copy failed"
-                                  : copyState === "unsupported"
-                                    ? "Copy unsupported"
-                                    : "Copy Image"}
-                        </button>
-                        <button className="save-button" onClick={onDownloadSVG} type="button">
-                            <SaveIcon width="15" height="15" aria-hidden="true" />
-                            Save Image
+                    <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
+                        <div className="copy-button-wrap">
+                            <span
+                                className={`copy-status-badge noselect${
+                                    copyState !== "idle" ? " visible" : ""
+                                }${copyState === "error" || copyState === "unsupported" ? " error" : ""}`}
+                                role="status"
+                                aria-live="polite"
+                                aria-hidden={copyState === "idle"}
+                            >
+                                {copyState === "pending"
+                                    ? "Copying…"
+                                    : copyState === "copied"
+                                      ? "Copied!"
+                                      : copyState === "error"
+                                        ? "Copy failed"
+                                        : copyState === "unsupported"
+                                          ? "Copy unsupported"
+                                          : ""}
+                            </span>
+                            <button
+                                className="copy-button"
+                                onClick={onCopySVG}
+                                type="button"
+                                title="Copy Image"
+                                disabled={copyState === "pending"}
+                                aria-busy={copyState === "pending"}
+                            >
+                                <CopyIcon
+                                    className="btn-icon"
+                                    width="15"
+                                    height="15"
+                                    aria-hidden="true"
+                                />
+                                <span className="btn-label">Copy Image</span>
+                            </button>
+                        </div>
+                        <button
+                            className="save-button"
+                            onClick={onDownloadSVG}
+                            type="button"
+                            title="Save Image"
+                        >
+                            <SaveIcon
+                                className="btn-icon"
+                                width="15"
+                                height="15"
+                                aria-hidden="true"
+                            />
+                            <span className="btn-label">Save Image</span>
                         </button>
                     </div>
                 </div>

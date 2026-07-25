@@ -11,7 +11,7 @@
   --radius-sm: 3px;
   --radius-md: 5px;
   --transition: 0.15s ease;
-  --fast-transition: 0.05 ease;
+  --options-btn-font-size: 12.5px;
 
   /* Color palette — light */
   --paper-light: hsl(48, 20%, 97%);
@@ -214,17 +214,6 @@ a,
   border-right: 1px solid var(--line);
 
   background-color: var(--panel);
-  /* background-image:
-    linear-gradient(var(--grid-major) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
-    linear-gradient(var(--grid-minor) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
-  background-position: -1px -1px;
-  background-size:
-    5rem 5rem,
-    5rem 5rem,
-    1rem 1rem,
-    1rem 1rem; */
 }
 
 .left.grid-hidden {
@@ -753,20 +742,12 @@ footer a {
 }
 
 .viewport-options {
-  --options-row-gap: 10px;
-
   position: absolute;
   z-index: 3;
   top: 28px;
   right: 28px;
 
   display: flex;
-  gap: var(--options-row-gap);
-}
-
-/* Applied via JS (measured collision with .viewport-label) rather than
-   a width breakpoint — see the effect around optionsStacked in App.tsx. */
-.viewport-options.stacked {
   flex-direction: column;
   gap: 6px;
   align-items: flex-end;
@@ -777,7 +758,7 @@ footer a {
   cursor: pointer;
 
   display: flex;
-  gap: 6px;
+  gap: 0;
   align-items: center;
 
   padding: 5px 9px;
@@ -785,7 +766,7 @@ footer a {
   border-radius: var(--radius-sm);
 
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--options-btn-font-size);
   font-weight: 500;
   color: var(--muted);
   text-transform: uppercase;
@@ -801,9 +782,44 @@ footer a {
     opacity var(--transition);
 }
 
+/* Text slides out on hover/focus instead of always taking up row width. */
+.grid-toggle .btn-label,
+.table-toggle .btn-label {
+  overflow: hidden;
+
+  max-width: 0;
+  margin-left: 0;
+
+  font-family: var(--font-mono);
+  white-space: nowrap;
+
+  opacity: 0;
+
+  transition:
+    max-width 0.3s ease,
+    margin-left 0.3s ease,
+    opacity 0.2s ease;
+}
+
+.grid-toggle .btn-icon,
+.table-toggle .btn-icon {
+  width: calc(var(--options-btn-font-size) * 15 / 10.5);
+  height: calc(var(--options-btn-font-size) * 15 / 10.5);
+}
+
+.grid-toggle:hover .btn-label,
+.grid-toggle:focus-visible .btn-label,
+.table-toggle:hover .btn-label,
+.table-toggle:focus-visible .btn-label {
+  max-width: 60px;
+  margin-left: 6px;
+  opacity: 1;
+}
+
 .grid-toggle::after,
 .table-toggle::after {
   content: "OFF";
+  margin-left: 6px;
 }
 
 .grid-toggle:hover,
@@ -941,21 +957,14 @@ footer a {
 
 .tubesheet-svg {
   position: relative;
-  z-index: 3;
+  z-index: 2;
   max-width: 100%;
   max-height: calc(100vh - 48px - var(--viewport-footer-reserve, 48px));
 }
 
 .tubesheet-svg > * {
-  pointer-events: visible;
   stroke: var(--ink);
-  transition: stroke var(--fast-transition), filter var(--fast-transition);
-}
-
-.tubesheet-svg > circle:hover {
-  filter:
-    drop-shadow(5px 5px 0 var(--blue-bright)) drop-shadow(-5px 5px 0 var(--blue-bright))
-    drop-shadow(-5px -5px 0 var(--blue-bright)) drop-shadow(5px -5px 0 var(--blue-bright));
+  transition: stroke var(--transition);
 }
 
 /* ============================================================
@@ -965,7 +974,7 @@ footer a {
   --footer-row-gap: 16px;
 
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   right: 28px;
   bottom: 28px;
   left: 28px;
@@ -979,29 +988,13 @@ footer a {
 }
 
 .viewport-actions {
-  --actions-row-gap: 10px;
-
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--actions-row-gap);
-  align-items: center;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
 
   min-width: 0;
   margin-left: auto;
-}
-
-.viewport-actions.stacked {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.viewport-actions.stacked > button {
-  width: 100%;
-}
-
-.viewport-actions > button {
-  flex: 0 0 auto;
 }
 
 .tubesheet-data-table {
@@ -1054,7 +1047,7 @@ footer a {
   cursor: pointer;
 
   display: flex;
-  gap: 8px;
+  gap: 0;
   align-items: center;
 
   padding: 10px 16px;
@@ -1064,6 +1057,35 @@ footer a {
   letter-spacing: 0.02em;
 
   box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
+
+  transition: padding var(--transition);
+}
+
+/* Text slides out on hover/focus instead of always taking up row width. */
+.save-button .btn-label,
+.copy-button .btn-label {
+  overflow: hidden;
+
+  max-width: 0;
+  margin-left: 0;
+
+  white-space: nowrap;
+
+  opacity: 0;
+
+  transition:
+    max-width 0.3s ease,
+    margin-left 0.3s ease,
+    opacity 0.2s ease;
+}
+
+.save-button:hover .btn-label,
+.save-button:focus-visible .btn-label,
+.copy-button:hover .btn-label,
+.copy-button:focus-visible .btn-label {
+  max-width: 140px;
+  margin-left: 8px;
+  opacity: 1;
 }
 
 .save-button {
@@ -1086,6 +1108,56 @@ footer a {
   border-color: var(--blue);
   color: var(--blue);
 }
+
+.copy-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.copy-button:disabled:hover {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.copy-button-wrap {
+  position: relative;
+}
+
+.copy-status-badge {
+  pointer-events: none;
+
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: calc(100% + 8px);
+
+  padding: 6px 14px;
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-sm);
+
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+
+  opacity: 0;
+  background-color: var(--blue-tint);
+
+  transition: opacity 0.2s ease;
+}
+
+.copy-status-badge.visible {
+  opacity: 1;
+}
+
+.copy-status-badge.error {
+  border-color: var(--redline);
+  color: var(--redline);
+}
+
 /* ============================================================
    Context Menu (drawing canvas)
    ============================================================ */
@@ -1269,6 +1341,15 @@ footer a {
     right: 14px;
     bottom: 14px;
     left: 14px;
+  }
+
+  .btn-label {
+    font-size: calc(var(--options-btn-font-size) *0.92);
+  }
+
+  .btn-icon {
+    width: calc(var(--options-btn-font-size) *0.92);
+    height: calc(var(--options-btn-font-size) *0.92);
   }
 
   .save-button,
