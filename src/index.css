@@ -30,6 +30,7 @@
   --blue-tint-light: hsl(214, 62%, 95%);
   --blue-glow-light: hsl(214, 68%, 42%, 22%);
   --redline-light: hsl(0, 74%, 42%);
+  --greenline-light: hsl(135, 74%, 42%);
   --preferred-light: hsl(214, 68%, 42%);
   --box-shadow-light-1: hsla(0, 0%, 0%, 0.3);
   --box-shadow-light-2: hsla(0, 0%, 0%, 0.1);
@@ -51,6 +52,7 @@
   --blue-tint-dark: hsl(212, 50%, 18%);
   --blue-glow-dark: hsl(212, 84%, 68%, 22%);
   --redline-dark: hsl(0, 84%, 66%);
+  --greenline-dark: hsl(135, 84%, 66%);
   --preferred-dark: hsl(212, 84%, 76%);
   --box-shadow-dark-1: hsla(0, 0%, 0%, 0.7);
   --box-shadow-dark-2: hsla(0, 0%, 0%, 0.5);
@@ -72,6 +74,7 @@
   --blue-tint: var(--blue-tint-light);
   --blue-glow: var(--blue-glow-light);
   --redline: var(--redline-light);
+  --greenline: var(--greenline-light);
   --preferred: var(--preferred-light);
   --box-shadow-1: var(--box-shadow-light-1);
   --box-shadow-2: var(--box-shadow-light-2);
@@ -97,6 +100,7 @@
   --blue-tint: var(--blue-tint-dark);
   --blue-glow: var(--blue-glow-dark);
   --redline: var(--redline-dark);
+  --greenline: var(--greenline-dark);
   --preferred: var(--preferred-dark);
   --box-shadow-1: var(--box-shadow-dark-1);
   --box-shadow-2: var(--box-shadow-dark-2);
@@ -1121,6 +1125,9 @@ footer a {
 
 .copy-button-wrap {
   position: relative;
+  display: flex;
+  justify-content: flex-end;
+  width: 200px;
 }
 
 .copy-status-badge {
@@ -1156,6 +1163,11 @@ footer a {
 .copy-status-badge.error {
   border-color: var(--redline);
   color: var(--redline);
+}
+
+.copy-status-badge.success {
+  border-color: var(--greenline);
+  color: var(--greenline);
 }
 
 /* ============================================================
