@@ -5,7 +5,7 @@ export interface Tube {
     x: number;
     y: number;
 }
-export interface TubeField extends Array<Tube> {}
+export type TubeField = Array<Tube>;
 export type TubeSheetLayout = 30 | 45 | 60 | 90 | "radial";
 
 export interface ITubeSheetData {
@@ -202,8 +202,8 @@ const roundUp = (value: number, decimalPlaces: number): number => {
 };
 
 const round = (num: number, decimalPlaces = 0) => {
-    var p = Math.pow(10, decimalPlaces);
-    var n = num * p * (1 + Number.EPSILON);
+    const p = Math.pow(10, decimalPlaces);
+    const n = num * p * (1 + Number.EPSILON);
     return Math.round(n) / p;
 };
 
@@ -441,7 +441,7 @@ const radialTubeField = (
             x = 0;
             y = centreD / 2;
         } else {
-            let angle = angleIncrement * i * -1 + Math.PI / 2;
+            const angle = angleIncrement * i * -1 + Math.PI / 2;
             x = (centreD / 2) * Math.cos(angle);
             y = (centreD / 2) * Math.sin(angle);
         }
@@ -514,7 +514,7 @@ const tubeCount = (
     layout: TubeSheetLayout,
     offsetOption: boolean | "AUTO" = "AUTO",
 ): number => {
-    let tubeField = generateTubeField(
+    const tubeField = generateTubeField(
         shellID,
         OTLClearance,
         tubeOD,
@@ -603,7 +603,7 @@ const tubeFieldOTL = (
             }
             return OTL;
         }
-    } catch (error) {
+    } catch {
         return null;
     }
 };
@@ -1040,7 +1040,7 @@ const findMinID = memoize(
                     }
                     return D_upperBound;
                 }
-            } catch (err) {
+            } catch {
                 if (retries < MAX_RETRIES) {
                     retries++;
                     minTubes++;
@@ -1192,7 +1192,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
         // Create variables to define bounding box based on coordinates and diameter
-        let minX = (-diameter / 2) * 1.1,
+        const minX = (-diameter / 2) * 1.1,
             minY = (-diameter / 2) * 1.1,
             maxX = (diameter / 2) * 1.1,
             maxY = (diameter / 2) * 1.1;
