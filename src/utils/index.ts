@@ -22,7 +22,7 @@ export const utils = {
         const n = num * p * (1 + Number.EPSILON);
         return Math.trunc(n) / p;
     },
-    isNumber(x: any): x is number {
+    isNumber(x: unknown): x is number {
         return (
             (typeof x === "number" && x - x === 0) ||
             (typeof x === "string" && Number.isFinite(+x.replace(",", "")) && x.trim() !== "")

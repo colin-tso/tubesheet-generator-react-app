@@ -1,10 +1,4 @@
-import type {
-    ChangeEvent,
-    KeyboardEvent,
-    SyntheticEvent,
-    SubmitEvent,
-    InputHTMLAttributes,
-} from "react";
+import type { KeyboardEvent, SyntheticEvent, SubmitEvent, InputHTMLAttributes } from "react";
 import { IMaskInput } from "react-imask";
 import { utils } from "../utils";
 
@@ -65,7 +59,7 @@ export function NumericField({
                     onBlur={onBlur}
                     onKeyDown={onKeyDown}
                     onAccept={onAccept}
-                    onChange={(_e: ChangeEvent<HTMLInputElement>) => {}}
+                    onChange={() => {}}
                     onSubmit={onSubmit}
                     inputMode={inputMode}
                     required={required}

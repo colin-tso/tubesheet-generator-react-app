@@ -63,7 +63,6 @@ const App = () => {
         tubeClearance,
         pitchRatio,
         shellID,
-        actualTubes,
         layoutInputsDefined,
         layoutOptionSelected,
         onAcceptEmpty,

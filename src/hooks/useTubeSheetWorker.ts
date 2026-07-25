@@ -59,6 +59,7 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         pendingCompletionsRef.current += 1;
         setCalcError(null);
         setIsCalculating(true);
+        setAnnouncement("Calculating layout…");
     }, []);
 
     const completeCalculation = useCallback(() => {
@@ -144,8 +145,6 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     // Debounce showing the loading badge.
     useEffect(() => {
         if (isCalculating) {
-            setAnnouncement("Calculating layout…");
-
             const showTimer = window.setTimeout(() => {
                 loadingShownAtRef.current = Date.now();
                 setShowLoadingBadge(true);
