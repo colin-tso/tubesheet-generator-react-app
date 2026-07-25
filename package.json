@@ -22,13 +22,8 @@
         "preview": "vite preview",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d build",
-        "test": "vitest"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
+        "test": "vitest",
+        "lint": "eslint ."
     },
     "browserslist": {
         "production": [
@@ -43,31 +38,32 @@
         ]
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@stylistic/stylelint-config": "^5.0.0",
         "@types/lodash.memoize": "^4.1.9",
         "@types/node": "^26.1.1",
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^6.0.3",
         "@vitest/coverage-v8": "^4.1.10",
-        "eslint-config-react-app": "^7.0.1",
+        "eslint": "^10.8.0",
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "eslint-plugin-react-refresh": "^0.5.3",
         "gh-pages": "^6.3.0",
+        "globals": "^17.7.0",
         "jsdom": "^29.1.1",
         "stylelint": "^17.14.0",
         "stylelint-config-clean-order": "^10.0.0",
         "stylelint-config-standard": "^40.0.0",
         "stylelint-order": "^8.1.1",
-        "typescript": "^7.0.2",
+        "typescript": "npm:@typescript/typescript6@^6.0.2",
+        "typescript-eslint": "^8.65.0",
+        "typescript-native": "npm:typescript@^7.0.2",
         "vite": "^8.1.5",
         "vite-plugin-svgr": "^5.2.0",
         "vitest": "^4.1.10"
     },
-    "overrides": {
-        "react-scripts": {
-            "resolve-url-loader": "5.0.0",
-            "@svgr/webpack": "8.1.0"
-        }
-    },
     "engines": {
         "npm": ">=8.3.0"
-    }
+    },
+    "type": "module"
 }
