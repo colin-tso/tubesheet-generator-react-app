@@ -14,11 +14,9 @@ export const downloadBlob = (blob: Blob | MediaSource, filename: string) => {
 const FALLBACK_VB_WIDTH = 300;
 const FALLBACK_VB_HEIGHT = 150;
 
-// Reads the viewBox's width/height, falling back to sane defaults for any
-// missing, zero, or non-finite (NaN/Infinity) value. Browsers require an SVG
-// passed to createImageBitmap/<img> to have a valid finite intrinsic size —
-// otherwise rasterisation fails outright with "the source image could not be
-// decoded", so this guards every path that derives pixel dimensions from it.
+// Reads the viewBox's width/height, falling back to sane defaults if missing,
+// zero, or non-finite. An invalid intrinsic size makes SVG rasterisation fail
+// outright, so this guards every path that derives pixel dimensions from it.
 const readViewBoxSize = (svg: SVGSVGElement) => {
     const viewBox = svg.getAttribute("viewBox");
     const parts = viewBox ? viewBox.split(" ").map(Number) : [];
@@ -30,8 +28,8 @@ const readViewBoxSize = (svg: SVGSVGElement) => {
     };
 };
 
-// Clone svg with explicit pixel dimensions derived from viewBox
-// for SVG and PNG rasterisation.
+// Clones the SVG with explicit pixel width/height derived from its viewBox, for
+// SVG and PNG output.
 export const sizedSvgString = (svg: SVGSVGElement, scale = 2) => {
     const { vbWidth, vbHeight } = readViewBoxSize(svg);
     const width = Math.max(1, Math.round(vbWidth * scale));
@@ -45,32 +43,26 @@ export const sizedSvgString = (svg: SVGSVGElement, scale = 2) => {
     return { svgString: new XMLSerializer().serializeToString(clone), width, height };
 };
 
-// Rasterisation above this size gets slow for large tubesheets with many tubes.
-// This is only used for the clipboard's PNG fallback.
+// Only used for the clipboard's PNG fallback (not the SVG download), so it
+// targets a lower ceiling than a full-resolution export would need.
 const MAX_RASTER_DIMENSION = 2048; // px
-const MIN_RASTER_SCALE = 1; // never render below the SVG's native units
 const MAX_RASTER_SCALE = 4; // cap upscaling on very small drawings
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-// Derives the render scale so the longest edge lands near "maxDimension",
-// then serialises the sized SVG.
+// Scales so the longest edge lands at (or under) maxDimension. Only caps the
+// upscale side — a large tubesheet must be free to scale down as far as needed
+// to stay under maxDimension.
 const prepareRaster = (svg: SVGSVGElement, maxDimension: number) => {
     const { vbWidth, vbHeight } = readViewBoxSize(svg);
     const largestDimension = Math.max(vbWidth, vbHeight);
     const scale =
-        largestDimension > 0
-            ? clamp(maxDimension / largestDimension, MIN_RASTER_SCALE, MAX_RASTER_SCALE)
-            : MIN_RASTER_SCALE;
+        largestDimension > 0 ? Math.min(maxDimension / largestDimension, MAX_RASTER_SCALE) : 1;
 
     return sizedSvgString(svg, scale);
 };
 
-// Encodes an already-decoded image to a PNG blob, entirely on the calling
-// thread. Used as the fallback when worker encoding (below) is unavailable or
-// fails. Prefers OffscreenCanvas when present since its encode isn't tied to a
-// visible canvas backing store, so some browsers can still run it off the main
-// thread even without a dedicated Worker.
+// Fallback for when worker encoding is unavailable or fails. Prefers
+// OffscreenCanvas, since some browsers can run its encode off the main thread
+// even without a Worker.
 const encodePngInline = async (
     image: HTMLImageElement,
     width: number,
@@ -85,9 +77,8 @@ const encodePngInline = async (
         }
     }
 
-    // "desynchronized" lets the browser skip some of the sync-with-display work
-    // a canvas normally does, which is not required for render straight to a
-    // blob.
+    // Skips the canvas's usual sync-with-display work, unneeded for a render
+    // that goes straight to a blob.
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -113,10 +104,9 @@ const canUseWorkerEncode =
     typeof OffscreenCanvas !== "undefined" &&
     typeof createImageBitmap !== "undefined";
 
-// A fresh Worker per copy has a startup cost. Reuse instead, then kept alive so
-// later copies skip startup. Since it's shared, requests carry an id to
-// correlate responses (more than one encode could be in flight — e.g. the
-// clipboard fallback retry).
+// Reused across calls to avoid paying Worker startup cost every copy. Requests
+// carry an id since more than one encode can be in flight (e.g. the clipboard
+// fallback retry).
 let sharedWorker: Worker | null = null;
 let nextRequestId = 0;
 const pendingRequests = new Map<
@@ -149,8 +139,8 @@ const getPngEncodeWorker = (): Worker => {
     };
 
     worker.onerror = (event) => {
-        // The worker itself is now in an unknown state — discard it so the
-        // next call spins up a fresh one, and fail whatever was in flight.
+        // Worker's in an unknown state — discard it so the next call gets a
+        // fresh one, and fail whatever was in flight.
         sharedWorker = null;
         const err = new Error(event.message || "PNG encode worker failed");
         for (const { reject } of pendingRequests.values()) {
@@ -163,9 +153,8 @@ const getPngEncodeWorker = (): Worker => {
     return worker;
 };
 
-// Spins up the shared PNG-encode worker ahead of time (e.g. on app mount),
-// so its startup cost is paid once in the background rather than being on
-// the critical path of the very first "Copy Image" click.
+// Spins up the shared worker ahead of time (e.g. on app mount), so its startup
+// cost isn't on the critical path of the first "Copy Image" click.
 export const preloadPngEncodeWorker = (): void => {
     if (canUseWorkerEncode) {
         getPngEncodeWorker();
@@ -185,9 +174,9 @@ const encodePngViaWorker = (bitmap: ImageBitmap, width: number, height: number):
     });
 };
 
-// Rasterise SVG to a PNG blob. SVG on the main thread via <img>.decode(). The
-// decoded bitmap is then handed off to a worker for the draw + encode step,
-// Falls back to encoding in-process if that's unsupported or fails.
+// Rasterises the SVG to a PNG blob: decode happens on the main thread via
+// <img>.decode(), then the decoded bitmap is handed to a worker for the draw +
+// encode step. Falls back to encoding in-process if that fails.
 export const svgToPngBlob = async (
     svg: SVGSVGElement,
     maxDimension = MAX_RASTER_DIMENSION,
