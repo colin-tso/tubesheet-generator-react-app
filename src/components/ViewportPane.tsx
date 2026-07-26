@@ -1,6 +1,7 @@
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
 import { TubeSheetSVG } from "./TubeSheetSVG";
 import { TubeSheetDataTable } from "./TubeSheetDataTable";
+import { ShellOTLTooltip } from "./ShellOTLTooltip";
 import { ContextMenu, ContextMenuItem } from "./context-menu";
 import TableIcon from "../assets/table-icon.svg?react";
 import GridIcon from "../assets/grid-icon.svg?react";
@@ -9,6 +10,7 @@ import CopyIcon from "../assets/copy-icon.svg?react";
 import type { AnimationLifecycle } from "../hooks/useContextMenu";
 import type { CopyState } from "../hooks/useSvgExportActions";
 import type { SingleResultPayload } from "../hooks/useTubeSheetWorker";
+import { useShellOtlHighlight } from "../hooks/useShellOTLHighlight";
 
 interface ViewportPaneProps {
     containerRef: RefObject<HTMLDivElement | null>;
@@ -67,6 +69,14 @@ export function ViewportPane({
     onCopySVG,
     onDownloadSVG,
 }: ViewportPaneProps) {
+    // Hover-highlight the shell/OTL circles on the drawing and drive a
+    // cursor-following tooltip with their calculated values.
+    const { hovered, tooltipRef } = useShellOtlHighlight(
+        containerRef,
+        drawingSVG,
+        lastSingleResult,
+    );
+
     return (
         <div className="column-pane right">
             <div
@@ -142,6 +152,7 @@ export function ViewportPane({
                     className="tubesheet-svg"
                     onRendered={onDrawingRendered}
                 />
+                <ShellOTLTooltip ref={tooltipRef} hovered={hovered} data={lastSingleResult} />
                 <div className="viewport-overlay-footer" ref={footerRef}>
                     <TubeSheetDataTable
                         ref={onTableRef}

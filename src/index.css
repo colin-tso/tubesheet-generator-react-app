@@ -972,6 +972,72 @@ footer a {
 }
 
 /* ============================================================
+   Shell / OTL hover highlight + tooltip
+   The shell and OTL rings are the only circles in the drawing
+   without an "id" (every tube circle gets one), so they're
+   targeted purely with :not([id]) rather than an app class.
+   ============================================================ */
+.tubesheet-svg circle:not([id]) {
+  transition:
+    stroke var(--transition),
+    stroke-width var(--transition),
+    stroke-opacity var(--transition);
+}
+
+.tubesheet-svg circle:not([id]).region-hovered {
+  stroke: var(--blue);
+  stroke-opacity: 1;
+  stroke-width: var(--region-hover-stroke-width, 3);
+}
+
+.region-tooltip {
+  pointer-events: none;
+
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  transform: translateY(2px);
+
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+
+  padding: 5px 10px;
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-sm);
+
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--blue);
+  white-space: nowrap;
+
+  opacity: 0;
+  background-color: var(--panel);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.region-tooltip.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.region-tooltip-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
+.region-tooltip-value {
+  font-weight: 600;
+}
+
+/* ============================================================
    Footer (table + actions)
    ============================================================ */
 .viewport-overlay-footer {
