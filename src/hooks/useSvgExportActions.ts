@@ -1,12 +1,16 @@
-import { useCallback, useRef, useState } from "react";
-import { downloadBlob, sizedSvgString, svgToPngBlob } from "../utils/svgExport";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+    downloadBlob,
+    preloadPngEncodeWorker,
+    sizedSvgString,
+    svgToPngBlob,
+} from "../utils/svgExport";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported";
 
-// Clipboard writes and PNG rasterisation have no built-in ceiling, so a
-// slow browser or an unusually large tubesheet can otherwise leave the
-// button looking stuck with no feedback. Bound the whole operation so it
-// always settles one way or another.
+// No built-in ceiling on clipboard writes/PNG rasterisation, so a slow browser
+// or huge tubesheet could otherwise leave the button stuck with no feedback.
+// Bounds the whole operation so it always settles one way or another.
 const COPY_TIMEOUT_MS = 15000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -33,6 +37,12 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
     // independent of the (async) React state so it can't race a click.
     const copyInFlightRef = useRef(false);
 
+    // Warm up the PNG-encode worker on mount so its startup cost is out of the
+    // way before the first "Copy Image" click.
+    useEffect(() => {
+        preloadPngEncodeWorker();
+    }, []);
+
     const downloadSVG = useCallback(() => {
         const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
         downloadBlob(blob, "tubesheet.svg");
@@ -56,8 +66,8 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
         copyInFlightRef.current = true;
         setCopyState("pending");
 
-        // Clipboard writes must occur during user activation. Pass pending
-        // Promises to "ClipboardItem" so browsers accept async image data.
+        // Clipboard writes need user activation, so pass a pending Promise for
+        // the PNG rather than awaiting it first.
         const { svgString } = sizedSvgString(drawingSVG);
         const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
         const pngPromise = svgToPngBlob(drawingSVG);
@@ -91,7 +101,11 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
             .then(onSuccess)
             .catch(() =>
                 withTimeout(
-                    navigator.clipboard.write([new ClipboardItem({ "image/png": pngPromise })]),
+                    // Fresh rasterisation, not the first attempt's promise
+                    // (which may have already rejected).
+                    navigator.clipboard.write([
+                        new ClipboardItem({ "image/png": svgToPngBlob(drawingSVG) }),
+                    ]),
                     COPY_TIMEOUT_MS,
                     "Copy timed out",
                 )

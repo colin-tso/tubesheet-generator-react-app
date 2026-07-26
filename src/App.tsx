@@ -75,6 +75,10 @@ const App = () => {
     // Copy-to-clipboard / download-as-file actions for the drawing.
     const { copyState, downloadSVG, copySVG } = useSvgExportActions(drawingSVG);
 
+    // True while a worker-backed operation is running (layout calculation or
+    // clipboard copy), used to show a loading cursor across the whole app.
+    const isBusy = isCalculating || copyState === "pending";
+
     // Show/hide grid state (persisted)
     const [showGrid, setShowGrid] = useState<boolean>(() => {
         const stored = window.localStorage.getItem("view-options.showGrid");
@@ -152,7 +156,7 @@ const App = () => {
 
     // JSX return
     return (
-        <div className="row-pane">
+        <div className={`row-pane${isBusy ? " app-busy" : ""}`}>
             <form
                 className={`column-pane left${showGrid ? "" : " grid-hidden"}`}
                 onSubmit={formOnSubmitHandler}

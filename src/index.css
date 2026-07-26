@@ -41,8 +41,8 @@
   --ink-dark: hsl(210, 40%, 94%);
   --muted-dark: hsl(212, 16%, 62%);
   --line-dark: hsl(212, 24%, 22%);
-  --grid-minor-dark: hsl(212, 26%, 16%);
-  --grid-major-dark: hsl(212, 26%, 20%);
+  --grid-minor-dark: hsl(212, 26%, 10%);
+  --grid-major-dark: hsl(212, 26%, 14%);
   --input-bg-dark: hsl(212, 30%, 10%);
   --input-readonly-bg-dark: hsl(212, 24%, 17%);
   --input-readonly-text-dark: hsl(212, 12%, 55%);
@@ -196,6 +196,14 @@ a,
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+}
+
+/* Loading cursor while a worker-backed operation (calculation, clipboard
+   copy) is running. !important so it wins over the pointer cursor the
+   shell/OTL hover highlight sets inline on the viewport. */
+.app-busy,
+.app-busy * {
+  cursor: wait !important;
 }
 
 .column-pane {
@@ -969,6 +977,72 @@ footer a {
 .tubesheet-svg > * {
   stroke: var(--ink);
   transition: stroke var(--transition);
+}
+
+/* ============================================================
+   Shell / OTL hover highlight + tooltip
+   The shell and OTL rings are the only circles in the drawing
+   without an "id" (every tube circle gets one), so they're
+   targeted purely with :not([id]) rather than an app class.
+   ============================================================ */
+.tubesheet-svg circle:not([id]) {
+  transition:
+    stroke var(--transition),
+    stroke-width var(--transition),
+    stroke-opacity var(--transition);
+}
+
+.tubesheet-svg circle:not([id]).region-hovered {
+  stroke: var(--blue);
+  stroke-opacity: 1;
+  stroke-width: var(--region-hover-stroke-width, 3);
+}
+
+.region-tooltip {
+  pointer-events: none;
+
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  transform: translateY(2px);
+
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+
+  padding: 5px 10px;
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-sm);
+
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--blue);
+  white-space: nowrap;
+
+  opacity: 0;
+  background-color: var(--panel);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.region-tooltip.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.region-tooltip-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
+.region-tooltip-value {
+  font-weight: 600;
 }
 
 /* ============================================================
