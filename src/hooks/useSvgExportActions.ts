@@ -1,5 +1,10 @@
-import { useCallback, useRef, useState } from "react";
-import { downloadBlob, sizedSvgString, svgToPngBlob } from "../utils/svgExport";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+    downloadBlob,
+    preloadPngEncodeWorker,
+    sizedSvgString,
+    svgToPngBlob,
+} from "../utils/svgExport";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported";
 
@@ -32,6 +37,13 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
     // Synchronous guard against double-clicks while a copy is in flight —
     // independent of the (async) React state so it can't race a click.
     const copyInFlightRef = useRef(false);
+
+    // Warm up the PNG-encode worker in the background as soon as this
+    // mounts, so its startup cost is out of the way before the user ever
+    // clicks "Copy Image".
+    useEffect(() => {
+        preloadPngEncodeWorker();
+    }, []);
 
     const downloadSVG = useCallback(() => {
         const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
@@ -91,7 +103,11 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
             .then(onSuccess)
             .catch(() =>
                 withTimeout(
-                    navigator.clipboard.write([new ClipboardItem({ "image/png": pngPromise })]),
+                    // A fresh rasterisation attempt, not the same (possibly
+                    // already-rejected) promise from the first attempt.
+                    navigator.clipboard.write([
+                        new ClipboardItem({ "image/png": svgToPngBlob(drawingSVG) }),
+                    ]),
                     COPY_TIMEOUT_MS,
                     "Copy timed out",
                 )
