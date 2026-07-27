@@ -4,7 +4,9 @@ import { TubeSheetDataTable } from "./TubeSheetDataTable";
 import { ShellOTLTooltip } from "./ShellOTLTooltip";
 import { ContextMenu, ContextMenuItem } from "./context-menu";
 import TableIcon from "../assets/table-icon.svg?react";
+import TableOffIcon from "../assets/table-off-icon.svg?react";
 import GridIcon from "../assets/grid-icon.svg?react";
+import GridOffIcon from "../assets/grid-off-icon.svg?react";
 import SaveIcon from "../assets/save-icon.svg?react";
 import CopyIcon from "../assets/copy-icon.svg?react";
 import type { AnimationLifecycle } from "../hooks/useContextMenu";
@@ -133,7 +135,21 @@ export function ViewportPane({
                         aria-pressed={showTable}
                         title={showTable ? "Hide Table" : "Show Table"}
                     >
-                        <TableIcon width="13" height="13" aria-hidden="true" />
+                        {showTable ? (
+                            <TableIcon
+                                className="btn-icon"
+                                width="13"
+                                height="13"
+                                aria-hidden="true"
+                            />
+                        ) : (
+                            <TableOffIcon
+                                className="btn-icon"
+                                width="13"
+                                height="13"
+                                aria-hidden="true"
+                            />
+                        )}
                         <span className="btn-label">Table</span>
                     </button>
                     <button
@@ -143,7 +159,21 @@ export function ViewportPane({
                         aria-pressed={showGrid}
                         title={showGrid ? "Hide Grid" : "Show Grid"}
                     >
-                        <GridIcon width="13" height="13" aria-hidden="true" />
+                        {showGrid ? (
+                            <GridIcon
+                                className="btn-icon"
+                                width="13"
+                                height="13"
+                                aria-hidden="true"
+                            />
+                        ) : (
+                            <GridOffIcon
+                                className="btn-icon"
+                                width="13"
+                                height="13"
+                                aria-hidden="true"
+                            />
+                        )}
                         <span className="btn-label">Grid</span>
                     </button>
                 </div>
