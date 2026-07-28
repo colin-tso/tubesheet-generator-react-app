@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-globals */
 import { TubeSheet } from "../plugins/tubesheet-layout-generator";
 
 self.onmessage = (event: MessageEvent) => {

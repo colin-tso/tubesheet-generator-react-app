@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import type { ChangeEvent, SubmitEvent, KeyboardEvent, SyntheticEvent } from "react";
 import { utils } from "../utils/";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
@@ -111,8 +111,21 @@ export function useLayoutForm({
     postCalculateAll,
 }: UseLayoutFormOptions) {
     const [fields, dispatch] = useReducer(fieldsReducer, initialFieldValues);
-    const [layoutInputsDefined, setLayoutInputsDefined] = useState<boolean>(false);
-    const [layoutOptionSelected, setLayoutOptionSelected] = useState<boolean>(false);
+
+    // Derived directly from fields — no need for separate state or an effect to sync it.
+    const layoutInputsDefined =
+        utils.isNumber(fields.OTLtoShell) &&
+        utils.isNumber(fields.tubeOD) &&
+        utils.isNumber(fields.tubeClearance) &&
+        utils.isNumber(fields.pitchRatio) &&
+        utils.isNumber(fields.minTubes) &&
+        fields.OTLtoShell >= 0 &&
+        fields.tubeOD > 0 &&
+        fields.tubeClearance >= 0 &&
+        fields.pitchRatio >= 1 &&
+        fields.minTubes > 0;
+
+    const layoutOptionSelected = utils.isNumber(fields.layoutOption);
 
     const setGenericField = useCallback((name: string, value: number | undefined) => {
         if (isGenericFieldName(name)) {
@@ -416,37 +429,6 @@ export function useLayoutForm({
 
         triggerSingleCalculation({ overrideLayout: parsedValue });
     };
-
-    const validateLayoutOption = useCallback(() => {
-        setLayoutOptionSelected(utils.isNumber(fields.layoutOption));
-    }, [fields.layoutOption]);
-
-    const validateLayoutInputs = useCallback(() => {
-        const valid =
-            utils.isNumber(fields.OTLtoShell) &&
-            utils.isNumber(fields.tubeOD) &&
-            utils.isNumber(fields.tubeClearance) &&
-            utils.isNumber(fields.pitchRatio) &&
-            utils.isNumber(fields.minTubes) &&
-            fields.OTLtoShell >= 0 &&
-            fields.tubeOD > 0 &&
-            fields.tubeClearance >= 0 &&
-            fields.pitchRatio >= 1 &&
-            fields.minTubes > 0;
-        setLayoutInputsDefined(valid);
-    }, [
-        fields.OTLtoShell,
-        fields.minTubes,
-        fields.pitchRatio,
-        fields.tubeClearance,
-        fields.tubeOD,
-    ]);
-
-    // Validation
-    useEffect(() => {
-        validateLayoutInputs();
-        validateLayoutOption();
-    }, [validateLayoutInputs, validateLayoutOption]);
 
     // Keep actualTubes synced with a custom shell ID via the worker instead
     // of rebuilding TubeSheet on the main thread. The worker response is

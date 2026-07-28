@@ -13,16 +13,16 @@ export const utils = {
         return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
     },
     round(num: number, decimalPlaces = 0) {
-        var p = Math.pow(10, decimalPlaces);
-        var n = num * p * (1 + Number.EPSILON);
+        const p = Math.pow(10, decimalPlaces);
+        const n = num * p * (1 + Number.EPSILON);
         return Math.round(n) / p;
     },
     trunc(num: number, decimalPlaces = 0) {
-        var p = Math.pow(10, decimalPlaces);
-        var n = num * p * (1 + Number.EPSILON);
+        const p = Math.pow(10, decimalPlaces);
+        const n = num * p * (1 + Number.EPSILON);
         return Math.trunc(n) / p;
     },
-    isNumber(x: any): x is number {
+    isNumber(x: unknown): x is number {
         return (
             (typeof x === "number" && x - x === 0) ||
             (typeof x === "string" && Number.isFinite(+x.replace(",", "")) && x.trim() !== "")
