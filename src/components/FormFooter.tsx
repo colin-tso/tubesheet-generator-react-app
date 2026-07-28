@@ -1,17 +1,18 @@
-import GitHubButton from "react-github-btn";
+import GithubIcon from "../assets/github-icon.svg?react";
 
 export function FormFooter() {
     return (
         <div className="form-footer">
             <footer>
-                <GitHubButton
+                <a
+                    className="github-button"
                     href="https://github.com/colin-tso/tubesheet-generator-react-app"
-                    data-color-scheme="light"
-                    data-size="large"
-                    aria-label=" View this repo on GitHub"
+                    target="_blank"
+                    rel="noopener noreferrer"
                 >
+                    <GithubIcon className="github-button-icon" aria-hidden="true" />
                     View this repo on GitHub
-                </GitHubButton>
+                </a>
                 <br />
                 Released under a GPL 3.0 license.{" "}
                 <a
