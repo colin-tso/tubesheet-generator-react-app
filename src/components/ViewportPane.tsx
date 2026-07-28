@@ -133,7 +133,7 @@ export function ViewportPane({
                         className={`table-toggle ${showTable ? "active" : ""}`}
                         onClick={onToggleTable}
                         aria-pressed={showTable}
-                        title={showTable ? "Hide Table" : "Show Table"}
+                        data-title={showTable ? "Hide Table" : "Show Table"}
                     >
                         {showTable ? (
                             <TableIcon
@@ -157,7 +157,7 @@ export function ViewportPane({
                         className={`grid-toggle ${showGrid ? "active" : ""}`}
                         onClick={onToggleGrid}
                         aria-pressed={showGrid}
-                        title={showGrid ? "Hide Grid" : "Show Grid"}
+                        data-title={showGrid ? "Hide Grid" : "Show Grid"}
                     >
                         {showGrid ? (
                             <GridIcon
@@ -216,7 +216,7 @@ export function ViewportPane({
                                 className="copy-button"
                                 onClick={onCopySVG}
                                 type="button"
-                                title="Copy Image"
+                                data-title="Copy Image"
                                 disabled={copyState === "pending"}
                                 aria-busy={copyState === "pending"}
                             >
@@ -233,7 +233,7 @@ export function ViewportPane({
                             className="save-button"
                             onClick={onDownloadSVG}
                             type="button"
-                            title="Save Image"
+                            data-title="Save Image"
                         >
                             <SaveIcon
                                 className="btn-icon"

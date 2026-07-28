@@ -21,6 +21,7 @@ import { LayoutOptionsList } from "./components/LayoutOptionsList";
 import { ViewportPane } from "./components/ViewportPane";
 import { FormFooter } from "./components/FormFooter";
 import { numericFieldConfigs } from "./constants/numericFieldConfigs";
+import type { NumericFieldConfig } from "./constants/numericFieldConfigs";
 import { layoutOptionRows } from "./constants/layoutOptionRows";
 
 const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
@@ -38,6 +39,20 @@ const placeholderSVG = generateTubeSheetSVG(emptyData);
 
 // Must match .viewport's base padding in index.css (desktop breakpoint).
 const VIEWPORT_BASE_PADDING = 48;
+
+// Cluster consecutive field configs that share a "row" id so they can be rendered side by side.
+const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<NumericFieldConfig[][]>(
+    (rows, cfg) => {
+        const lastRow = rows[rows.length - 1];
+        if (cfg.row && lastRow?.[0]?.row === cfg.row) {
+            lastRow.push(cfg);
+        } else {
+            rows.push([cfg]);
+        }
+        return rows;
+    },
+    [],
+);
 
 const App = () => {
     // Worker lifecycle, calculation results, loading/error/status state.
@@ -172,26 +187,43 @@ const App = () => {
                     </div>
                     <ThemeToggle />
                 </div>
-                <hr />
+                {/* <hr /> */}
                 <div className="form-scroll">
                     <div className="section">
                         <h2>Calculation Inputs</h2>
-                        {numericFieldConfigs.map((cfg) => (
-                            <NumericField
-                                key={cfg.id}
-                                {...cfg}
-                                value={fieldValues[cfg.id]}
-                                readOnly={cfg.calculated || isCalculating}
-                                onBlur={cfg.calculated ? undefined : onBlur}
-                                onKeyDown={cfg.calculated ? undefined : onKeyDown}
-                                onAccept={
-                                    cfg.calculated
-                                        ? undefined
-                                        : (value) => onAcceptEmpty(value, cfg.id)
-                                }
-                                onSubmit={cfg.calculated ? undefined : inputOnSubmitHandler}
-                            />
-                        ))}
+                        {numericFieldRows.map((row) => {
+                            const fields = row.map((cfg) => (
+                                <NumericField
+                                    key={cfg.id}
+                                    {...cfg}
+                                    value={fieldValues[cfg.id]}
+                                    pairedValue={
+                                        cfg.pairedWith ? fieldValues[cfg.pairedWith] : undefined
+                                    }
+                                    readOnly={cfg.calculated || isCalculating}
+                                    onBlur={cfg.calculated ? undefined : onBlur}
+                                    onKeyDown={cfg.calculated ? undefined : onKeyDown}
+                                    onAccept={
+                                        cfg.calculated
+                                            ? undefined
+                                            : (value) => onAcceptEmpty(value, cfg.id)
+                                    }
+                                    onSubmit={cfg.calculated ? undefined : inputOnSubmitHandler}
+                                />
+                            ));
+
+                            if (row.length === 1) {
+                                return fields[0];
+                            }
+
+                            const rowHint = row.find((cfg) => cfg.rowHint)?.rowHint;
+                            return (
+                                <div key={row.map((cfg) => cfg.id).join("-")}>
+                                    <div className="field-row">{fields}</div>
+                                    {rowHint && <p className="field-row-hint">{rowHint}</p>}
+                                </div>
+                            );
+                        })}
                     </div>
                     <div className="divider" />
                     <LayoutOptionsList
