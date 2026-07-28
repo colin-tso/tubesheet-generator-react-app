@@ -1,16 +1,26 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 
+@font-face {
+  font-family: "Commit Mono";
+  font-weight: 400 400 600 650 700;
+  font-style: normal;
+
+  font-display: swap;
+  src: url("./fonts/CommitMono VariableFont.woff2") format("woff2");
+}
+
 /* ============================================================
    Design tokens
    ============================================================ */
 :root {
   --font-ui: "Inter", Arial, "Segoe UI", -apple-system, BlinkMacSystemFont, "Noto Sans", Helvetica, sans-serif;
-  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+  --font-mono: "Commit Mono", "IBM Plex Mono", "SFMono-Regular", Consolas, Menlo, monospace;
   --font-monochrome-emoji: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", monospace;
 
   --radius-sm: 3px;
   --radius-md: 5px;
   --transition: 0.15s ease;
+  --tooltip-transition: cubic-bezier(0, 0, 0.2, 1);
   --options-btn-font-size: 12.5px;
 
   /* Color palette — light */
@@ -18,6 +28,7 @@
   --panel-light: hsl(0, 0%, 100%);
   --ink-light: hsl(214, 28%, 14%);
   --muted-light: hsl(214, 12%, 42%);
+  --dm-light: hsl(214, 12%, 42%);
   --line-light: hsl(214, 16%, 84%);
   --grid-minor-light: hsl(214, 30%, 92%);
   --grid-major-light: hsl(214, 24%, 87%);
@@ -30,6 +41,7 @@
   --blue-tint-light: hsl(214, 62%, 95%);
   --blue-glow-light: hsl(214, 68%, 42%, 22%);
   --redline-light: hsl(0, 74%, 42%);
+  --redline-glow-light: hsl(0, 74%, 42%, 20%);
   --greenline-light: hsl(135, 74%, 42%);
   --preferred-light: hsl(214, 68%, 42%);
   --box-shadow-light-1: hsla(0, 0%, 0%, 0.3);
@@ -40,7 +52,8 @@
   --panel-dark: hsl(212, 28%, 12%);
   --ink-dark: hsl(210, 40%, 94%);
   --muted-dark: hsl(212, 16%, 62%);
-  --line-dark: hsl(212, 24%, 22%);
+  --dm-dark: var(--panel-dark);
+  --line-dark: hsl(212, 22%, 31%);
   --grid-minor-dark: hsl(212, 26%, 10%);
   --grid-major-dark: hsl(212, 26%, 14%);
   --input-bg-dark: hsl(212, 30%, 10%);
@@ -52,6 +65,7 @@
   --blue-tint-dark: hsl(212, 50%, 18%);
   --blue-glow-dark: hsl(212, 84%, 68%, 22%);
   --redline-dark: hsl(0, 84%, 66%);
+  --redline-glow-dark: hsl(0, 84%, 66%, 20%);
   --greenline-dark: hsl(135, 84%, 66%);
   --preferred-dark: hsl(212, 84%, 76%);
   --box-shadow-dark-1: hsla(0, 0%, 0%, 0.7);
@@ -62,6 +76,7 @@
   --panel: var(--panel-light);
   --ink: var(--ink-light);
   --muted: var(--muted-light);
+  --dm: var(--dm-light);
   --line: var(--line-light);
   --grid-minor: var(--grid-minor-light);
   --grid-major: var(--grid-major-light);
@@ -74,10 +89,17 @@
   --blue-tint: var(--blue-tint-light);
   --blue-glow: var(--blue-glow-light);
   --redline: var(--redline-light);
+  --redline-glow: var(--redline-glow-light);
   --greenline: var(--greenline-light);
   --preferred: var(--preferred-light);
   --box-shadow-1: var(--box-shadow-light-1);
   --box-shadow-2: var(--box-shadow-light-2);
+
+  /* Elevation scale: low (resting buttons/chips), mid (floating panels
+     like the data table), high (menus/overlays above everything else). */
+  --elevation-low: 0 1px 2px var(--box-shadow-2);
+  --elevation-mid: 0 4px 12px var(--box-shadow-2), 0 1px 3px var(--box-shadow-1);
+  --elevation-high: 0 10px 24px var(--box-shadow-2), 0 2px 6px var(--box-shadow-1);
 
   margin: 0;
 }
@@ -88,6 +110,7 @@
   --panel: var(--panel-dark);
   --ink: var(--ink-dark);
   --muted: var(--muted-dark);
+  --dm: var(--dm-dark);
   --line: var(--line-dark);
   --grid-minor: var(--grid-minor-dark);
   --grid-major: var(--grid-major-dark);
@@ -100,6 +123,7 @@
   --blue-tint: var(--blue-tint-dark);
   --blue-glow: var(--blue-glow-dark);
   --redline: var(--redline-dark);
+  --redline-glow: var(--redline-glow-dark);
   --greenline: var(--greenline-dark);
   --preferred: var(--preferred-dark);
   --box-shadow-1: var(--box-shadow-dark-1);
@@ -183,12 +207,6 @@ a,
   padding-left: 10px;
 }
 
-.github-logo {
-  position: relative;
-  display: inline;
-  height: 1em;
-}
-
 /* ============================================================
    Layout skeleton
    ============================================================ */
@@ -218,7 +236,6 @@ a,
 .left {
   position: relative;
 
-  overflow-y: auto;
   flex: 0 0 24rem;
   flex-direction: column;
   align-items: normal;
@@ -226,10 +243,6 @@ a,
   border-right: 1px solid var(--line);
 
   background-color: var(--panel);
-}
-
-.left.grid-hidden {
-  background-image: none;
 }
 
 form.column-pane.left {
@@ -253,6 +266,7 @@ form.column-pane.left {
   justify-content: space-between;
 
   padding: 1.375rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--line);
 
   background-color: var(--panel);
 }
@@ -264,7 +278,7 @@ form.column-pane.left {
 
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--blue);
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -299,7 +313,7 @@ h2 {
 
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -327,9 +341,34 @@ hr {
    Form sections
    ============================================================ */
 .form-scroll {
+  scrollbar-color: var(--line) transparent;
+
+  /* Firefox */
+  scrollbar-width: thin;
+
   overflow-y: auto;
   flex: 1;
+
   padding: 20px 24px 24px;
+}
+
+.form-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.form-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-color: var(--line);
+  background-clip: padding-box;
+}
+
+.form-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted);
 }
 
 .section {
@@ -345,6 +384,29 @@ hr {
   margin-bottom: 0;
 }
 
+/* Two fields shown side by side, e.g. tube clearance / pitch ratio, where
+   only one of the pair is actually required. */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.field-row .field {
+  margin-bottom: 0;
+}
+
+.field-row-hint {
+  margin: 6px 0 1rem;
+
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
 .field-label {
   display: flex;
   gap: 4px;
@@ -353,7 +415,7 @@ hr {
   margin-bottom: 6px;
 
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink);
 }
 
@@ -381,6 +443,7 @@ input[type="text"] {
 
   font-family: var(--font-mono);
   font-size: 13px;
+  font-weight: 400;
   color: var(--ink);
   letter-spacing: 0.01em;
 
@@ -409,6 +472,25 @@ input.calculated-field[type="text"]:read-only {
   background-color: var(--input-readonly-background);
 }
 
+input[type="text"].field-invalid {
+  border-color: var(--redline);
+}
+
+input[type="text"].field-invalid:focus {
+  border-color: var(--redline);
+  box-shadow: 0 0 0 3px var(--redline-glow);
+}
+
+.field-error {
+  margin: 6px 0 0;
+
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--redline);
+  letter-spacing: 0.01em;
+}
+
 .input-group > .units {
   pointer-events: none;
 
@@ -417,7 +499,7 @@ input.calculated-field[type="text"]:read-only {
 
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
 }
 
@@ -441,7 +523,7 @@ input.calculated-field[type="text"]:read-only {
 
   font-family: var(--font-mono);
   font-size: 9.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -461,22 +543,24 @@ input.calculated-field[type="text"]:read-only {
 .layout-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
 }
 
 .layout-row {
   cursor: pointer;
 
   position: relative;
+  z-index: 0;
 
   display: grid;
   grid-template-columns: 16px 52px 1fr auto;
   gap: 12px;
   align-items: center;
 
+  margin-top: -1.5px;
   padding: 8px 10px;
   border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
 
   background-color: var(--input-background);
 
@@ -486,8 +570,31 @@ input.calculated-field[type="text"]:read-only {
     opacity var(--transition);
 }
 
+.layout-row:first-child {
+  margin-top: 0;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+
+.layout-row:last-child {
+  border-bottom-right-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+/* Selected/preferred rows draw their border and ring above their
+   neighbors', instead of a neighbor's plain divider painting over them. */
+.layout-row:has(input:checked),
 .layout-row.preferred {
-  box-shadow: 0 0 0 3px var(--preferred);
+  z-index: 1;
+}
+
+.layout-row:hover:not(:has(input:disabled)) {
+  background-color: var(--input-readonly-background);
+}
+
+.layout-row.preferred {
+  z-index: 4;
+  box-shadow: 0 0 0 2px var(--preferred);
 }
 
 .layout-row .row-badge {
@@ -537,7 +644,7 @@ input.calculated-field[type="text"]:read-only {
   align-items: center;
 
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
 }
@@ -581,8 +688,9 @@ input.calculated-field[type="text"]:read-only {
 .layout-row .row-stats .row-minid {
   min-width: 54px;
 
+  font-family: var(--font-mono);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink);
   text-align: center;
 }
@@ -590,6 +698,7 @@ input.calculated-field[type="text"]:read-only {
 .layout-row .row-stats .row-tubes {
   min-width: 44px;
 
+  font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
@@ -622,6 +731,18 @@ button {
 
 button:disabled {
   cursor: auto;
+}
+
+/* Consistent keyboard-focus treatment across custom buttons, matching the
+   blue-glow used on text inputs and layout-option rows, instead of falling
+   back to the browser's native (OS-dependent) focus ring. */
+.generate-button:focus-visible,
+.save-button:focus-visible,
+.copy-button:focus-visible,
+.grid-toggle:focus-visible,
+.table-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-glow);
 }
 
 .generate-button {
@@ -659,12 +780,53 @@ footer {
 
   font-family: var(--font-mono);
   font-size: 10.5px;
+  font-weight: 400;
   line-height: 1.7;
   color: var(--muted);
 }
 
 footer a {
   color: var(--blue);
+}
+
+.github-button {
+  cursor: pointer;
+
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+
+  background-color: var(--input-background);
+  box-shadow: var(--elevation-low);
+
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background-color var(--transition);
+}
+
+.github-button:hover,
+.github-button:focus-visible {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.github-button-icon {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
 }
 
 /* ============================================================
@@ -775,13 +937,13 @@ footer a {
   gap: 0;
   align-items: center;
 
-  padding: 5px 9px;
+  padding: 5px 5px;
   border: 1.5px solid var(--line);
   border-radius: var(--radius-sm);
 
   font-family: var(--font-mono);
   font-size: var(--options-btn-font-size);
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
   letter-spacing: 0.08em;
 
@@ -815,18 +977,18 @@ footer a {
 
   font-family: var(--font-ui);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: hsl(210, 40%, 96%);
   letter-spacing: 0.01em;
   white-space: nowrap;
 
   opacity: 0;
   background-color: hsl(214, 30%, 15%);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 24%);
+  box-shadow: var(--elevation-low);
 
   transition:
-    opacity 0.15s ease-out,
-    transform 0.15s ease-out;
+    opacity 0.15s var(--tooltip-transition),
+    transform 0.15s var(--tooltip-transition);
 }
 
 /* Small pointer arrow tying the tooltip to its button. */
@@ -907,7 +1069,7 @@ footer a {
 
   font-family: var(--font-mono);
   font-size: 10.5px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -928,7 +1090,7 @@ footer a {
 
   font-family: var(--font-mono);
   font-size: 10.5px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--blue);
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -1047,13 +1209,13 @@ footer a {
 
   font-family: var(--font-mono);
   font-size: 10.5px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--blue);
   white-space: nowrap;
 
   opacity: 0;
   background-color: var(--panel);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--elevation-low);
 
   transition:
     opacity 0.12s ease,
@@ -1072,7 +1234,8 @@ footer a {
 }
 
 .region-tooltip-value {
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-weight: 400;
 }
 
 /* ============================================================
@@ -1117,8 +1280,9 @@ footer a {
   font-family: var(--font-mono);
   font-size: 11px;
 
-  background-color: color-mix(in srgb, var(--panel), transparent 30%);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
+  background-color: color-mix(in srgb, var(--panel), transparent 12%);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--elevation-mid);
 }
 
 .tubesheet-data-table[hidden] {
@@ -1138,14 +1302,15 @@ footer a {
 }
 
 .tubesheet-data-table th {
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .tubesheet-data-table td {
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-weight: 400;
   color: var(--ink);
   text-align: right;
 }
@@ -1160,13 +1325,10 @@ footer a {
   gap: 0;
   align-items: center;
 
-  padding: 10px 16px;
+  padding: 9px 9px;
   border-radius: var(--radius-md);
 
-  font-size: 12.5px;
-  letter-spacing: 0.02em;
-
-  box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
+  box-shadow: var(--elevation-low);
 
   transition: padding var(--transition);
 }
@@ -1191,18 +1353,18 @@ footer a {
 
   font-family: var(--font-ui);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: hsl(210, 40%, 96%);
   letter-spacing: 0.01em;
   white-space: nowrap;
 
   opacity: 0;
   background-color: hsl(214, 30%, 15%);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 24%);
+  box-shadow: var(--elevation-low);
 
   transition:
-    opacity 0.15s ease-out,
-    transform 0.15s ease-out;
+    opacity 0.15s var(--tooltip-transition),
+    transform 0.15s var(--tooltip-transition);
 }
 
 /* Small pointer arrow tying the tooltip to its button. */
@@ -1274,7 +1436,6 @@ footer a {
   position: relative;
   display: flex;
   justify-content: flex-end;
-  width: 200px;
 }
 
 .copy-status-badge {
@@ -1291,7 +1452,7 @@ footer a {
 
   font-family: var(--font-mono);
   font-size: 10.5px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--blue);
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -1328,7 +1489,6 @@ footer a {
   min-width: 150px;
   margin: 0;
   padding: 0;
-  padding: 0;
   border: 1.5px solid var(--line);
   border-radius: var(--radius-md);
 
@@ -1339,7 +1499,7 @@ footer a {
 
   background-color: var(--panel);
   outline: none;
-  box-shadow: 0 4px 10px -1px var(--box-shadow-1), 0 15px 20px -1px var(--box-shadow-2);
+  box-shadow: var(--elevation-high);
 }
 
 .context-menu:focus,
@@ -1355,7 +1515,6 @@ footer a {
 }
 
 .context-menu-divider {
-  border: 0;
   border: 0;
   border-top: 1.5px solid var(--line);
 }
@@ -1407,6 +1566,12 @@ footer a {
    ============================================================ */
 
 @media screen and (max-width: 56.25rem) {
+  .title-block {
+    position: sticky;
+    z-index: 99;
+    top: 0;
+    width: 100%;
+  }
   .row-pane {
     flex-direction: column;
   }
@@ -1425,7 +1590,7 @@ footer a {
     padding: 28px;
   }
   .tubesheet-svg {
-    height: 70vh;
+    height: auto;
     max-height: none;
   }
   /* Move the badge up under the "Layout Preview" */

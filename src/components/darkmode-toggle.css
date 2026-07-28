@@ -74,9 +74,5 @@
   z-index: 0;
   width: calc(32px * var(--toggle-scale));
   height: calc(32px * var(--toggle-scale));
-  fill: var(--muted);
-}
-
-.toggle.enabled .icons svg {
-  fill: hsl(0, 0%, 100%, 70%);
+  fill: var(--dm);
 }
