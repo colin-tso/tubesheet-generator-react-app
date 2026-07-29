@@ -47,86 +47,90 @@ export function LayoutOptionsList({
 
     return (
         <div className="section">
-            <h2>Layout Options</h2>
-            <div className="layout-list-header" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-                <span className="header-stats">
-                    <span className="header-minid">
-                        {layoutResultsUseCustomShellID ? "Min " : ""}ID (mm)
+            <div className="field-group-card">
+                <h3 className="field-group-title">Layout options</h3>
+                <div className="layout-list-header" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                    <span className="header-stats">
+                        <span className="header-minid">
+                            {layoutResultsUseCustomShellID ? "Min " : ""}ID (mm)
+                        </span>
+                        <span className="header-tubes">Tubes</span>
                     </span>
-                    <span className="header-tubes">Tubes</span>
-                </span>
-            </div>
-            <div
-                className="layout-list"
-                role="radiogroup"
-                aria-label="Tube layout angle"
-                aria-busy={showLoadingBadge}
-            >
-                {rows.map(({ key, id, label, value, required }) => {
-                    // Hide stale values while calculating
-                    const result = showLoadingBadge ? undefined : layoutResults[key];
-                    const minIDValue =
-                        result && result.minID !== null ? (result.minID as number) : undefined;
+                </div>
+                <div
+                    className="layout-list"
+                    role="radiogroup"
+                    aria-label="Tube layout angle"
+                    aria-busy={showLoadingBadge}
+                >
+                    {rows.map(({ key, id, label, value, required }) => {
+                        // Hide stale values while calculating
+                        const result = showLoadingBadge ? undefined : layoutResults[key];
+                        const minIDValue =
+                            result && result.minID !== null
+                                ? (result.minID as number)
+                                : undefined;
 
-                    return (
-                        <label
-                            key={id}
-                            className={`layout-row ${result?.preferred ? "preferred" : ""}`}
-                            htmlFor={id}
-                        >
-                            <input
-                                type="radio"
-                                id={id}
-                                name="layoutOption"
-                                value={value}
-                                onChange={onLayoutOptionChange}
-                                disabled={showLoadingBadge}
-                                required={required}
-                            />
-                            <span className="row-angle">
-                                {label}
-                                {result?.preferred && (
-                                    <span
-                                        className="row-badge"
-                                        title="Lowest minimum shell ID among the calculated layouts"
-                                    >
-                                        <StarIcon width="10" height="10" aria-hidden="true" />
-                                        <span className="hidden">
-                                            Preferred layout (lowest minimum shell ID)
-                                        </span>
-                                    </span>
-                                )}
-                            </span>
-                            <span className="row-bar-track" aria-hidden="true">
-                                <span
-                                    className="row-bar-fill"
-                                    style={{
-                                        width: `${minIDBarLogPercent(minIDValue, minIDFloor, minIDCeiling)}%`,
-                                    }}
+                        return (
+                            <label
+                                key={id}
+                                className={`layout-row ${result?.preferred ? "preferred" : ""}`}
+                                htmlFor={id}
+                            >
+                                <input
+                                    type="radio"
+                                    id={id}
+                                    name="layoutOption"
+                                    value={value}
+                                    onChange={onLayoutOptionChange}
+                                    disabled={showLoadingBadge}
+                                    required={required}
                                 />
-                            </span>
-                            <span className="row-stats">
-                                <span className="row-minid">
-                                    {minIDValue !== undefined ? (
-                                        utils.numFormat3SigFigs(minIDValue)
-                                    ) : (
-                                        <span className="empty">—</span>
+                                <span className="row-angle">
+                                    {label}
+                                    {result?.preferred && (
+                                        <span
+                                            className="row-badge"
+                                            title="Lowest minimum shell ID among the calculated layouts"
+                                        >
+                                            <StarIcon width="10" height="10" aria-hidden="true" />
+                                            <span className="hidden">
+                                                Preferred layout (lowest minimum shell ID)
+                                            </span>
+                                        </span>
                                     )}
                                 </span>
-                                <span className="row-tubes">
-                                    {result ? (
-                                        utils.numFormat3SigFigs(result.numTubes as number)
-                                    ) : (
-                                        <span className="empty">—</span>
-                                    )}{" "}
+                                <span className="row-bar-track" aria-hidden="true">
+                                    <span
+                                        className="row-bar-fill"
+                                        style={{
+                                            width: `${minIDBarLogPercent(minIDValue, minIDFloor, minIDCeiling)}%`,
+                                        }}
+                                    />
                                 </span>
-                            </span>
-                        </label>
-                    );
-                })}
+                                <span className="row-stats">
+                                    <span className="row-minid">
+                                        {minIDValue !== undefined ? (
+                                            utils.numFormat3SigFigs(minIDValue)
+                                        ) : (
+                                            <span className="empty">—</span>
+                                        )}
+                                    </span>
+                                    <span className="row-tubes">
+                                        {result ? (
+                                            utils.numFormat3SigFigs(result.numTubes as number)
+                                        ) : (
+                                            <span className="empty">—</span>
+                                        )}{" "}
+                                    </span>
+                                </span>
+                            </label>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

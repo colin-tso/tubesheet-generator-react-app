@@ -128,54 +128,56 @@ export function ViewportPane({
                 <span className="reg-bl" aria-hidden="true" />
                 <span className="reg-br" aria-hidden="true" />
                 <div className="viewport-options">
-                    <button
-                        type="button"
-                        className={`table-toggle ${showTable ? "active" : ""}`}
-                        onClick={onToggleTable}
-                        aria-pressed={showTable}
-                        data-title={showTable ? "Hide Table" : "Show Table"}
-                    >
-                        {showTable ? (
-                            <TableIcon
-                                className="btn-icon"
-                                width="13"
-                                height="13"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <TableOffIcon
-                                className="btn-icon"
-                                width="13"
-                                height="13"
-                                aria-hidden="true"
-                            />
-                        )}
-                        <span className="btn-label">Table</span>
-                    </button>
-                    <button
-                        type="button"
-                        className={`grid-toggle ${showGrid ? "active" : ""}`}
-                        onClick={onToggleGrid}
-                        aria-pressed={showGrid}
-                        data-title={showGrid ? "Hide Grid" : "Show Grid"}
-                    >
-                        {showGrid ? (
-                            <GridIcon
-                                className="btn-icon"
-                                width="13"
-                                height="13"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <GridOffIcon
-                                className="btn-icon"
-                                width="13"
-                                height="13"
-                                aria-hidden="true"
-                            />
-                        )}
-                        <span className="btn-label">Grid</span>
-                    </button>
+                    <div className="viewport-options-group">
+                        <button
+                            type="button"
+                            className={`table-toggle ${showTable ? "active" : ""}`}
+                            onClick={onToggleTable}
+                            aria-pressed={showTable}
+                            data-title={showTable ? "Hide Results Table" : "Show Results Table"}
+                        >
+                            {showTable ? (
+                                <TableIcon
+                                    className="btn-icon"
+                                    width="13"
+                                    height="13"
+                                    aria-hidden="true"
+                                />
+                            ) : (
+                                <TableOffIcon
+                                    className="btn-icon"
+                                    width="13"
+                                    height="13"
+                                    aria-hidden="true"
+                                />
+                            )}
+                            <span className="btn-label">Results Table</span>
+                        </button>
+                        <button
+                            type="button"
+                            className={`grid-toggle ${showGrid ? "active" : ""}`}
+                            onClick={onToggleGrid}
+                            aria-pressed={showGrid}
+                            data-title={showGrid ? "Hide Grid" : "Show Grid"}
+                        >
+                            {showGrid ? (
+                                <GridIcon
+                                    className="btn-icon"
+                                    width="13"
+                                    height="13"
+                                    aria-hidden="true"
+                                />
+                            ) : (
+                                <GridOffIcon
+                                    className="btn-icon"
+                                    width="13"
+                                    height="13"
+                                    aria-hidden="true"
+                                />
+                            )}
+                            <span className="btn-label">Grid</span>
+                        </button>
+                    </div>
                 </div>
                 <TubeSheetSVG
                     src={drawingSVG}
@@ -192,57 +194,59 @@ export function ViewportPane({
                         visible={showTable}
                     />
                     <div className="viewport-actions" hidden={drawingSVG === placeholderSVG}>
-                        <div className="copy-button-wrap">
-                            <span
-                                className={`copy-status-badge noselect${
-                                    copyState !== "idle" ? " visible" : ""
-                                }${copyState === "error" || copyState === "unsupported" ? " error" : ""}
+                        <div className="viewport-actions-group">
+                            <div className="copy-button-wrap">
+                                <span
+                                    className={`copy-status-badge noselect${
+                                        copyState !== "idle" ? " visible" : ""
+                                    }${copyState === "error" || copyState === "unsupported" ? " error" : ""}
                                 ${copyState === "copied" ? " success" : ""}`}
-                                role="status"
-                                aria-live="polite"
-                                aria-hidden={copyState === "idle"}
-                            >
-                                {copyState === "pending"
-                                    ? "Copying…"
-                                    : copyState === "copied"
-                                      ? "Copied!"
-                                      : copyState === "error"
-                                        ? "Copy failed"
-                                        : copyState === "unsupported"
-                                          ? "Copy unsupported"
-                                          : ""}
-                            </span>
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-hidden={copyState === "idle"}
+                                >
+                                    {copyState === "pending"
+                                        ? "Copying…"
+                                        : copyState === "copied"
+                                          ? "Copied!"
+                                          : copyState === "error"
+                                            ? "Copy failed"
+                                            : copyState === "unsupported"
+                                              ? "Copy unsupported"
+                                              : ""}
+                                </span>
+                                <button
+                                    className="copy-button"
+                                    onClick={onCopySVG}
+                                    type="button"
+                                    data-title="Copy Image"
+                                    disabled={copyState === "pending"}
+                                    aria-busy={copyState === "pending"}
+                                >
+                                    <CopyIcon
+                                        className="btn-icon"
+                                        width="15"
+                                        height="15"
+                                        aria-hidden="true"
+                                    />
+                                    <span className="btn-label">Copy Image</span>
+                                </button>
+                            </div>
                             <button
-                                className="copy-button"
-                                onClick={onCopySVG}
+                                className="save-button"
+                                onClick={onDownloadSVG}
                                 type="button"
-                                data-title="Copy Image"
-                                disabled={copyState === "pending"}
-                                aria-busy={copyState === "pending"}
+                                data-title="Save Image"
                             >
-                                <CopyIcon
+                                <SaveIcon
                                     className="btn-icon"
                                     width="15"
                                     height="15"
                                     aria-hidden="true"
                                 />
-                                <span className="btn-label">Copy Image</span>
+                                <span className="btn-label">Save Image</span>
                             </button>
                         </div>
-                        <button
-                            className="save-button"
-                            onClick={onDownloadSVG}
-                            type="button"
-                            data-title="Save Image"
-                        >
-                            <SaveIcon
-                                className="btn-icon"
-                                width="15"
-                                height="15"
-                                aria-hidden="true"
-                            />
-                            <span className="btn-label">Save Image</span>
-                        </button>
                     </div>
                 </div>
             </div>
