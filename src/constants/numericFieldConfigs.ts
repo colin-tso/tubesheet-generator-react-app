@@ -8,6 +8,9 @@ export type NumericFieldConfig = Omit<NumericFieldProps, "value" | "pairedValue"
     pairedWith?: string;
     // Shown once beneath a paired row, explaining the either/or relationship.
     rowHint?: string;
+    // Fields sharing the same "group" label are rendered together inside one
+    // titled card, so related inputs read as a set rather than a flat list.
+    group?: string;
 };
 
 export const numericFieldConfigs: NumericFieldConfig[] = [
@@ -20,6 +23,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         required: true,
         min: 0,
         minExclusive: true,
+        group: "Tube geometry",
     },
     {
         id: "tubeOD",
@@ -31,6 +35,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         units: "mm",
         min: 0,
         minExclusive: true,
+        group: "Tube geometry",
     },
     {
         id: "OTLtoShell",
@@ -41,6 +46,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         required: true,
         units: "mm",
         min: 0,
+        group: "Shell constraints",
     },
     {
         id: "tubeClearance",
@@ -54,6 +60,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "clearance-pitch",
         pairedWith: "pitchRatio",
         pairedLabel: "pitch ratio",
+        group: "Shell constraints",
     },
     {
         id: "pitchRatio",
@@ -66,7 +73,8 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "clearance-pitch",
         pairedWith: "tubeClearance",
         pairedLabel: "tube clearance",
-        rowHint: "Set either value — the other is calculated automatically.",
+        rowHint: "Set either value – the other is calculated automatically.",
+        group: "Shell constraints",
     },
     {
         id: "shellID",
@@ -75,5 +83,6 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         scale: 2,
         inputMode: "decimal",
         units: "mm",
+        group: "Overrides",
     },
 ];

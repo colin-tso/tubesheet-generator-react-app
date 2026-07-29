@@ -54,6 +54,27 @@ const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<Nume
     [],
 );
 
+// Further cluster consecutive field-rows that share a "group" label, so
+// related inputs (e.g. everything under "Tube geometry") render together
+// inside one titled card instead of as a flat, undifferentiated list.
+interface NumericFieldGroup {
+    label: string | undefined;
+    rows: NumericFieldConfig[][];
+}
+const numericFieldGroups: NumericFieldGroup[] = numericFieldRows.reduce<NumericFieldGroup[]>(
+    (groups, row) => {
+        const groupLabel = row[0]?.group;
+        const lastGroup = groups[groups.length - 1];
+        if (lastGroup?.label === groupLabel) {
+            lastGroup.rows.push(row);
+        } else {
+            groups.push({ label: groupLabel, rows: [row] });
+        }
+        return groups;
+    },
+    [],
+);
+
 const App = () => {
     // Worker lifecycle, calculation results, loading/error/status state.
     const {
@@ -191,41 +212,64 @@ const App = () => {
                 <div className="form-scroll">
                     <div className="section">
                         <h2>Calculation Inputs</h2>
-                        {numericFieldRows.map((row) => {
-                            const fields = row.map((cfg) => (
-                                <NumericField
-                                    key={cfg.id}
-                                    {...cfg}
-                                    value={fieldValues[cfg.id]}
-                                    pairedValue={
-                                        cfg.pairedWith ? fieldValues[cfg.pairedWith] : undefined
-                                    }
-                                    readOnly={cfg.calculated || isCalculating}
-                                    onBlur={cfg.calculated ? undefined : onBlur}
-                                    onKeyDown={cfg.calculated ? undefined : onKeyDown}
-                                    onAccept={
-                                        cfg.calculated
-                                            ? undefined
-                                            : (value) => onAcceptEmpty(value, cfg.id)
-                                    }
-                                    onSubmit={cfg.calculated ? undefined : inputOnSubmitHandler}
-                                />
-                            ));
+                        <div className="field-group-stack">
+                            {numericFieldGroups.map((group) => (
+                                <div
+                                    className="field-group-card"
+                                    key={group.label ?? group.rows[0]?.[0]?.id}
+                                >
+                                    {group.label && (
+                                        <h3 className="field-group-title">{group.label}</h3>
+                                    )}
+                                    {group.rows.map((row) => {
+                                        const fields = row.map((cfg) => (
+                                            <NumericField
+                                                key={cfg.id}
+                                                {...cfg}
+                                                value={fieldValues[cfg.id]}
+                                                pairedValue={
+                                                    cfg.pairedWith
+                                                        ? fieldValues[cfg.pairedWith]
+                                                        : undefined
+                                                }
+                                                readOnly={cfg.calculated || isCalculating}
+                                                onBlur={cfg.calculated ? undefined : onBlur}
+                                                onKeyDown={cfg.calculated ? undefined : onKeyDown}
+                                                onAccept={
+                                                    cfg.calculated
+                                                        ? undefined
+                                                        : (value) => onAcceptEmpty(value, cfg.id)
+                                                }
+                                                onSubmit={
+                                                    cfg.calculated
+                                                        ? undefined
+                                                        : inputOnSubmitHandler
+                                                }
+                                            />
+                                        ));
 
-                            if (row.length === 1) {
-                                return fields[0];
-                            }
+                                        if (row.length === 1) {
+                                            return fields[0];
+                                        }
 
-                            const rowHint = row.find((cfg) => cfg.rowHint)?.rowHint;
-                            return (
-                                <div key={row.map((cfg) => cfg.id).join("-")}>
-                                    <div className="field-row">{fields}</div>
-                                    {rowHint && <p className="field-row-hint">{rowHint}</p>}
+                                        const rowHint = row.find((cfg) => cfg.rowHint)?.rowHint;
+                                        return (
+                                            <div key={row.map((cfg) => cfg.id).join("-")}>
+                                                <div className="field-row">
+                                                    {fields[0]}
+                                                    <span className="field-row-or">or</span>
+                                                    {fields[1]}
+                                                </div>
+                                                {rowHint && (
+                                                    <p className="field-row-hint">{rowHint}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })}
+                            ))}
+                        </div>
                     </div>
-                    <div className="divider" />
                     <LayoutOptionsList
                         rows={layoutOptionRows}
                         layoutResults={layoutResults}
