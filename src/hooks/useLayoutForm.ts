@@ -51,7 +51,7 @@ type FieldAction =
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
     | { type: "SET_PITCH_RATIO"; value: number | undefined };
 
-// Distinguish absent override (use fallback) from explicit undefined (clea// field) as ?? can't distinguish this difference.
+// Distinguish absent override (use fallback) from explicit undefined as ?? can't distinguish this difference.
 function withOverride(
     overrides: Record<string, number | undefined> | undefined,
     key: string,
@@ -112,18 +112,21 @@ export function useLayoutForm({
 }: UseLayoutFormOptions) {
     const [fields, dispatch] = useReducer(fieldsReducer, initialFieldValues);
 
-    // Derived directly from fields — no need for separate state or an effect to sync it.
+    // Derived directly from fields — no need for separate state or an effect to
+    // sync it.
+    const hasMinTubes = utils.isNumber(fields.minTubes) && fields.minTubes > 0;
+    const hasShellID = utils.isNumber(fields.shellID) && fields.shellID > 0;
+
     const layoutInputsDefined =
         utils.isNumber(fields.OTLtoShell) &&
         utils.isNumber(fields.tubeOD) &&
         utils.isNumber(fields.tubeClearance) &&
         utils.isNumber(fields.pitchRatio) &&
-        utils.isNumber(fields.minTubes) &&
         fields.OTLtoShell >= 0 &&
         fields.tubeOD > 0 &&
         fields.tubeClearance >= 0 &&
         fields.pitchRatio >= 1 &&
-        fields.minTubes > 0;
+        (hasMinTubes || hasShellID);
 
     const layoutOptionSelected = utils.isNumber(fields.layoutOption);
 
@@ -340,8 +343,8 @@ export function useLayoutForm({
 
         const currentValue = comparableValues[name];
         const unchanged = (() => {
-            // For "tubeClearance" and "pitchRatio", compare values at
-            // display precision (2 decimals).
+            // For "tubeClearance" and "pitchRatio", compare values at display
+            // precision (2 decimals).
             if (name === "tubeClearance" || name === "pitchRatio") {
                 if (utils.isNumber(committed) && utils.isNumber(currentValue)) {
                     return utils.trunc(currentValue, 2) === utils.trunc(committed, 2);
@@ -396,12 +399,12 @@ export function useLayoutForm({
             utils.isNumber(next.tubeOD) &&
             utils.isNumber(next.tubeClearance) &&
             utils.isNumber(next.pitchRatio) &&
-            utils.isNumber(next.minTubes) &&
             next.OTLtoShell >= 0 &&
             next.tubeOD > 0 &&
             next.tubeClearance >= 0 &&
             next.pitchRatio >= 1 &&
-            next.minTubes > 0;
+            ((utils.isNumber(next.minTubes) && next.minTubes > 0) ||
+                (utils.isNumber(next.shellID) && next.shellID > 0));
 
         if (!inputsValid || !utils.isNumber(fields.layoutOption)) {
             return;
@@ -430,9 +433,9 @@ export function useLayoutForm({
         triggerSingleCalculation({ overrideLayout: parsedValue });
     };
 
-    // Keep actualTubes synced with a custom shell ID via the worker instead
-    // of rebuilding TubeSheet on the main thread. The worker response is
-    // handled by the lastSingleResult effect below.
+    // Keep actualTubes synced with a custom shell ID via the worker instead of
+    // rebuilding TubeSheet on the main thread. The worker response is handled
+    // by the lastSingleResult effect below.
     useEffect(() => {
         if (
             !utils.isNumber(fields.layoutOption) ||
@@ -454,7 +457,8 @@ export function useLayoutForm({
         triggerSingleCalculation,
     ]);
 
-    // If a SINGLE_RESULT came back for a custom shell ID, sync actual tubes to it.
+    // If a SINGLE_RESULT came back for a custom shell ID, sync actual tubes to
+    // it.
     useEffect(() => {
         if (lastSingleResult?.shellID && lastSingleResult?.numTubes) {
             dispatch({
