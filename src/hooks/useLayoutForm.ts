@@ -241,21 +241,45 @@ export function useLayoutForm({
             return;
         }
 
-        // shellID: recalculate on change commit
+        // shellID: last-edited wins, so committing a value here clears any
+        // min-tubes value and recalculates using the new shell ID.
         if (name === "shellID") {
             const changed = fields.shellID !== parsed;
-            setGenericField(name, parsed);
-            if (changed) {
-                requestAllLayoutResults({ shellID: parsed });
+            const clearsMinTubes = utils.isNumber(fields.minTubes);
+            setGenericField("shellID", parsed);
+            if (clearsMinTubes) {
+                setGenericField("minTubes", undefined);
             }
-            if (changed && layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
-                triggerSingleCalculation({ shellID: parsed });
+            if (changed || clearsMinTubes) {
+                requestAllLayoutResults({ shellID: parsed, minTubes: undefined });
+            }
+            if (
+                (changed || clearsMinTubes) &&
+                layoutInputsDefined &&
+                utils.isNumber(fields.layoutOption)
+            ) {
+                triggerSingleCalculation({ shellID: parsed, minTubes: undefined });
             }
             return;
         }
 
-        // minTubes/tubeOD/OTLtoShell: recalculate on change commit
-        if (name === "minTubes" || name === "tubeOD" || name === "OTLtoShell") {
+        // minTubes: last-edited wins, so committing a value here clears any
+        // custom shell ID and recalculates using the new min-tubes count.
+        if (name === "minTubes") {
+            const changed = fields.minTubes !== parsed;
+            const clearsShellID = utils.isNumber(fields.shellID);
+            setGenericField("minTubes", parsed);
+            if (clearsShellID) {
+                setGenericField("shellID", undefined);
+            }
+            if (changed || clearsShellID) {
+                requestAllLayoutResults({ minTubes: parsed, shellID: undefined });
+            }
+            return;
+        }
+
+        // tubeOD/OTLtoShell: recalculate on change commit
+        if (name === "tubeOD" || name === "OTLtoShell") {
             const changed = fields[name] !== parsed;
             setGenericField(name, parsed);
             if (changed) {
@@ -384,14 +408,18 @@ export function useLayoutForm({
             nextTubeClearance = (committed - 1) * fields.tubeOD;
         }
 
-        // Nothing to recalculate if this field's value is unchanged.
+        // Nothing to recalculate if this field's value is unchanged. Note: name
+        // is never "shellID" here (handled and returned above), but committing
+        // minTubes still needs to override shellID to undefined — onBlur
+        // already dispatched that clear, but the dispatch hasn't landed in this
+        // closure's `fields` yet, so `fields.shellID` here is stale.
         const next = {
             minTubes: name === "minTubes" ? committed : fields.minTubes,
             tubeOD: name === "tubeOD" ? committed : fields.tubeOD,
             OTLtoShell: name === "OTLtoShell" ? committed : fields.OTLtoShell,
             tubeClearance: nextTubeClearance,
             pitchRatio: nextPitchRatio,
-            shellID: name === "shellID" ? committed : fields.shellID,
+            shellID: name === "minTubes" ? undefined : fields.shellID,
         };
 
         const inputsValid =
