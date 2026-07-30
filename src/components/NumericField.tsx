@@ -23,6 +23,11 @@ export interface NumericFieldProps {
     pairedValue?: number;
     /** Label of the paired field, used in the empty-state helper text. */
     pairedLabel?: string;
+    /** When provided, overrides the field's own touched/blurred tracking so a
+     * parent can decide when errors become visible (e.g. a paired row that
+     * should only show errors once focus has left BOTH fields, not just this
+     * one). Omit to keep the default per-field behavior. */
+    touched?: boolean;
     onBlur?: (e: SyntheticEvent<HTMLInputElement, Event>) => void;
     onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
     onAccept?: (value: string) => void;
@@ -44,6 +49,7 @@ export function NumericField({
     minExclusive = false,
     pairedValue,
     pairedLabel,
+    touched: touchedProp,
     onBlur,
     onKeyDown,
     onAccept,
@@ -51,8 +57,10 @@ export function NumericField({
 }: NumericFieldProps) {
     // Errors only surface once the user has actually left the field, so a
     // freshly loaded/empty form isn't shown as invalid before they've typed
-    // anything.
-    const [touched, setTouched] = useState(false);
+    // anything. A parent can take over this decision via the `touched` prop
+    // (see PairedFieldRow); otherwise it's tracked internally per-field.
+    const [internalTouched, setInternalTouched] = useState(false);
+    const touched = touchedProp ?? internalTouched;
 
     const errorMessage = (() => {
         if (!touched || readOnly) return undefined;
@@ -77,7 +85,9 @@ export function NumericField({
     const errorId = `${id}-error`;
 
     const handleBlur = (e: SyntheticEvent<HTMLInputElement, Event>) => {
-        setTouched(true);
+        if (touchedProp === undefined) {
+            setInternalTouched(true);
+        }
         onBlur?.(e);
     };
 

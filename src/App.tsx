@@ -7,6 +7,7 @@ import {
     ITubeSheetData,
 } from "./plugins/tubesheet-layout-generator";
 import { NumericField } from "./components/NumericField";
+import { PairedFieldRow } from "./components/PairedFieldRow";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import { ContextMenuItem } from "./components/context-menu";
@@ -222,48 +223,49 @@ const App = () => {
                                         <h3 className="field-group-title">{group.label}</h3>
                                     )}
                                     {group.rows.map((row) => {
-                                        const fields = row.map((cfg) => (
-                                            <NumericField
-                                                key={cfg.id}
-                                                {...cfg}
-                                                value={fieldValues[cfg.id]}
-                                                pairedValue={
-                                                    cfg.pairedWith
-                                                        ? fieldValues[cfg.pairedWith]
-                                                        : undefined
-                                                }
-                                                readOnly={cfg.calculated || isCalculating}
-                                                onBlur={cfg.calculated ? undefined : onBlur}
-                                                onKeyDown={cfg.calculated ? undefined : onKeyDown}
-                                                onAccept={
-                                                    cfg.calculated
-                                                        ? undefined
-                                                        : (value) => onAcceptEmpty(value, cfg.id)
-                                                }
-                                                onSubmit={
-                                                    cfg.calculated
-                                                        ? undefined
-                                                        : inputOnSubmitHandler
-                                                }
-                                            />
-                                        ));
-
                                         if (row.length === 1) {
-                                            return fields[0];
+                                            const cfg = row[0];
+                                            return (
+                                                <NumericField
+                                                    key={cfg.id}
+                                                    {...cfg}
+                                                    value={fieldValues[cfg.id]}
+                                                    pairedValue={
+                                                        cfg.pairedWith
+                                                            ? fieldValues[cfg.pairedWith]
+                                                            : undefined
+                                                    }
+                                                    readOnly={cfg.calculated || isCalculating}
+                                                    onBlur={cfg.calculated ? undefined : onBlur}
+                                                    onKeyDown={
+                                                        cfg.calculated ? undefined : onKeyDown
+                                                    }
+                                                    onAccept={
+                                                        cfg.calculated
+                                                            ? undefined
+                                                            : (value) =>
+                                                                  onAcceptEmpty(value, cfg.id)
+                                                    }
+                                                    onSubmit={
+                                                        cfg.calculated
+                                                            ? undefined
+                                                            : inputOnSubmitHandler
+                                                    }
+                                                />
+                                            );
                                         }
 
-                                        const rowHint = row.find((cfg) => cfg.rowHint)?.rowHint;
                                         return (
-                                            <div key={row.map((cfg) => cfg.id).join("-")}>
-                                                <div className="field-row">
-                                                    {fields[0]}
-                                                    <span className="field-row-or">or</span>
-                                                    {fields[1]}
-                                                </div>
-                                                {rowHint && (
-                                                    <p className="field-row-hint">{rowHint}</p>
-                                                )}
-                                            </div>
+                                            <PairedFieldRow
+                                                key={row.map((cfg) => cfg.id).join("-")}
+                                                row={row}
+                                                fieldValues={fieldValues}
+                                                isCalculating={isCalculating}
+                                                onBlur={onBlur}
+                                                onKeyDown={onKeyDown}
+                                                onAcceptEmpty={onAcceptEmpty}
+                                                inputOnSubmitHandler={inputOnSubmitHandler}
+                                            />
                                         );
                                     })}
                                 </div>
