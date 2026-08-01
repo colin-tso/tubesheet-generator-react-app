@@ -26,7 +26,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "minTubes-shellID",
         pairedWith: "shellID",
         pairedLabel: "Shell ID",
-        group: "Layout Parameters",
+        group: "Design Constraint",
     },
     {
         id: "shellID",
@@ -41,8 +41,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "minTubes-shellID",
         pairedWith: "minTubes",
         pairedLabel: "Min # of tubes",
-        rowHint: "Set either – shell ID will override min # of tubes.",
-        group: "Layout Parameters",
+        group: "Design Constraint",
     },
     {
         id: "tubeOD",
@@ -79,7 +78,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "clearance-pitch",
         pairedWith: "pitchRatio",
         pairedLabel: "pitch ratio",
-        group: "Layout Parameters",
+        group: "Tube Spacing",
     },
     {
         id: "pitchRatio",
@@ -92,7 +91,6 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "clearance-pitch",
         pairedWith: "tubeClearance",
         pairedLabel: "tube clearance",
-        rowHint: "Set either – the other is calculated automatically.",
-        group: "Layout Parameters",
+        group: "Tube Spacing",
     },
 ];
