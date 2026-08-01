@@ -51,7 +51,8 @@ type FieldAction =
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
     | { type: "SET_PITCH_RATIO"; value: number | undefined };
 
-// Distinguish absent override (use fallback) from explicit undefined as ?? can't distinguish this difference.
+// Distinguish absent override (use fallback) from explicit undefined as ??
+// can't distinguish this difference.
 function withOverride(
     overrides: Record<string, number | undefined> | undefined,
     key: string,
@@ -275,6 +276,13 @@ export function useLayoutForm({
             if (changed || clearsShellID) {
                 requestAllLayoutResults({ minTubes: parsed, shellID: undefined });
             }
+            if (
+                (changed || clearsShellID) &&
+                layoutInputsDefined &&
+                utils.isNumber(fields.layoutOption)
+            ) {
+                triggerSingleCalculation({ minTubes: parsed, shellID: undefined });
+            }
             return;
         }
 
@@ -412,7 +420,7 @@ export function useLayoutForm({
         // is never "shellID" here (handled and returned above), but committing
         // minTubes still needs to override shellID to undefined — onBlur
         // already dispatched that clear, but the dispatch hasn't landed in this
-        // closure's `fields` yet, so `fields.shellID` here is stale.
+        // closure's "fields" yet, so `fields.shellID` here is stale.
         const next = {
             minTubes: name === "minTubes" ? committed : fields.minTubes,
             tubeOD: name === "tubeOD" ? committed : fields.tubeOD,

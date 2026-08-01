@@ -43,6 +43,7 @@
   --redline-light: hsl(0, 74%, 42%);
   --redline-glow-light: hsl(0, 74%, 42%, 20%);
   --greenline-light: hsl(135, 74%, 42%);
+  --greenline-glow-light: hsl(135, 74%, 42%, 20%);
   --preferred-light: hsl(214, 68%, 42%);
   --box-shadow-light-1: hsla(0, 0%, 0%, 0.3);
   --box-shadow-light-2: hsla(0, 0%, 0%, 0.1);
@@ -67,6 +68,7 @@
   --redline-dark: hsl(0, 84%, 66%);
   --redline-glow-dark: hsl(0, 84%, 66%, 20%);
   --greenline-dark: hsl(135, 84%, 66%);
+  --greenline-glow-dark: hsl(135, 84%, 66%, 20%);
   --preferred-dark: hsl(212, 84%, 76%);
   --box-shadow-dark-1: hsla(0, 0%, 0%, 0.7);
   --box-shadow-dark-2: hsla(0, 0%, 0%, 0.5);
@@ -91,6 +93,7 @@
   --redline: var(--redline-light);
   --redline-glow: var(--redline-glow-light);
   --greenline: var(--greenline-light);
+  --greenline-glow: var(--greenline-glow-light);
   --preferred: var(--preferred-light);
   --box-shadow-1: var(--box-shadow-light-1);
   --box-shadow-2: var(--box-shadow-light-2);
@@ -125,6 +128,7 @@
   --redline: var(--redline-dark);
   --redline-glow: var(--redline-glow-dark);
   --greenline: var(--greenline-dark);
+  --greenline-glow: var(--greenline-glow-dark);
   --preferred: var(--preferred-dark);
   --box-shadow-1: var(--box-shadow-dark-1);
   --box-shadow-2: var(--box-shadow-dark-2);
@@ -407,6 +411,10 @@ hr {
 /* Card title sits a step below the field labels below it (12.5px, bold,
    full-contrast ink) so it reads as a category header, not another field. */
 .field-group-title {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+
   margin: 0 0 12px;
   padding: 0;
 
@@ -414,7 +422,16 @@ hr {
   font-size: 12.5px;
   font-weight: 700;
   color: var(--ink);
-  text-decoration: underline dotted;
+}
+
+/* Wrapper for a paired either/or row plus its hint, standing in for the
+   .field spacing that individual fields normally provide. */
+.field-row-group {
+  margin-bottom: 1rem;
+}
+
+.field-row-group:last-child {
+  margin-bottom: 0;
 }
 
 /* Two fields shown side by side, e.g. tube clearance / pitch ratio, where
@@ -450,6 +467,10 @@ hr {
   font-weight: 400;
   color: var(--muted);
   letter-spacing: 0.01em;
+}
+
+.field-row-group .field-row-hint {
+  margin-bottom: 0;
 }
 
 .field-label {
@@ -536,6 +557,15 @@ input[type="text"].field-invalid {
 input[type="text"].field-invalid:focus {
   border-color: var(--redline);
   box-shadow: 0 0 0 3px var(--redline-glow);
+}
+
+input[type="text"].field-valid {
+  border-color: var(--greenline);
+}
+
+input[type="text"].field-valid:focus {
+  border-color: var(--greenline);
+  box-shadow: 0 0 0 3px var(--greenline-glow);
 }
 
 .field-error {

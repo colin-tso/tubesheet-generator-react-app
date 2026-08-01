@@ -41,7 +41,8 @@ const placeholderSVG = generateTubeSheetSVG(emptyData);
 // Must match .viewport's base padding in index.css (desktop breakpoint).
 const VIEWPORT_BASE_PADDING = 48;
 
-// Cluster consecutive field configs that share a "row" id so they can be rendered side by side.
+// Cluster consecutive field configs that share a "row" id so they can be
+// rendered side by side.
 const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<NumericFieldConfig[][]>(
     (rows, cfg) => {
         const lastRow = rows[rows.length - 1];
@@ -55,9 +56,8 @@ const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<Nume
     [],
 );
 
-// Further cluster consecutive field-rows that share a "group" label, so
-// related inputs (e.g. everything under "Tube geometry") render together
-// inside one titled card instead of as a flat, undifferentiated list.
+// Further cluster consecutive field-rows that share a "group" label, so related
+// inputs render together inside one titled card instead.
 interface NumericFieldGroup {
     label: string | undefined;
     rows: NumericFieldConfig[][];
@@ -99,6 +99,7 @@ const App = () => {
         tubeClearance,
         pitchRatio,
         shellID,
+        layoutOption,
         layoutInputsDefined,
         layoutOptionSelected,
         onAcceptEmpty,
@@ -220,7 +221,14 @@ const App = () => {
                                     key={group.label ?? group.rows[0]?.[0]?.id}
                                 >
                                     {group.label && (
-                                        <h3 className="field-group-title">{group.label}</h3>
+                                        <h3 className="field-group-title">
+                                            {group.label}
+                                            {group.rows.length === 1 &&
+                                                group.rows[0].length === 2 &&
+                                                group.rows[0].some((cfg) => cfg.required) && (
+                                                    <span className="required-asterisk">*</span>
+                                                )}
+                                        </h3>
                                     )}
                                     {group.rows.map((row) => {
                                         if (row.length === 1) {
@@ -260,6 +268,8 @@ const App = () => {
                                                 key={row.map((cfg) => cfg.id).join("-")}
                                                 row={row}
                                                 fieldValues={fieldValues}
+                                                layoutOption={layoutOption}
+                                                committedResult={lastSingleResult}
                                                 isCalculating={isCalculating}
                                                 onBlur={onBlur}
                                                 onKeyDown={onKeyDown}
