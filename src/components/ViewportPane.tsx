@@ -39,6 +39,7 @@ interface ViewportPaneProps {
     drawingTableRequestedTubes: number | undefined;
     onTableRef: (el: HTMLTableElement | null) => void;
     copyState: CopyState;
+    copyReady: boolean;
     onCopySVG: () => void;
     onDownloadSVG: () => void;
 }
@@ -68,6 +69,7 @@ export function ViewportPane({
     drawingTableRequestedTubes,
     onTableRef,
     copyState,
+    copyReady,
     onCopySVG,
     onDownloadSVG,
 }: ViewportPaneProps) {
@@ -212,16 +214,16 @@ export function ViewportPane({
                                           : copyState === "error"
                                             ? "Copy failed"
                                             : copyState === "unsupported"
-                                              ? "Copy unsupported"
+                                              ? "Copy unsupported on this browser"
                                               : ""}
                                 </span>
                                 <button
                                     className="copy-button"
                                     onClick={onCopySVG}
                                     type="button"
-                                    data-title="Copy Image"
-                                    disabled={copyState === "pending"}
-                                    aria-busy={copyState === "pending"}
+                                    data-title={copyReady ? "Copy Image" : "Preparing image…"}
+                                    disabled={copyState === "pending" || !copyReady}
+                                    aria-busy={copyState === "pending" || !copyReady}
                                 >
                                     <CopyIcon
                                         className="btn-icon"

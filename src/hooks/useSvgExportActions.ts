@@ -8,6 +8,16 @@ import {
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported";
 
+// Firefox for Android rejects navigator.clipboard.write() for images outright –
+// a combined SVG+PNG ClipboardItem fails with `NotAllowedError: Type
+// "image/svg+xml" not supported for write.`, and retrying with PNG alone still
+// fails with a generic `NotAllowedError: Clipboard write is not allowed.`.
+// Chrome/Edge on Android are unaffected. Not tested on iOS.
+const isAndroidFirefox =
+    typeof navigator !== "undefined" &&
+    /android/i.test(navigator.userAgent) &&
+    /firefox/i.test(navigator.userAgent);
+
 // No built-in ceiling on clipboard writes/PNG rasterisation, so a slow browser
 // or huge tubesheet could otherwise leave the button stuck with no feedback.
 // Bounds the whole operation so it always settles one way or another.
@@ -43,6 +53,11 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
         preloadPngEncodeWorker();
     }, []);
 
+    // Always true now that there's no preload phase to gate on — kept in the
+    // return value so callers (the copy button, the context menu item) don't
+    // need to change if that ever comes back.
+    const copyReady = true;
+
     const downloadSVG = useCallback(() => {
         const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
         downloadBlob(blob, "tubesheet.svg");
@@ -56,7 +71,8 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
         if (
             typeof navigator === "undefined" ||
             !navigator.clipboard ||
-            typeof ClipboardItem === "undefined"
+            typeof ClipboardItem === "undefined" ||
+            isAndroidFirefox
         ) {
             setCopyState("unsupported");
             setTimeout(() => setCopyState("idle"), 2500);
@@ -83,7 +99,10 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
         const onFailure = (err: unknown) => {
             finish();
             console.error("Copy to clipboard failed:", err);
-            setCopyState("error");
+            // A permission denial means this browser does not support image
+            // clipboard write.
+            const notAllowed = err instanceof DOMException && err.name === "NotAllowedError";
+            setCopyState(notAllowed ? "unsupported" : "error");
             setTimeout(() => setCopyState("idle"), 2500);
         };
 
@@ -93,26 +112,33 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
             writePromise = navigator.clipboard.write([
                 new ClipboardItem({ "image/svg+xml": svgBlob, "image/png": pngPromise }),
             ]);
-        } catch {
-            writePromise = Promise.reject();
+        } catch (err) {
+            writePromise = Promise.reject(err);
         }
 
         withTimeout(writePromise, COPY_TIMEOUT_MS, "Copy timed out")
             .then(onSuccess)
-            .catch(() =>
-                withTimeout(
+            .catch(() => {
+                // Constructing ClipboardItem/calling write() can itself throw
+                // synchronously (not just reject) — wrapped so that always
+                // reaches onFailure instead of going unhandled and leaving
+                // copyState stuck at "pending".
+                let retryWrite: Promise<void>;
+                try {
                     // Fresh rasterisation, not the first attempt's promise
                     // (which may have already rejected).
-                    navigator.clipboard.write([
+                    retryWrite = navigator.clipboard.write([
                         new ClipboardItem({ "image/png": svgToPngBlob(drawingSVG) }),
-                    ]),
-                    COPY_TIMEOUT_MS,
-                    "Copy timed out",
-                )
+                    ]);
+                } catch (retryErr) {
+                    onFailure(retryErr);
+                    return;
+                }
+                withTimeout(retryWrite, COPY_TIMEOUT_MS, "Copy timed out")
                     .then(onSuccess)
-                    .catch(onFailure),
-            );
+                    .catch(onFailure);
+            });
     }, [drawingSVG]);
 
-    return { copyState, downloadSVG, copySVG };
+    return { copyState, downloadSVG, copySVG, copyReady };
 }

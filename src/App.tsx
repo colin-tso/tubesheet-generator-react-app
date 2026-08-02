@@ -41,8 +41,7 @@ const placeholderSVG = generateTubeSheetSVG(emptyData);
 // Must match .viewport's base padding in index.css (desktop breakpoint).
 const VIEWPORT_BASE_PADDING = 48;
 
-// Cluster consecutive field configs that share a "row" id so they can be
-// rendered side by side.
+// Cluster consecutive field configs that share a "row" id so they can be rendered side by side.
 const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<NumericFieldConfig[][]>(
     (rows, cfg) => {
         const lastRow = rows[rows.length - 1];
@@ -56,8 +55,9 @@ const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<Nume
     [],
 );
 
-// Further cluster consecutive field-rows that share a "group" label, so related
-// inputs render together inside one titled card instead.
+// Further cluster consecutive field-rows that share a "group" label, so
+// related inputs (e.g. everything under "Tube geometry") render together
+// inside one titled card instead of as a flat, undifferentiated list.
 interface NumericFieldGroup {
     label: string | undefined;
     rows: NumericFieldConfig[][];
@@ -111,7 +111,7 @@ const App = () => {
     } = useLayoutForm({ lastSingleResult, postCalculateSingle, postCalculateAll });
 
     // Copy-to-clipboard / download-as-file actions for the drawing.
-    const { copyState, downloadSVG, copySVG } = useSvgExportActions(drawingSVG);
+    const { copyState, downloadSVG, copySVG, copyReady } = useSvgExportActions(drawingSVG);
 
     // True while a worker-backed operation is running (layout calculation or
     // clipboard copy), used to show a loading cursor across the whole app.
@@ -187,7 +187,12 @@ const App = () => {
         requestClose(); // Initiates the safe unmount fade out
     };
     const menuConfig: ContextMenuItem[] = [
-        { label: "Copy Image", icon: <CopyIcon />, onClick: () => handleContextMenuCopyAction() },
+        {
+            label: "Copy Image",
+            icon: <CopyIcon />,
+            onClick: () => handleContextMenuCopyAction(),
+            disabled: !copyReady,
+        },
         { label: "", isDivider: true, onClick: () => {} },
         { label: "Save Image", icon: <SaveIcon />, onClick: () => handleContextMenuSaveAction() },
     ];
@@ -324,6 +329,7 @@ const App = () => {
                 drawingTableRequestedTubes={drawingTableRequestedTubes}
                 onTableRef={setTableEl}
                 copyState={copyState}
+                copyReady={copyReady}
                 onCopySVG={copySVG}
                 onDownloadSVG={downloadSVG}
             />
