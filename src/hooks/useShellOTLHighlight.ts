@@ -17,15 +17,6 @@ const HIGHLIGHT_STROKE_MIN_INCREASE = 1;
 const TOOLTIP_CURSOR_OFFSET = 16;
 const TOOLTIP_EDGE_MARGIN = 8;
 
-/**
- * Tracks the pointer over the tubesheet drawing to determine whether it's
- * hovering the shell or OTL to trigger highlight and tooltip.
- *
- * Shell/OTL are the only circles without an "id" (every tube gets one), so
- * they're found via `circle:not([id])`. Hit-testing uses the SVG's own
- * user-space "getScreenCTM" to stay accurate at any zoom, since the circles use
- * "vector-effect: non-scaling-stroke" and can be just a px or two wide.
- */
 export function useShellOtlHighlight(
     containerRef: RefObject<HTMLDivElement | null>,
     drawingSVG: SVGSVGElement,
@@ -33,6 +24,12 @@ export function useShellOtlHighlight(
 ) {
     const [hovered, setHovered] = useState<HighlightRegion>(null);
     const tooltipRef = useRef<HTMLDivElement | null>(null);
+
+    // Cache the shell/OTL circle elements so we don't query the DOM on every mouse move.
+    const circleRefs = useRef<{
+        shell: SVGCircleElement | null;
+        OTL: SVGCircleElement | null;
+    }>({ shell: null, OTL: null });
 
     useEffect(() => {
         const container = containerRef.current;
@@ -42,15 +39,13 @@ export function useShellOtlHighlight(
         const OTLDiameter = lastSingleResult.OTL;
         if (!utils.isNumber(shellDiameter) || !utils.isNumber(OTLDiameter)) return;
 
-        const shellR = shellDiameter / 2;
-        const OTLR = OTLDiameter / 2;
-
-        // Draw order is shell, then OTL, then (id-bearing) tube circles.
+        // Query once when drawing changes.
         const [shellCircle, OTLCircle] = Array.from(
             drawingSVG.querySelectorAll<SVGCircleElement>("circle:not([id])"),
         );
+        circleRefs.current = { shell: shellCircle || null, OTL: OTLCircle || null };
 
-        // Expose each circle's scaled-up hover width to CSS as a custom property.
+        // Apply hover stroke width as a CSS custom property.
         const applyHighlightWidth = (circle: SVGCircleElement | undefined) => {
             if (!circle) return;
             const base = parseFloat(circle.getAttribute("stroke-width") ?? "") || 1;
@@ -64,15 +59,15 @@ export function useShellOtlHighlight(
         applyHighlightWidth(OTLCircle);
 
         const setActiveRegion = (region: HighlightRegion) => {
-            shellCircle?.classList.toggle("region-hovered", region === "shell");
-            OTLCircle?.classList.toggle("region-hovered", region === "OTL");
+            const { shell, OTL } = circleRefs.current;
+            shell?.classList.toggle("region-hovered", region === "shell");
+            OTL?.classList.toggle("region-hovered", region === "OTL");
             container.style.cursor = region ? "pointer" : "";
         };
 
         const positionTooltip = (clientX: number, clientY: number) => {
             const tooltip = tooltipRef.current;
             if (!tooltip) return;
-
             const { width, height } = tooltip.getBoundingClientRect();
 
             // Default: down-right of the cursor.
@@ -96,24 +91,26 @@ export function useShellOtlHighlight(
                 Math.max(top, TOOLTIP_EDGE_MARGIN),
                 Math.max(window.innerHeight - height - TOOLTIP_EDGE_MARGIN, TOOLTIP_EDGE_MARGIN),
             );
-
             tooltip.style.left = `${left}px`;
             tooltip.style.top = `${top}px`;
         };
 
         const handlePointerMove = (e: PointerEvent) => {
             if (!drawingSVG.isConnected) return;
-
             const ctm = drawingSVG.getScreenCTM();
             if (!ctm) return;
 
             // Pointer position in SVG user-space (rings are centered at origin).
             const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
             const distFromCentre = Math.hypot(pt.x, pt.y);
-
             const scale = ctm.a || 1;
             const tolerance = HIT_TOLERANCE_PX / scale;
 
+            const { shell, OTL } = circleRefs.current;
+            if (!shell || !OTL) return; // should not happen
+
+            const shellR = shellDiameter / 2;
+            const OTLR = OTLDiameter / 2;
             const shellDelta = Math.abs(distFromCentre - shellR);
             const OTLDelta = Math.abs(distFromCentre - OTLR);
 
@@ -121,7 +118,6 @@ export function useShellOtlHighlight(
             if (shellDelta <= tolerance || OTLDelta <= tolerance) {
                 region = shellDelta <= OTLDelta ? "shell" : "OTL";
             }
-
             setActiveRegion(region);
             positionTooltip(e.clientX, e.clientY);
             setHovered((prev) => (prev === region ? prev : region));

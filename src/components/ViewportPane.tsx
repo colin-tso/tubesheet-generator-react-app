@@ -1,4 +1,5 @@
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
+import { memo } from "react";
 import { TubeSheetSVG } from "./TubeSheetSVG";
 import { TubeSheetDataTable } from "./TubeSheetDataTable";
 import { ShellOTLTooltip } from "./ShellOTLTooltip";
@@ -44,7 +45,7 @@ interface ViewportPaneProps {
     onDownloadSVG: () => void;
 }
 
-export function ViewportPane({
+export const ViewportPane = memo(function ViewportPane({
     containerRef,
     footerRef,
     showGrid,
@@ -202,7 +203,7 @@ export function ViewportPane({
                                     className={`copy-status-badge noselect${
                                         copyState !== "idle" ? " visible" : ""
                                     }${copyState === "error" || copyState === "unsupported" ? " error" : ""}
-                                ${copyState === "copied" ? " success" : ""}`}
+                  ${copyState === "copied" ? " success" : ""}`}
                                     role="status"
                                     aria-live="polite"
                                     aria-hidden={copyState === "idle"}
@@ -254,4 +255,4 @@ export function ViewportPane({
             </div>
         </div>
     );
-}
+});
