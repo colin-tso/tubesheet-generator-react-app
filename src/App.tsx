@@ -25,6 +25,7 @@ import { numericFieldConfigs } from "./constants/numericFieldConfigs";
 import type { NumericFieldConfig } from "./constants/numericFieldConfigs";
 import { layoutOptionRows } from "./constants/layoutOptionRows";
 
+// --- Static config computation (moved outside component) ---
 const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
 const emptyData: ITubeSheetData = {
     tubeField: emptyTubeSheet.tubeField,
@@ -41,7 +42,7 @@ const placeholderSVG = generateTubeSheetSVG(emptyData);
 // Must match .viewport's base padding in index.css (desktop breakpoint).
 const VIEWPORT_BASE_PADDING = 48;
 
-// Cluster field configs
+// Cluster consecutive field configs that share a "row" id.
 const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<NumericFieldConfig[][]>(
     (rows, cfg) => {
         const lastRow = rows[rows.length - 1];
@@ -55,6 +56,7 @@ const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<Nume
     [],
 );
 
+// Further cluster consecutive field-rows that share a "group" label.
 interface NumericFieldGroup {
     label: string | undefined;
     rows: NumericFieldConfig[][];
@@ -73,6 +75,7 @@ const numericFieldGroups: NumericFieldGroup[] = numericFieldRows.reduce<NumericF
     [],
 );
 
+// --- App component ---
 const App = () => {
     // Worker lifecycle, calculation results, loading/error/status state.
     const {
