@@ -202,8 +202,11 @@ export const ViewportPane = memo(function ViewportPane({
                                 <span
                                     className={`copy-status-badge noselect${
                                         copyState !== "idle" ? " visible" : ""
-                                    }${copyState === "error" || copyState === "unsupported" ? " error" : ""}
-                  ${copyState === "copied" ? " success" : ""}`}
+                                    }${copyState === "error" || copyState === "unsupported" ? " error" : ""}${
+                                        copyState === "copied" || copyState === "downloaded"
+                                            ? " success"
+                                            : ""
+                                    }`}
                                     role="status"
                                     aria-live="polite"
                                     aria-hidden={copyState === "idle"}
@@ -212,11 +215,13 @@ export const ViewportPane = memo(function ViewportPane({
                                         ? "Copying…"
                                         : copyState === "copied"
                                           ? "Copied!"
-                                          : copyState === "error"
-                                            ? "Copy failed"
-                                            : copyState === "unsupported"
-                                              ? "Copy unsupported on this browser"
-                                              : ""}
+                                          : copyState === "downloaded"
+                                            ? "Copy unsupported – image saved"
+                                            : copyState === "error"
+                                              ? "Copy failed"
+                                              : copyState === "unsupported"
+                                                ? "Copy unsupported"
+                                                : ""}
                                 </span>
                                 <button
                                     className="copy-button"
