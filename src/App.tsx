@@ -41,7 +41,7 @@ const placeholderSVG = generateTubeSheetSVG(emptyData);
 // Must match .viewport's base padding in index.css (desktop breakpoint).
 const VIEWPORT_BASE_PADDING = 48;
 
-// Cluster consecutive field configs that share a "row" id so they can be rendered side by side.
+// Cluster field configs
 const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<NumericFieldConfig[][]>(
     (rows, cfg) => {
         const lastRow = rows[rows.length - 1];
@@ -55,9 +55,6 @@ const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<Nume
     [],
 );
 
-// Further cluster consecutive field-rows that share a "group" label, so
-// related inputs (e.g. everything under "Tube geometry") render together
-// inside one titled card instead of as a flat, undifferentiated list.
 interface NumericFieldGroup {
     label: string | undefined;
     rows: NumericFieldConfig[][];
@@ -89,6 +86,7 @@ const App = () => {
         onDrawingRendered,
         postCalculateSingle,
         postCalculateAll,
+        requestSingle,
     } = useTubeSheetWorker(placeholderSVG);
 
     // All calculation-input field state, validation, and input handlers.
@@ -112,18 +110,17 @@ const App = () => {
 
     // Copy-to-clipboard / download-as-file actions for the drawing.
     const { copyState, downloadSVG, copySVG, copyReady } = useSvgExportActions(drawingSVG);
-
     // True while a worker-backed operation is running (layout calculation or
     // clipboard copy), used to show a loading cursor across the whole app.
     const isBusy = isCalculating || copyState === "pending";
 
-    // Show/hide grid state (persisted)
+    // Show/hide grid state
     const [showGrid, setShowGrid] = useState<boolean>(() => {
         const stored = window.localStorage.getItem("view-options.showGrid");
         return stored === null ? true : stored === "true";
     });
 
-    // Show/hide table state (persisted)
+    // Show/hide table state
     const [showTable, setShowTable] = useState<boolean>(() => {
         const stored = window.localStorage.getItem("view-options.showTable");
         return stored === null ? true : stored === "true";
@@ -215,7 +212,6 @@ const App = () => {
                     </div>
                     <ThemeToggle />
                 </div>
-                {/* <hr /> */}
                 <div className="form-scroll">
                     <div className="section">
                         <h2>Calculation Inputs</h2>
@@ -280,6 +276,7 @@ const App = () => {
                                                 onKeyDown={onKeyDown}
                                                 onAcceptEmpty={onAcceptEmpty}
                                                 inputOnSubmitHandler={inputOnSubmitHandler}
+                                                requestSingle={requestSingle}
                                             />
                                         );
                                     })}
