@@ -24,6 +24,12 @@ const emptyLayoutResults: LayoutResults = {
 const SHOW_DELAY_MS = 150;
 const MIN_VISIBLE_MS = 300;
 
+type SingleCallback = (payload: SingleResultPayload) => void;
+type AllCallback = (payload: LayoutResults) => void;
+type CallbackEntry =
+    | { type: "single"; callback: SingleCallback; isPreview: boolean }
+    | { type: "all"; callback: AllCallback; isPreview: boolean };
+
 // Owns the tubesheet.worker.ts Web Worker.
 // Request/response handling, error/loading state, and announcements.
 // Supports concurrent CALCULATE_ALL/CALCULATE_SINGLE requests.
@@ -48,9 +54,9 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     const pendingAllResponsesRef = useRef(0);
     const pendingSingleResponsesRef = useRef(0);
 
-    // Use monotonic request IDs. Apply responses only if their requestId matches the
-    // latest for that channel, discarding older replies so out-of-order results
-    // are not returned.
+    // Registry for one‑off callbacks (live preview)
+    const pendingCallbacksRef = useRef<Map<number, CallbackEntry>>(new Map());
+
     const nextRequestIdRef = useRef(0);
     const latestAllRequestIdRef = useRef<number | null>(null);
     const latestSingleRequestIdRef = useRef<number | null>(null);
@@ -64,9 +70,7 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
 
     const completeCalculation = useCallback(() => {
         pendingCompletionsRef.current = Math.max(0, pendingCompletionsRef.current - 1);
-        if (pendingCompletionsRef.current === 0) {
-            setIsCalculating(false);
-        }
+        if (pendingCompletionsRef.current === 0) setIsCalculating(false);
     }, []);
 
     // Drain counter and call completeCalculation per recorded response.
@@ -74,14 +78,96 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         (counterRef: { current: number }) => {
             const count = counterRef.current;
             counterRef.current = 0;
-            for (let i = 0; i < count; i++) {
-                completeCalculation();
-            }
+            for (let i = 0; i < count; i++) completeCalculation();
         },
         [completeCalculation],
     );
 
-    // Create the worker once and wire up its message handler.
+    // Core dispatcher – stores callback for preview requests, skips loading badge for previews.
+    const makeRequest = useCallback(
+        (
+            type: "CALCULATE_SINGLE" | "CALCULATE_ALL",
+            payload: Record<string, unknown>,
+            callback?: SingleCallback | AllCallback,
+            isPreview = false,
+        ): number => {
+            if (!workerRef.current) {
+                throw new Error("Worker not initialized");
+            }
+            const requestId = ++nextRequestIdRef.current;
+            if (type === "CALCULATE_SINGLE") {
+                latestSingleRequestIdRef.current = requestId;
+            } else {
+                latestAllRequestIdRef.current = requestId;
+            }
+
+            if (callback) {
+                if (type === "CALCULATE_SINGLE") {
+                    pendingCallbacksRef.current.set(requestId, {
+                        type: "single",
+                        callback: callback as SingleCallback,
+                        isPreview,
+                    });
+                } else {
+                    pendingCallbacksRef.current.set(requestId, {
+                        type: "all",
+                        callback: callback as AllCallback,
+                        isPreview,
+                    });
+                }
+            }
+            if (!isPreview) beginCalculation();
+            workerRef.current.postMessage({ type, requestId, payload });
+            return requestId;
+        },
+        [beginCalculation],
+    );
+
+    // Public API for live preview (callback‑based, no loading badge)
+    const requestSingle = useCallback(
+        (payload: Record<string, unknown>, callback: SingleCallback, isPreview = true): number =>
+            makeRequest("CALCULATE_SINGLE", payload, callback, isPreview),
+        [makeRequest],
+    );
+
+    const requestAll = useCallback(
+        (payload: Record<string, unknown>, callback: AllCallback, isPreview = true): number =>
+            makeRequest("CALCULATE_ALL", payload, callback, isPreview),
+        [makeRequest],
+    );
+
+    // Legacy wrappers for committed calculations
+    const postCalculateSingle = useCallback(
+        (payload: Record<string, unknown>) => {
+            requestSingle(
+                payload,
+                (result) => {
+                    setCalcError(null);
+                    if (result) {
+                        setDrawingSVG(generateTubeSheetSVG(result));
+                        setLastSingleResult(result);
+                    }
+                },
+                false,
+            );
+        },
+        [requestSingle],
+    );
+
+    const postCalculateAll = useCallback(
+        (payload: Record<string, unknown>) => {
+            requestAll(
+                payload,
+                (result) => {
+                    setLayoutResults(result);
+                },
+                false,
+            );
+        },
+        [requestAll],
+    );
+
+    // Worker lifecycle
     useEffect(() => {
         const w = new Worker(new URL("../workers/tubesheet.worker.ts", import.meta.url), {
             type: "module",
@@ -90,43 +176,46 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         w.onmessage = (event) => {
             const { type, requestId, payload } = event.data;
 
+            // 1. One‑off callback (preview) takes precedence
+            const entry = pendingCallbacksRef.current.get(requestId);
+            if (entry) {
+                pendingCallbacksRef.current.delete(requestId);
+                if (entry.type === "single") {
+                    (entry.callback as SingleCallback)(payload as SingleResultPayload);
+                } else {
+                    (entry.callback as AllCallback)(payload as LayoutResults);
+                }
+                if (!entry.isPreview) completeCalculation();
+                return;
+            }
+
+            // 2. Normal state updates (committed results)
             if (type === "ALL_RESULTS") {
-                if (requestId !== latestAllRequestIdRef.current) {
-                    // Discard request if superseded and mark as complete
-                    // (drain "isCalculating").
-                    completeCalculation();
-                    return;
+                if (requestId === latestAllRequestIdRef.current) {
+                    pendingAllResponsesRef.current += 1;
+                    setLayoutResults(payload);
+                } else {
+                    completeCalculation(); // stale
                 }
-                // Count ALL_RESULTS now; an effect will drain and clear isCalculating.
-                pendingAllResponsesRef.current += 1;
-                setLayoutResults(payload);
-            }
-
-            if (type === "SINGLE_RESULT") {
-                if (requestId !== latestSingleRequestIdRef.current) {
+            } else if (type === "SINGLE_RESULT") {
+                if (requestId === latestSingleRequestIdRef.current) {
+                    pendingSingleResponsesRef.current += 1;
+                    setCalcError(null);
+                    setDrawingSVG(generateTubeSheetSVG(payload));
+                    setLastSingleResult(payload);
+                } else {
                     completeCalculation();
-                    return;
                 }
-                // Count SINGLE_RESULT and set SVG; TubeSheetSVG's onRendered clears isCalculating.
-                pendingSingleResponsesRef.current += 1;
-                setCalcError(null);
-                setDrawingSVG(generateTubeSheetSVG(payload));
-                setLastSingleResult(payload);
-            }
-
-            if (type === "ERROR") {
-                const { requestType } = event.data;
-                const latestIdForChannel =
-                    requestType === "CALCULATE_ALL"
+            } else if (type === "ERROR") {
+                const latestId =
+                    event.data.requestType === "CALCULATE_ALL"
                         ? latestAllRequestIdRef.current
                         : latestSingleRequestIdRef.current;
-
-                if (requestId !== latestIdForChannel) {
-                    // Discard error if superseded.
+                // Discard error if superseded.
+                if (requestId !== latestId) {
                     completeCalculation();
                     return;
                 }
-
                 console.error("Worker Error:", payload);
                 setCalcError(typeof payload === "string" ? payload : "Calculation failed.");
                 setAnnouncement(`Calculation failed: ${payload}`);
@@ -135,81 +224,43 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         };
 
         workerRef.current = w;
-
         return () => {
             w.terminate();
             workerRef.current = null;
         };
     }, [completeCalculation]);
 
-    // Debounce showing the loading badge.
+    // Loading badge: debounce show, minimum visibility
     useEffect(() => {
         if (isCalculating) {
-            const showTimer = window.setTimeout(() => {
+            const timer = setTimeout(() => {
                 loadingShownAtRef.current = Date.now();
                 setShowLoadingBadge(true);
             }, SHOW_DELAY_MS);
-
-            return () => clearTimeout(showTimer);
+            return () => clearTimeout(timer);
         }
-
-        // Calculation finished. If the badge never actually became visible
-        // the cleanup above already cancelled the timer.
-        if (loadingShownAtRef.current === null) {
-            return;
-        }
-
-        const elapsed = Date.now() - loadingShownAtRef.current;
-        const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
-
-        const hideTimer = window.setTimeout(() => {
+        if (loadingShownAtRef.current === null) return;
+        const remaining = Math.max(0, MIN_VISIBLE_MS - (Date.now() - loadingShownAtRef.current));
+        const timer = setTimeout(() => {
             setShowLoadingBadge(false);
             loadingShownAtRef.current = null;
         }, remaining);
-
-        return () => clearTimeout(hideTimer);
+        return () => clearTimeout(timer);
     }, [isCalculating]);
 
-    // After layoutResults commit: drain pending ALL_RESULTS count.
+    // Drain pending completions after results arrive
     useEffect(() => {
         drainCompletions(pendingAllResponsesRef);
     }, [layoutResults, drainCompletions]);
 
-    // Stable callback for TubeSheetSVG render.
     const onDrawingRendered = useCallback(() => {
-        // Drain pending SINGLE_RESULT count.
         drainCompletions(pendingSingleResponsesRef);
-
-        // Skip initial placeholder announcement
         if (!hasRenderedOnceRef.current) {
             hasRenderedOnceRef.current = true;
             return;
         }
-
         setAnnouncement("Layout updated.");
     }, [drainCompletions]);
-
-    const postCalculateSingle = useCallback(
-        (payload: Record<string, unknown>) => {
-            if (!workerRef.current) return;
-            const requestId = ++nextRequestIdRef.current;
-            latestSingleRequestIdRef.current = requestId;
-            beginCalculation();
-            workerRef.current.postMessage({ type: "CALCULATE_SINGLE", requestId, payload });
-        },
-        [beginCalculation],
-    );
-
-    const postCalculateAll = useCallback(
-        (payload: Record<string, unknown>) => {
-            if (!workerRef.current) return;
-            const requestId = ++nextRequestIdRef.current;
-            latestAllRequestIdRef.current = requestId;
-            beginCalculation();
-            workerRef.current.postMessage({ type: "CALCULATE_ALL", requestId, payload });
-        },
-        [beginCalculation],
-    );
 
     return {
         layoutResults,
@@ -223,5 +274,7 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         onDrawingRendered,
         postCalculateSingle,
         postCalculateAll,
+        requestSingle,
+        requestAll,
     };
 }
