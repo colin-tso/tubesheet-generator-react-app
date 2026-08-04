@@ -4,7 +4,7 @@
 
 ## About
 
-Tubesheet Layout Generator React App is a web app built with React, TypeScript, and Vite. It acts as a UI wrapper for the [`tubesheet-layout-generator`](https://github.com/colin-tso/tubesheet-generator) Node.js module, letting users define a shell-and-tube heat exchanger tubesheet layout and get back calculated properties and a rendered sketch.
+The Calculator and Visualiser for Tubesheet Layouts is a web app built with React, TypeScript, and Vite. It acts as a UI wrapper for the [`tubesheet-layout-generator`](https://github.com/colin-tso/tubesheet-generator) Node.js module, letting users define a shell-and-tube heat exchanger tubesheet layout and get back calculated properties and a rendered sketch.
 
 ## How it works
 
