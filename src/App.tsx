@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import packageJson from "../package.json";
 import {
@@ -7,6 +7,7 @@ import {
     ITubeSheetData,
 } from "./plugins/tubesheet-layout-generator";
 import { NumericField } from "./components/NumericField";
+import { PairedFieldRow } from "./components/PairedFieldRow";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
 import { ContextMenuItem } from "./components/context-menu";
@@ -24,6 +25,7 @@ import { numericFieldConfigs } from "./constants/numericFieldConfigs";
 import type { NumericFieldConfig } from "./constants/numericFieldConfigs";
 import { layoutOptionRows } from "./constants/layoutOptionRows";
 
+// --- Static config computation (moved outside component) ---
 const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
 const emptyData: ITubeSheetData = {
     tubeField: emptyTubeSheet.tubeField,
@@ -40,7 +42,7 @@ const placeholderSVG = generateTubeSheetSVG(emptyData);
 // Must match .viewport's base padding in index.css (desktop breakpoint).
 const VIEWPORT_BASE_PADDING = 48;
 
-// Cluster consecutive field configs that share a "row" id so they can be rendered side by side.
+// Cluster consecutive field configs that share a "row" id.
 const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<NumericFieldConfig[][]>(
     (rows, cfg) => {
         const lastRow = rows[rows.length - 1];
@@ -54,6 +56,26 @@ const numericFieldRows: NumericFieldConfig[][] = numericFieldConfigs.reduce<Nume
     [],
 );
 
+// Further cluster consecutive field-rows that share a "group" label.
+interface NumericFieldGroup {
+    label: string | undefined;
+    rows: NumericFieldConfig[][];
+}
+const numericFieldGroups: NumericFieldGroup[] = numericFieldRows.reduce<NumericFieldGroup[]>(
+    (groups, row) => {
+        const groupLabel = row[0]?.group;
+        const lastGroup = groups[groups.length - 1];
+        if (lastGroup?.label === groupLabel) {
+            lastGroup.rows.push(row);
+        } else {
+            groups.push({ label: groupLabel, rows: [row] });
+        }
+        return groups;
+    },
+    [],
+);
+
+// --- App component ---
 const App = () => {
     // Worker lifecycle, calculation results, loading/error/status state.
     const {
@@ -67,6 +89,7 @@ const App = () => {
         onDrawingRendered,
         postCalculateSingle,
         postCalculateAll,
+        requestSingle,
     } = useTubeSheetWorker(placeholderSVG);
 
     // All calculation-input field state, validation, and input handlers.
@@ -77,6 +100,7 @@ const App = () => {
         tubeClearance,
         pitchRatio,
         shellID,
+        layoutOption,
         layoutInputsDefined,
         layoutOptionSelected,
         onAcceptEmpty,
@@ -88,19 +112,18 @@ const App = () => {
     } = useLayoutForm({ lastSingleResult, postCalculateSingle, postCalculateAll });
 
     // Copy-to-clipboard / download-as-file actions for the drawing.
-    const { copyState, downloadSVG, copySVG } = useSvgExportActions(drawingSVG);
-
+    const { copyState, downloadSVG, copySVG, copyReady } = useSvgExportActions(drawingSVG);
     // True while a worker-backed operation is running (layout calculation or
     // clipboard copy), used to show a loading cursor across the whole app.
     const isBusy = isCalculating || copyState === "pending";
 
-    // Show/hide grid state (persisted)
+    // Show/hide grid state
     const [showGrid, setShowGrid] = useState<boolean>(() => {
         const stored = window.localStorage.getItem("view-options.showGrid");
         return stored === null ? true : stored === "true";
     });
 
-    // Show/hide table state (persisted)
+    // Show/hide table state
     const [showTable, setShowTable] = useState<boolean>(() => {
         const stored = window.localStorage.getItem("view-options.showTable");
         return stored === null ? true : stored === "true";
@@ -151,23 +174,45 @@ const App = () => {
         basePadding: VIEWPORT_BASE_PADDING,
     });
 
-    const viewportStyle = {
-        "--viewport-footer-reserve": `${viewportBottomReserve}px`,
-    } as CSSProperties;
+    // Stable references so ViewportPane's memo isn't broken every render.
+    const onToggleGrid = useCallback(() => setShowGrid((v) => !v), []);
+    const onToggleTable = useCallback(() => setShowTable((v) => !v), []);
 
-    const handleContextMenuCopyAction = () => {
+    const viewportStyle = useMemo(
+        () =>
+            ({
+                "--viewport-footer-reserve": `${viewportBottomReserve}px`,
+            }) as CSSProperties,
+        [viewportBottomReserve],
+    );
+
+    const handleContextMenuCopyAction = useCallback(() => {
         copySVG();
         requestClose(); // Initiates the safe unmount fade out
-    };
-    const handleContextMenuSaveAction = () => {
+    }, [copySVG, requestClose]);
+    const handleContextMenuSaveAction = useCallback(() => {
         downloadSVG();
         requestClose(); // Initiates the safe unmount fade out
-    };
-    const menuConfig: ContextMenuItem[] = [
-        { label: "Copy Image", icon: <CopyIcon />, onClick: () => handleContextMenuCopyAction() },
-        { label: "", isDivider: true, onClick: () => {} },
-        { label: "Save Image", icon: <SaveIcon />, onClick: () => handleContextMenuSaveAction() },
-    ];
+    }, [downloadSVG, requestClose]);
+
+    // Stable reference so ViewportPane's memo isn't broken every render.
+    const menuConfig: ContextMenuItem[] = useMemo(
+        () => [
+            {
+                label: "Copy Image",
+                icon: <CopyIcon />,
+                onClick: () => handleContextMenuCopyAction(),
+                disabled: !copyReady,
+            },
+            { label: "", isDivider: true, onClick: () => {} },
+            {
+                label: "Save Image",
+                icon: <SaveIcon />,
+                onClick: () => handleContextMenuSaveAction(),
+            },
+        ],
+        [handleContextMenuCopyAction, handleContextMenuSaveAction, copyReady],
+    );
 
     // JSX return
     return (
@@ -187,45 +232,78 @@ const App = () => {
                     </div>
                     <ThemeToggle />
                 </div>
-                {/* <hr /> */}
                 <div className="form-scroll">
                     <div className="section">
                         <h2>Calculation Inputs</h2>
-                        {numericFieldRows.map((row) => {
-                            const fields = row.map((cfg) => (
-                                <NumericField
-                                    key={cfg.id}
-                                    {...cfg}
-                                    value={fieldValues[cfg.id]}
-                                    pairedValue={
-                                        cfg.pairedWith ? fieldValues[cfg.pairedWith] : undefined
-                                    }
-                                    readOnly={cfg.calculated || isCalculating}
-                                    onBlur={cfg.calculated ? undefined : onBlur}
-                                    onKeyDown={cfg.calculated ? undefined : onKeyDown}
-                                    onAccept={
-                                        cfg.calculated
-                                            ? undefined
-                                            : (value) => onAcceptEmpty(value, cfg.id)
-                                    }
-                                    onSubmit={cfg.calculated ? undefined : inputOnSubmitHandler}
-                                />
-                            ));
+                        <div className="field-group-stack">
+                            {numericFieldGroups.map((group) => (
+                                <div
+                                    className="field-group-card"
+                                    key={group.label ?? group.rows[0]?.[0]?.id}
+                                >
+                                    {group.label && (
+                                        <h3 className="field-group-title">
+                                            {group.label}
+                                            {group.rows.length === 1 &&
+                                                group.rows[0].length === 2 &&
+                                                group.rows[0].some((cfg) => cfg.required) && (
+                                                    <span className="required-asterisk">*</span>
+                                                )}
+                                        </h3>
+                                    )}
+                                    {group.rows.map((row) => {
+                                        if (row.length === 1) {
+                                            const cfg = row[0];
+                                            return (
+                                                <NumericField
+                                                    key={cfg.id}
+                                                    {...cfg}
+                                                    value={fieldValues[cfg.id]}
+                                                    pairedValue={
+                                                        cfg.pairedWith
+                                                            ? fieldValues[cfg.pairedWith]
+                                                            : undefined
+                                                    }
+                                                    readOnly={cfg.calculated || isCalculating}
+                                                    onBlur={cfg.calculated ? undefined : onBlur}
+                                                    onKeyDown={
+                                                        cfg.calculated ? undefined : onKeyDown
+                                                    }
+                                                    onAccept={
+                                                        cfg.calculated
+                                                            ? undefined
+                                                            : (value) =>
+                                                                  onAcceptEmpty(value, cfg.id)
+                                                    }
+                                                    onSubmit={
+                                                        cfg.calculated
+                                                            ? undefined
+                                                            : inputOnSubmitHandler
+                                                    }
+                                                />
+                                            );
+                                        }
 
-                            if (row.length === 1) {
-                                return fields[0];
-                            }
-
-                            const rowHint = row.find((cfg) => cfg.rowHint)?.rowHint;
-                            return (
-                                <div key={row.map((cfg) => cfg.id).join("-")}>
-                                    <div className="field-row">{fields}</div>
-                                    {rowHint && <p className="field-row-hint">{rowHint}</p>}
+                                        return (
+                                            <PairedFieldRow
+                                                key={row.map((cfg) => cfg.id).join("-")}
+                                                row={row}
+                                                fieldValues={fieldValues}
+                                                layoutOption={layoutOption}
+                                                committedResult={lastSingleResult}
+                                                isCalculating={isCalculating}
+                                                onBlur={onBlur}
+                                                onKeyDown={onKeyDown}
+                                                onAcceptEmpty={onAcceptEmpty}
+                                                inputOnSubmitHandler={inputOnSubmitHandler}
+                                                requestSingle={requestSingle}
+                                            />
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })}
+                            ))}
+                        </div>
                     </div>
-                    <div className="divider" />
                     <LayoutOptionsList
                         rows={layoutOptionRows}
                         layoutResults={layoutResults}
@@ -248,8 +326,8 @@ const App = () => {
                 footerRef={footerRef}
                 showGrid={showGrid}
                 showTable={showTable}
-                onToggleGrid={() => setShowGrid((v) => !v)}
-                onToggleTable={() => setShowTable((v) => !v)}
+                onToggleGrid={onToggleGrid}
+                onToggleTable={onToggleTable}
                 viewportStyle={viewportStyle}
                 onContextMenu={openContextMenu}
                 contextMenuAnimationState={contextMenuAnimationState}
@@ -268,6 +346,7 @@ const App = () => {
                 drawingTableRequestedTubes={drawingTableRequestedTubes}
                 onTableRef={setTableEl}
                 copyState={copyState}
+                copyReady={copyReady}
                 onCopySVG={copySVG}
                 onDownloadSVG={downloadSVG}
             />

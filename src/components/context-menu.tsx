@@ -11,6 +11,7 @@ export interface ContextMenuItem {
     onClick: () => void;
     isDanger?: boolean;
     isDivider?: boolean;
+    disabled?: boolean;
 }
 
 interface ContextMenuProps {
@@ -99,7 +100,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 setFocusedIndex(prev);
             } else if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                if (focusedIndex >= 0) items[focusedIndex]?.onClick();
+                if (focusedIndex >= 0 && !items[focusedIndex]?.disabled) {
+                    items[focusedIndex]?.onClick();
+                }
             }
         };
 
@@ -150,13 +153,15 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                     <li
                         key={index}
                         role="menuitem"
+                        aria-disabled={item.disabled}
                         tabIndex={focusedIndex === index ? 0 : -1}
                         onMouseEnter={() => setFocusedIndex(index)}
                         onClick={(e) => {
                             e.stopPropagation(); // Avoid triggering App's raw context dismissals
+                            if (item.disabled) return;
                             item.onClick();
                         }}
-                        className={`context-menu-item ${item.isDanger ? "danger" : ""} ${focusedIndex === index ? "focus" : ""} ${
+                        className={`context-menu-item ${item.isDanger ? "danger" : ""} ${item.disabled ? "disabled" : ""} ${focusedIndex === index ? "focus" : ""} ${
                             isFirstSelectable ? "first" : ""
                         } ${isLastSelectable ? "last" : ""}`}
                     >

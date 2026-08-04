@@ -1,0 +1,76 @@
+name: "Master - PR Preview"
+
+# Deploys a temporary preview of the app to GitHub Pages whenever a PR from
+# 'dev' into 'master' is opened/updated, and deletes it when that PR is closed
+# (merged or not).
+# Previews live at:
+# https://colin-tso.github.io/tubesheet-generator-react-app/pr-preview/pr-<number>/
+on:
+    pull_request:
+        branches:
+            - master
+        types:
+            - opened
+            - reopened
+            - synchronize
+            - closed
+
+# Cancel any in-flight preview build for a PR if it's updated again before the
+# previous run finished, and make sure deploy/remove runs never race each other
+# on the gh-pages branch.
+concurrency:
+    group: pr-preview-${{ github.event.number }}
+    cancel-in-progress: true
+
+jobs:
+    preview:
+        name: "Deploy/Remove PR Preview"
+        # Only run for PRs that are actually proposing to merge dev -> master.
+        if: github.event.pull_request.head.ref == 'dev'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        env:
+            # Must match the "base" in vite.config.ts and the umbrella-dir
+            # below.
+            PAGES_BASE_PATH: /tubesheet-generator-react-app/
+            PREVIEW_UMBRELLA_DIR: pr-preview
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            # No need to build if the PR is being closed - the preview is just
+            # removed.
+            - name: Set up Node.js
+              if: github.event.action != 'closed'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24.x"
+                  cache: "npm"
+
+            - name: Install dependencies
+              if: github.event.action != 'closed'
+              run: npm ci
+
+            - name: Type-check
+              if: github.event.action != 'closed'
+              run: npx tsc -b
+
+            - name: Build with preview base path
+              if: github.event.action != 'closed'
+              # Override the app's base path so asset URLs resolve correctly
+              # when served from the .../pr-preview/pr-<number>/ subdirectory
+              # instead of the site root.
+              run: npx vite build --base="${PAGES_BASE_PATH}${PREVIEW_UMBRELLA_DIR}/pr-${{ github.event.number }}/"
+
+            - name: Deploy or remove PR preview
+              uses: rossjrw/pr-preview-action@v1
+              with:
+                  token: ${{ secrets.GH_ORG_PAT }}
+                  source-dir: ./build/
+                  preview-branch: gh-pages
+                  umbrella-dir: ${{ env.PREVIEW_UMBRELLA_DIR }}
+                  action: auto
+                  git-config-name: ${{ secrets.GH_ORG_NAME }}
+                  git-config-email: ${{ secrets.GH_ORG_EMAIL }}

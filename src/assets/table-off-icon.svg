@@ -8,76 +8,76 @@
    height="1.125pc"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-   <defs
+  <defs
      id="defs1">
-      <filter
+    <filter
        id="mask-powermask-path-effect6_inverse"
        style="color-interpolation-filters:sRGB"
        height="100"
        width="100"
        x="-50"
        y="-50">
-         <feColorMatrix
+      <feColorMatrix
          id="mask-powermask-path-effect6_primitive1"
          values="1"
          type="saturate"
          result="fbSourceGraphic" />
-         <feColorMatrix
+      <feColorMatrix
          id="mask-powermask-path-effect6_primitive2"
          values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
          in="fbSourceGraphic" />
-      </filter>
-      <mask
+    </filter>
+    <mask
        maskUnits="userSpaceOnUse"
        id="mask-powermask-path-effect6">
-         <path
+      <path
          id="mask-powermask-path-effect6_box"
          style="fill:#ffffff;fill-opacity:1"
          d="m 7,6.5 h 20 v 6 H 7 Z" />
-         <path
+      <path
          style="stroke-width:1;stroke-linecap:square;paint-order:stroke fill markers"
          d="M 6.5234375,2.4550781 4.53125,4.6972656 5.6523437,5.6933594 27.984375,25.539062 29.105469,26.535156 31.097656,24.292968 29.976561,23.296875 7.6445312,3.4511719 Z"
-         id="path6" 
-         fill="#000000"/>
-      </mask>
-      <mask
+         id="path6"
+         fill="#000000" />
+    </mask>
+    <mask
        maskUnits="userSpaceOnUse"
        id="mask-powermask-path-effect7">
-         <path
+      <path
          id="mask-powermask-path-effect7_box"
          style="fill:#ffffff;fill-opacity:1"
          d="m 6.25,5.75 h 21.5 v 19.5 H 6.25 Z" />
-         <path
+      <path
          style="stroke-width:1;stroke-linecap:square;paint-order:stroke fill markers"
          d="M 6.5234375,2.4550781 4.53125,4.6972656 5.6523437,5.6933594 27.984375,25.539062 29.105469,26.535156 31.097656,24.292968 29.976561,23.296875 7.6445312,3.4511719 Z"
          id="path7"
          fill="#000000" />
-      </mask>
-      <filter
+    </mask>
+    <filter
        id="mask-powermask-path-effect7_inverse"
        style="color-interpolation-filters:sRGB"
        height="100"
        width="100"
        x="-50"
        y="-50">
-         <feColorMatrix
+      <feColorMatrix
          id="mask-powermask-path-effect7_primitive1"
          values="1"
          type="saturate"
          result="fbSourceGraphic" />
-         <feColorMatrix
+      <feColorMatrix
          id="mask-powermask-path-effect7_primitive2"
          values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0 "
          in="fbSourceGraphic" />
-      </filter>
-   </defs>
-   <path
+    </filter>
+  </defs>
+  <path
      original-d="M 4.0507553,6.3116376 27.272897,26.949242"
      d="M 26.987329,26.660843 4.6556078,6.8145583"
      id="strikethrough"
      style="display:inline;stroke-width:3;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
      stroke="currentColor" />
-   <path
+  <path
      stroke="currentColor"
      stroke-linecap="round"
      stroke-linejoin="round"
@@ -85,10 +85,12 @@
      d="m 8,11.5 v -2 c 0,-1.1045695 0.8954305,-2 2,-2 h 14 c 1.104569,0 2,0.8954305 2,2 v 2 m -18,0 v 6 m 0,-6 h 6 m 12,0 v 6 m 0,-6 H 14 m 12,6 v 4 c 0,1.104569 -0.895431,2 -2,2 H 14 m 12,-6 H 14 m -6,0 v 4 c 0,1.104569 0.8954305,2 2,2 h 4 m -6,-6 h 6 m 0,-6 v 6 m 0,0 v 6 m 6,-12 v 12"
      id="table-lines"
      style="stroke-width:1.5;stroke-dasharray:none"
-     mask="url(#mask-powermask-path-effect7)" />
-   <path
+     mask="url(#mask-powermask-path-effect7)"
+     transform="matrix(1.2418252,0,0,1.2343174,-4.1110284,-3.63192)" />
+  <path
      fill="currentColor"
      d="m 8,9.5 a 2,2 0 0 1 2,-2 h 14 a 2,2 0 0 1 2,2 v 2 H 8 Z"
      id="table-fill"
-     mask="url(#mask-powermask-path-effect6)" />
+     mask="url(#mask-powermask-path-effect6)"
+     transform="matrix(1.2418252,0,0,1.2343174,-4.1110284,-3.63192)" />
 </svg>

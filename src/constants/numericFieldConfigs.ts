@@ -8,18 +8,40 @@ export type NumericFieldConfig = Omit<NumericFieldProps, "value" | "pairedValue"
     pairedWith?: string;
     // Shown once beneath a paired row, explaining the either/or relationship.
     rowHint?: string;
+    // Fields sharing the same "group" label are rendered together inside one
+    // titled card, so related inputs read as a set rather than a flat list.
+    group?: string;
 };
 
 export const numericFieldConfigs: NumericFieldConfig[] = [
     {
         id: "minTubes",
-        label: "Minimum number of tubes",
+        label: "Min # of tubes",
         placeholder: "e.g. 100",
         scale: 0,
         inputMode: "numeric",
         required: true,
         min: 0,
         minExclusive: true,
+        row: "minTubes-shellID",
+        pairedWith: "shellID",
+        pairedLabel: "Shell ID",
+        group: "Design Constraint",
+    },
+    {
+        id: "shellID",
+        label: "Shell ID",
+        placeholder: "e.g. 500",
+        scale: 2,
+        inputMode: "decimal",
+        required: true,
+        units: "mm",
+        min: 0,
+        minExclusive: true,
+        row: "minTubes-shellID",
+        pairedWith: "minTubes",
+        pairedLabel: "Min # of tubes",
+        group: "Design Constraint",
     },
     {
         id: "tubeOD",
@@ -31,6 +53,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         units: "mm",
         min: 0,
         minExclusive: true,
+        group: "Layout Parameters",
     },
     {
         id: "OTLtoShell",
@@ -41,6 +64,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         required: true,
         units: "mm",
         min: 0,
+        group: "Layout Parameters",
     },
     {
         id: "tubeClearance",
@@ -54,6 +78,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "clearance-pitch",
         pairedWith: "pitchRatio",
         pairedLabel: "pitch ratio",
+        group: "Tube Spacing",
     },
     {
         id: "pitchRatio",
@@ -66,14 +91,6 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         row: "clearance-pitch",
         pairedWith: "tubeClearance",
         pairedLabel: "tube clearance",
-        rowHint: "Set either value — the other is calculated automatically.",
-    },
-    {
-        id: "shellID",
-        label: "Custom shell ID",
-        placeholder: "Optional override",
-        scale: 2,
-        inputMode: "decimal",
-        units: "mm",
+        group: "Tube Spacing",
     },
 ];
