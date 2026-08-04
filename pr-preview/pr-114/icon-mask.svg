@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="824.14502"
+   class="tubesheet-svg"
+   margin="0"
+   padding="0"
+   viewBox="-412.0725 -412.072 206.03625 206.03625"
+   title="Tubesheet Layout Drawing"
+   desc="Shell ID: 132.17 mm; OTL: 122.17 mm; Tube OD: 50 mm; Pitch: 12.5; Pitch Ratio: 1.25; Pitch Layout: radial; Number of Tubes: 3;"
+   role="img"
+   version="1.1"
+   id="svg3"
+   width="824.14502"
+   sodipodi:docname="icon.svg"
+   inkscape:export-filename="icon-192.png"
+   inkscape:export-xdpi="31.695009"
+   inkscape:export-ydpi="31.695009"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.125"
+     inkscape:cx="332.88889"
+     inkscape:cy="355.11111"
+     inkscape:window-width="2560"
+     inkscape:window-height="1369"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3" />
+  <defs
+     id="defs3" />
+  <circle
+     cx="-309.05438"
+     cy="-309.05386"
+     r="66.084389"
+     stroke="#000000"
+     fill="none"
+     stroke-width="2"
+     id="circle1"
+     style="stroke-width:4.99999988;stroke-dasharray:none" />
+  <circle
+     cx="-309.05438"
+     cy="-309.05386"
+     r="61.084393"
+     stroke="#000000"
+     fill="none"
+     stroke-dasharray="8 4"
+     stroke-width="0.5"
+     id="circle2"
+     style="stroke-width:1.24999997;stroke-dasharray:4.99999988,2.49999994;stroke-dashoffset:0" />
+  <circle
+     cx="-309.05438"
+     cy="-272.96948"
+     r="25"
+     id="1"
+     stroke="#000000"
+     fill="none"
+     stroke-width="1"
+     style="stroke-width:3.74999991;stroke-dasharray:none" />
+  <circle
+     cx="-277.80438"
+     cy="-327.09607"
+     r="25"
+     id="2"
+     stroke="#000000"
+     fill="none"
+     stroke-width="1"
+     style="stroke-width:3.74999991;stroke-dasharray:none" />
+  <circle
+     cx="-340.30438"
+     cy="-327.09607"
+     r="25"
+     id="3"
+     stroke="#000000"
+     fill="none"
+     stroke-width="1"
+     style="stroke-width:3.74999991;stroke-dasharray:none" />
+  <line
+     x1="-381.74719"
+     y1="-309.05386"
+     x2="-236.36154"
+     y2="-309.05386"
+     stroke="#000000"
+     fill="none"
+     stroke-dasharray="8 4"
+     stroke-width="0.5"
+     id="line2"
+     style="stroke-width:1.24999997;stroke-dasharray:4.99999988,2.49999994;stroke-dashoffset:0" />
+  <line
+     x1="-309.05438"
+     y1="-381.7467"
+     x2="-309.05438"
+     y2="-236.36104"
+     stroke="#000000"
+     fill="none"
+     stroke-dasharray="8 4"
+     stroke-width="0.5"
+     id="line3"
+     style="stroke-width:1.24999997;stroke-dasharray:4.99999988,2.49999994;stroke-dashoffset:0" />
+</svg>
