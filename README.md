@@ -1,6 +1,6 @@
 # Calculator and Visualiser for Tubesheet Layouts
 
-![Calculator and Visualiser for Tubesheet Layouts](https://github.com/[username]/[reponame]/blob/[branch]/public/og-image.svg?raw=true&sanitize=true)
+![Calculator and Visualiser for Tubesheet Layouts](/public/og-image.svg?raw=true&sanitize=true)
 
 ## About
 
