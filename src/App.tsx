@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import packageJson from "../package.json";
 import {
@@ -174,28 +174,45 @@ const App = () => {
         basePadding: VIEWPORT_BASE_PADDING,
     });
 
-    const viewportStyle = {
-        "--viewport-footer-reserve": `${viewportBottomReserve}px`,
-    } as CSSProperties;
+    // Stable references so ViewportPane's memo isn't broken every render.
+    const onToggleGrid = useCallback(() => setShowGrid((v) => !v), []);
+    const onToggleTable = useCallback(() => setShowTable((v) => !v), []);
 
-    const handleContextMenuCopyAction = () => {
+    const viewportStyle = useMemo(
+        () =>
+            ({
+                "--viewport-footer-reserve": `${viewportBottomReserve}px`,
+            }) as CSSProperties,
+        [viewportBottomReserve],
+    );
+
+    const handleContextMenuCopyAction = useCallback(() => {
         copySVG();
         requestClose(); // Initiates the safe unmount fade out
-    };
-    const handleContextMenuSaveAction = () => {
+    }, [copySVG, requestClose]);
+    const handleContextMenuSaveAction = useCallback(() => {
         downloadSVG();
         requestClose(); // Initiates the safe unmount fade out
-    };
-    const menuConfig: ContextMenuItem[] = [
-        {
-            label: "Copy Image",
-            icon: <CopyIcon />,
-            onClick: () => handleContextMenuCopyAction(),
-            disabled: !copyReady,
-        },
-        { label: "", isDivider: true, onClick: () => {} },
-        { label: "Save Image", icon: <SaveIcon />, onClick: () => handleContextMenuSaveAction() },
-    ];
+    }, [downloadSVG, requestClose]);
+
+    // Stable reference so ViewportPane's memo isn't broken every render.
+    const menuConfig: ContextMenuItem[] = useMemo(
+        () => [
+            {
+                label: "Copy Image",
+                icon: <CopyIcon />,
+                onClick: () => handleContextMenuCopyAction(),
+                disabled: !copyReady,
+            },
+            { label: "", isDivider: true, onClick: () => {} },
+            {
+                label: "Save Image",
+                icon: <SaveIcon />,
+                onClick: () => handleContextMenuSaveAction(),
+            },
+        ],
+        [handleContextMenuCopyAction, handleContextMenuSaveAction, copyReady],
+    );
 
     // JSX return
     return (
@@ -309,8 +326,8 @@ const App = () => {
                 footerRef={footerRef}
                 showGrid={showGrid}
                 showTable={showTable}
-                onToggleGrid={() => setShowGrid((v) => !v)}
-                onToggleTable={() => setShowTable((v) => !v)}
+                onToggleGrid={onToggleGrid}
+                onToggleTable={onToggleTable}
                 viewportStyle={viewportStyle}
                 onContextMenu={openContextMenu}
                 contextMenuAnimationState={contextMenuAnimationState}
