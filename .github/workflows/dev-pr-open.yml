@@ -1,10 +1,13 @@
 name: "Dev - PR Open"
 on:
-    pull_request:
+    pull_request_target:
         branches:
             - dev
         types:
             - opened
+permissions:
+    pull-requests: write
+    contents: read
 jobs:
     add_comment:
         name: "Add Comment"
