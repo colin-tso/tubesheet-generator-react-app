@@ -29,8 +29,6 @@ interface PairedFieldRowProps {
     ) => number;
 }
 
-const PREVIEW_DEBOUNCE_MS = 350;
-
 export function PairedFieldRow({
     row,
     fieldValues,
@@ -58,7 +56,7 @@ export function PairedFieldRow({
         onKeyDown,
         onAcceptEmpty,
         inputOnSubmitHandler,
-        otlToShell: fieldValues.OTLtoShell,
+        OTLToShell: fieldValues.OTLtoShell,
         tubeOD: fieldValues.tubeOD,
         pitchRatio: fieldValues.pitchRatio,
         layoutOption,
@@ -69,25 +67,17 @@ export function PairedFieldRow({
             onKeyDown,
             onAcceptEmpty,
             inputOnSubmitHandler,
-            otlToShell: fieldValues.OTLtoShell,
+            OTLToShell: fieldValues.OTLtoShell,
             tubeOD: fieldValues.tubeOD,
             pitchRatio: fieldValues.pitchRatio,
             layoutOption,
         };
     });
 
-    const debounceRef = useRef<number | null>(null);
-    const draftRef = useRef<{ id: string; value: number } | null>(null);
-
     // Clear draft only when the user empties the field or invalidates it.
     const clearDraft = useCallback(() => {
-        if (debounceRef.current !== null) {
-            window.clearTimeout(debounceRef.current);
-            debounceRef.current = null;
-        }
-        draftRef.current = null;
         setPreviewTargetId(undefined);
-        cancelPreview(); // stop any pending worker
+        cancelPreview(); // stop any pending worker request
     }, [cancelPreview]);
 
     useEffect(() => clearDraft, [clearDraft]);
@@ -100,25 +90,13 @@ export function PairedFieldRow({
                 setRowTouched(true);
             }
             // Do NOT clear draft or cancel preview on blur – keep showing last preview.
-            if (debounceRef.current !== null) {
-                window.clearTimeout(debounceRef.current);
-                debounceRef.current = null;
-            }
             latest.current.onBlur(e);
         },
         [rowFieldIds],
     );
 
     const handleFieldKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" || e.key === "NumpadEnter" || e.key === "Tab") {
-            // Do NOT clear draft or cancel preview – keep showing last preview.
-            if (debounceRef.current !== null) {
-                window.clearTimeout(debounceRef.current);
-                debounceRef.current = null;
-            }
-            latest.current.onKeyDown(e);
-            return;
-        }
+        // Do NOT clear draft or cancel preview – keep showing last preview.
         latest.current.onKeyDown(e);
     }, []);
 
@@ -136,36 +114,27 @@ export function PairedFieldRow({
                 return;
             }
 
-            draftRef.current = { id: fieldId, value: parsed };
             setPreviewTargetId(fieldId === "minTubes" ? "shellID" : "minTubes");
 
-            if (debounceRef.current !== null) {
-                window.clearTimeout(debounceRef.current);
-            }
-            debounceRef.current = window.setTimeout(() => {
-                debounceRef.current = null;
-                const draft = draftRef.current;
-                if (!draft) return;
+            const { OTLToShell, tubeOD, pitchRatio, layoutOption: lo } = latest.current;
+            const geometryReady =
+                utils.isNumber(OTLToShell) &&
+                OTLToShell >= 0 &&
+                utils.isNumber(tubeOD) &&
+                tubeOD > 0 &&
+                utils.isNumber(pitchRatio) &&
+                pitchRatio >= 1;
+            if (!geometryReady) return;
 
-                const { otlToShell, tubeOD, pitchRatio, layoutOption: lo } = latest.current;
-                const geometryReady =
-                    utils.isNumber(otlToShell) &&
-                    otlToShell >= 0 &&
-                    utils.isNumber(tubeOD) &&
-                    tubeOD > 0 &&
-                    utils.isNumber(pitchRatio) &&
-                    pitchRatio >= 1;
-                if (!geometryReady) return;
-
-                requestPreview({
-                    OTLtoShell: otlToShell,
-                    tubeOD,
-                    pitchRatio,
-                    layoutOption: utils.isNumber(lo) ? lo : 30,
-                    minTubes: draft.id === "minTubes" ? draft.value : undefined,
-                    shellID: draft.id === "shellID" ? draft.value : undefined,
-                });
-            }, PREVIEW_DEBOUNCE_MS);
+            // useLivePreview already debounces – no second layer needed here.
+            requestPreview({
+                OTLtoShell: OTLToShell,
+                tubeOD,
+                pitchRatio,
+                layoutOption: utils.isNumber(lo) ? lo : 30,
+                minTubes: fieldId === "minTubes" ? parsed : undefined,
+                shellID: fieldId === "shellID" ? parsed : undefined,
+            });
         },
         [clearDraft, requestPreview],
     );
@@ -194,33 +163,43 @@ export function PairedFieldRow({
 
         let placeholder = cfg.placeholder;
 
-        // If we have a draft preview, show it (even after commit, until cleared).
-        if (isPreviewTarget && livePreview.status === "pending") {
-            placeholder = "…";
-        } else if (isPreviewTarget && livePreview.status === "ready" && livePreview.result) {
-            const previewValue =
-                cfg.id === "shellID"
-                    ? utils.isNumber(livePreview.result.shellID)
-                        ? formatMaskedNumber(livePreview.result.shellID, shellIDScale)
-                        : undefined
-                    : utils.isNumber(livePreview.result.numTubes)
-                      ? formatMaskedNumber(livePreview.result.numTubes, minTubesScale)
-                      : undefined;
-            if (previewValue) placeholder = previewValue;
-        } else if (isSizeRow) {
-            // No draft – fallback to committed result.
+        if (isSizeRow) {
+            // Last full calculation for the other field of the pair.
+            let committedValue: string | undefined;
             if (
                 cfg.id === "shellID" &&
                 utils.isNumber(fieldValues.minTubes) &&
                 utils.isNumber(minID)
             ) {
-                placeholder = formatMaskedNumber(minID, shellIDScale);
+                committedValue = formatMaskedNumber(minID, shellIDScale);
             } else if (
                 cfg.id === "minTubes" &&
                 utils.isNumber(fieldValues.shellID) &&
                 utils.isNumber(numTubesCommitted)
             ) {
-                placeholder = formatMaskedNumber(numTubesCommitted, minTubesScale);
+                committedValue = formatMaskedNumber(numTubesCommitted, minTubesScale);
+            }
+
+            // Most recent completed preview; persists until cancelled.
+            let previewValue: string | undefined;
+            if (isPreviewTarget && livePreview.result) {
+                previewValue =
+                    cfg.id === "shellID"
+                        ? utils.isNumber(livePreview.result.shellID)
+                            ? formatMaskedNumber(livePreview.result.shellID, shellIDScale)
+                            : undefined
+                        : utils.isNumber(livePreview.result.numTubes)
+                          ? formatMaskedNumber(livePreview.result.numTubes, minTubesScale)
+                          : undefined;
+            }
+
+            // Prefer preview, then committed, then a loading placeholder.
+            if (previewValue) {
+                placeholder = previewValue;
+            } else if (committedValue) {
+                placeholder = committedValue;
+            } else if (isPreviewTarget && livePreview.status === "pending") {
+                placeholder = "…";
             }
         }
 
