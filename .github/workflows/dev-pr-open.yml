@@ -5,6 +5,9 @@ on:
             - dev
         types:
             - opened
+permissions:
+    pull-requests: write
+    contents: read
 jobs:
     add_comment:
         name: "Add Comment"
