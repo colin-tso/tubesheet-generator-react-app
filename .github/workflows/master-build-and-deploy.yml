@@ -3,8 +3,11 @@ name: Deploy to GitHub Pages
 on:
     push:
         branches: [master]
-    pull_request:
-        branches: [master]
+
+# Avoid two deploys racing each other on the gh-pages branch.
+concurrency:
+    group: master-deploy
+    cancel-in-progress: false
 
 jobs:
     build:
