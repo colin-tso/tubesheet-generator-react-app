@@ -1,4 +1,6 @@
-# Tubesheet Layout Generator React App
+# Calculator and Visualiser for Tubesheet Layouts
+
+![Calculator and Visualiser for Tubesheet Layouts](/public/og-image.svg?raw=true&sanitize=true)
 
 ## About
 
