@@ -43,6 +43,7 @@
   --redline-light: hsl(0, 74%, 42%);
   --redline-glow-light: hsl(0, 74%, 42%, 20%);
   --greenline-light: hsl(135, 74%, 42%);
+  --greenline-glow-light: hsl(135, 74%, 42%, 20%);
   --preferred-light: hsl(214, 68%, 42%);
   --box-shadow-light-1: hsla(0, 0%, 0%, 0.3);
   --box-shadow-light-2: hsla(0, 0%, 0%, 0.1);
@@ -67,6 +68,7 @@
   --redline-dark: hsl(0, 84%, 66%);
   --redline-glow-dark: hsl(0, 84%, 66%, 20%);
   --greenline-dark: hsl(135, 84%, 66%);
+  --greenline-glow-dark: hsl(135, 84%, 66%, 20%);
   --preferred-dark: hsl(212, 84%, 76%);
   --box-shadow-dark-1: hsla(0, 0%, 0%, 0.7);
   --box-shadow-dark-2: hsla(0, 0%, 0%, 0.5);
@@ -91,6 +93,7 @@
   --redline: var(--redline-light);
   --redline-glow: var(--redline-glow-light);
   --greenline: var(--greenline-light);
+  --greenline-glow: var(--greenline-glow-light);
   --preferred: var(--preferred-light);
   --box-shadow-1: var(--box-shadow-light-1);
   --box-shadow-2: var(--box-shadow-light-2);
@@ -125,6 +128,7 @@
   --redline: var(--redline-dark);
   --redline-glow: var(--redline-glow-dark);
   --greenline: var(--greenline-dark);
+  --greenline-glow: var(--greenline-glow-dark);
   --preferred: var(--preferred-dark);
   --box-shadow-1: var(--box-shadow-dark-1);
   --box-shadow-2: var(--box-shadow-dark-2);
@@ -372,7 +376,7 @@ hr {
 }
 
 .section {
-  margin-bottom: 26px;
+  margin-bottom: 12px;
 }
 
 .field {
@@ -384,17 +388,75 @@ hr {
   margin-bottom: 0;
 }
 
+/* Stack of titled cards grouping related inputs (Tube geometry, Shell
+   constraints, ...) so the form reads as clustered sets rather than one
+   flat list of same-weight fields. */
+.field-group-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field-group-card {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background-color: var(--panel);
+}
+
+.field-group-card .field:last-child {
+  margin-bottom: 0;
+}
+
+/* Card title sits a step below the field labels below it (12.5px, bold,
+   full-contrast ink) so it reads as a category header, not another field. */
+.field-group-title {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+
+  margin: 0 0 12px;
+  padding: 0;
+
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Wrapper for a paired either/or row plus its hint, standing in for the
+   .field spacing that individual fields normally provide. */
+.field-row-group {
+  margin-bottom: 1rem;
+}
+
+.field-row-group:last-child {
+  margin-bottom: 0;
+}
+
 /* Two fields shown side by side, e.g. tube clearance / pitch ratio, where
    only one of the pair is actually required. */
 .field-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
   align-items: start;
 }
 
 .field-row .field {
   margin-bottom: 0;
+}
+
+.field-row-or {
+  align-self: center;
+
+  margin-top: 20px;
+
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
 }
 
 .field-row-hint {
@@ -405,6 +467,10 @@ hr {
   font-weight: 400;
   color: var(--muted);
   letter-spacing: 0.01em;
+}
+
+.field-row-group .field-row-hint {
+  margin-bottom: 0;
 }
 
 .field-label {
@@ -467,6 +533,18 @@ input[type="text"]:focus {
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
 
+/* In dark mode, panel/card backgrounds and input backgrounds sit close
+   enough in lightness that the default --line border reads faintly.
+   Lighten it specifically for dark mode so field boundaries stay legible
+   without needing to touch the light-mode contrast at all. */
+[data-theme="dark"] input[type="text"] {
+  border-color: hsl(212, 24%, 40%);
+}
+
+[data-theme="dark"] input[type="text"]:focus {
+  border-color: var(--blue);
+}
+
 input.calculated-field[type="text"]:read-only {
   color: var(--input-readonly-text);
   background-color: var(--input-readonly-background);
@@ -479,6 +557,15 @@ input[type="text"].field-invalid {
 input[type="text"].field-invalid:focus {
   border-color: var(--redline);
   box-shadow: 0 0 0 3px var(--redline-glow);
+}
+
+input[type="text"].field-valid {
+  border-color: var(--greenline);
+}
+
+input[type="text"].field-valid:focus {
+  border-color: var(--greenline);
+  box-shadow: 0 0 0 3px var(--greenline-glow);
 }
 
 .field-error {
@@ -923,8 +1010,23 @@ footer a {
 
   display: flex;
   flex-direction: column;
-  gap: 6px;
   align-items: flex-end;
+}
+
+/* Shared card wrapping the grid/table toggle pair, so the two controls
+   read as one grouped cluster instead of two independently-bordered
+   buttons floating next to each other. */
+.viewport-options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  padding: 4px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+
+  background-color: var(--panel);
+  box-shadow: var(--elevation-low);
 }
 
 .grid-toggle,
@@ -938,7 +1040,7 @@ footer a {
   align-items: center;
 
   padding: 5px 5px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-sm);
 
   font-family: var(--font-mono);
@@ -948,7 +1050,7 @@ footer a {
   letter-spacing: 0.08em;
 
   opacity: 0.8;
-  background-color: var(--panel);
+  background-color: transparent;
 
   transition:
     color var(--transition),
@@ -1261,11 +1363,26 @@ footer a {
 .viewport-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   align-items: flex-end;
 
   min-width: 0;
   margin-left: auto;
+}
+
+/* Shared card wrapping copy + save, so the export actions read as one
+   grouped cluster (matching .viewport-options-group above) instead of
+   two independently-shadowed buttons stacked next to each other. */
+.viewport-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  padding: 4px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+
+  background-color: var(--panel);
+  box-shadow: var(--elevation-low);
 }
 
 .tubesheet-data-table {
@@ -1325,12 +1442,14 @@ footer a {
   gap: 0;
   align-items: center;
 
-  padding: 9px 9px;
-  border-radius: var(--radius-md);
+  padding: 7px 7px;
+  border-radius: var(--radius-sm);
 
-  box-shadow: var(--elevation-low);
-
-  transition: padding var(--transition);
+  transition:
+    padding var(--transition),
+    border var(--transition),
+    color var(--transition),
+    background-color var(--transition);
 }
 
 /* Label renders as a floating tooltip to the left of the button instead
@@ -1411,9 +1530,9 @@ footer a {
 }
 
 .copy-button {
-  border: 1.5px solid var(--line);
+  border: 1.5px solid transparent;
   color: var(--ink);
-  background-color: var(--panel);
+  background-color: transparent;
   box-shadow: none;
 }
 
@@ -1539,6 +1658,17 @@ footer a {
   color: var(--redline);
 }
 
+.context-menu-item.disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.context-menu-item.disabled.focus {
+  color: var(--muted);
+  background-color: transparent;
+}
+
 .context-menu-item.focus {
   color: var(--panel);
   background-color: var(--blue);
@@ -1604,7 +1734,6 @@ footer a {
   .viewport.has-table {
     flex-direction: column;
     gap: 16px;
-    padding-bottom: 24px;
   }
   .viewport.has-table .viewport-overlay-footer {
     position: static;
@@ -1628,10 +1757,21 @@ footer a {
     padding: 8px;
   }
 
+  .viewport,
+  .viewport.has-table {
+    padding: 16px;
+  }
+
+  .viewport-options {
+    top: 16px;
+    right: 16px;
+  }
+
   .viewport-label {
     top: 14px;
     font-size: 9.5px;
   }
+
   .reg-tl,
   .reg-tr,
   .reg-bl,
@@ -1660,13 +1800,6 @@ footer a {
     top: 40px;
   }
 
-  /* Tighten insets on mobile */
-  .viewport-overlay-footer {
-    right: 14px;
-    bottom: 14px;
-    left: 14px;
-  }
-
   .btn-label {
     font-size: calc(var(--options-btn-font-size) *0.92);
   }
@@ -1674,12 +1807,6 @@ footer a {
   .btn-icon {
     width: calc(var(--options-btn-font-size) *0.92);
     height: calc(var(--options-btn-font-size) *0.92);
-  }
-
-  .save-button,
-  .copy-button {
-    padding: 8px 12px;
-    font-size: 11.5px;
   }
 
   .tubesheet-data-table {

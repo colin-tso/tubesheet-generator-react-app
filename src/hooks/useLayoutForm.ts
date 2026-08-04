@@ -51,7 +51,8 @@ type FieldAction =
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
     | { type: "SET_PITCH_RATIO"; value: number | undefined };
 
-// Distinguish absent override (use fallback) from explicit undefined (clea// field) as ?? can't distinguish this difference.
+// Distinguish absent override (use fallback) from explicit undefined as ??
+// can't distinguish this difference.
 function withOverride(
     overrides: Record<string, number | undefined> | undefined,
     key: string,
@@ -112,18 +113,21 @@ export function useLayoutForm({
 }: UseLayoutFormOptions) {
     const [fields, dispatch] = useReducer(fieldsReducer, initialFieldValues);
 
-    // Derived directly from fields — no need for separate state or an effect to sync it.
+    // Derived directly from fields — no need for separate state or an effect to
+    // sync it.
+    const hasMinTubes = utils.isNumber(fields.minTubes) && fields.minTubes > 0;
+    const hasShellID = utils.isNumber(fields.shellID) && fields.shellID > 0;
+
     const layoutInputsDefined =
         utils.isNumber(fields.OTLtoShell) &&
         utils.isNumber(fields.tubeOD) &&
         utils.isNumber(fields.tubeClearance) &&
         utils.isNumber(fields.pitchRatio) &&
-        utils.isNumber(fields.minTubes) &&
         fields.OTLtoShell >= 0 &&
         fields.tubeOD > 0 &&
         fields.tubeClearance >= 0 &&
         fields.pitchRatio >= 1 &&
-        fields.minTubes > 0;
+        (hasMinTubes || hasShellID);
 
     const layoutOptionSelected = utils.isNumber(fields.layoutOption);
 
@@ -238,21 +242,52 @@ export function useLayoutForm({
             return;
         }
 
-        // shellID: recalculate on change commit
+        // shellID: last-edited wins, so committing a value here clears any
+        // min-tubes value and recalculates using the new shell ID.
         if (name === "shellID") {
             const changed = fields.shellID !== parsed;
-            setGenericField(name, parsed);
-            if (changed) {
-                requestAllLayoutResults({ shellID: parsed });
+            const clearsMinTubes = utils.isNumber(fields.minTubes);
+            setGenericField("shellID", parsed);
+            if (clearsMinTubes) {
+                setGenericField("minTubes", undefined);
             }
-            if (changed && layoutInputsDefined && utils.isNumber(fields.layoutOption)) {
-                triggerSingleCalculation({ shellID: parsed });
+            if (changed || clearsMinTubes) {
+                requestAllLayoutResults({ shellID: parsed, minTubes: undefined });
+            }
+            if (
+                (changed || clearsMinTubes) &&
+                layoutInputsDefined &&
+                utils.isNumber(fields.layoutOption)
+            ) {
+                triggerSingleCalculation({ shellID: parsed, minTubes: undefined });
             }
             return;
         }
 
-        // minTubes/tubeOD/OTLtoShell: recalculate on change commit
-        if (name === "minTubes" || name === "tubeOD" || name === "OTLtoShell") {
+        // minTubes: last-edited wins, so committing a value here clears any
+        // custom shell ID and recalculates using the new min-tubes count.
+        if (name === "minTubes") {
+            const changed = fields.minTubes !== parsed;
+            const clearsShellID = utils.isNumber(fields.shellID);
+            setGenericField("minTubes", parsed);
+            if (clearsShellID) {
+                setGenericField("shellID", undefined);
+            }
+            if (changed || clearsShellID) {
+                requestAllLayoutResults({ minTubes: parsed, shellID: undefined });
+            }
+            if (
+                (changed || clearsShellID) &&
+                layoutInputsDefined &&
+                utils.isNumber(fields.layoutOption)
+            ) {
+                triggerSingleCalculation({ minTubes: parsed, shellID: undefined });
+            }
+            return;
+        }
+
+        // tubeOD/OTLtoShell: recalculate on change commit
+        if (name === "tubeOD" || name === "OTLtoShell") {
             const changed = fields[name] !== parsed;
             setGenericField(name, parsed);
             if (changed) {
@@ -340,8 +375,8 @@ export function useLayoutForm({
 
         const currentValue = comparableValues[name];
         const unchanged = (() => {
-            // For "tubeClearance" and "pitchRatio", compare values at
-            // display precision (2 decimals).
+            // For "tubeClearance" and "pitchRatio", compare values at display
+            // precision (2 decimals).
             if (name === "tubeClearance" || name === "pitchRatio") {
                 if (utils.isNumber(committed) && utils.isNumber(currentValue)) {
                     return utils.trunc(currentValue, 2) === utils.trunc(committed, 2);
@@ -381,14 +416,18 @@ export function useLayoutForm({
             nextTubeClearance = (committed - 1) * fields.tubeOD;
         }
 
-        // Nothing to recalculate if this field's value is unchanged.
+        // Nothing to recalculate if this field's value is unchanged. Note: name
+        // is never "shellID" here (handled and returned above), but committing
+        // minTubes still needs to override shellID to undefined — onBlur
+        // already dispatched that clear, but the dispatch hasn't landed in this
+        // closure's "fields" yet, so `fields.shellID` here is stale.
         const next = {
             minTubes: name === "minTubes" ? committed : fields.minTubes,
             tubeOD: name === "tubeOD" ? committed : fields.tubeOD,
             OTLtoShell: name === "OTLtoShell" ? committed : fields.OTLtoShell,
             tubeClearance: nextTubeClearance,
             pitchRatio: nextPitchRatio,
-            shellID: name === "shellID" ? committed : fields.shellID,
+            shellID: name === "minTubes" ? undefined : fields.shellID,
         };
 
         const inputsValid =
@@ -396,12 +435,12 @@ export function useLayoutForm({
             utils.isNumber(next.tubeOD) &&
             utils.isNumber(next.tubeClearance) &&
             utils.isNumber(next.pitchRatio) &&
-            utils.isNumber(next.minTubes) &&
             next.OTLtoShell >= 0 &&
             next.tubeOD > 0 &&
             next.tubeClearance >= 0 &&
             next.pitchRatio >= 1 &&
-            next.minTubes > 0;
+            ((utils.isNumber(next.minTubes) && next.minTubes > 0) ||
+                (utils.isNumber(next.shellID) && next.shellID > 0));
 
         if (!inputsValid || !utils.isNumber(fields.layoutOption)) {
             return;
@@ -430,9 +469,9 @@ export function useLayoutForm({
         triggerSingleCalculation({ overrideLayout: parsedValue });
     };
 
-    // Keep actualTubes synced with a custom shell ID via the worker instead
-    // of rebuilding TubeSheet on the main thread. The worker response is
-    // handled by the lastSingleResult effect below.
+    // Keep actualTubes synced with a custom shell ID via the worker instead of
+    // rebuilding TubeSheet on the main thread. The worker response is handled
+    // by the lastSingleResult effect below.
     useEffect(() => {
         if (
             !utils.isNumber(fields.layoutOption) ||
@@ -454,7 +493,8 @@ export function useLayoutForm({
         triggerSingleCalculation,
     ]);
 
-    // If a SINGLE_RESULT came back for a custom shell ID, sync actual tubes to it.
+    // If a SINGLE_RESULT came back for a custom shell ID, sync actual tubes to
+    // it.
     useEffect(() => {
         if (lastSingleResult?.shellID && lastSingleResult?.numTubes) {
             dispatch({
