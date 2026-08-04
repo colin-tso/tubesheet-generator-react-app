@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { MouseEvent, RefObject } from "react";
 
 interface Position {
@@ -33,23 +33,27 @@ export function useContextMenu(containerRef: RefObject<HTMLDivElement | null>) {
         };
     }, [contextMenuAnimationState]);
 
-    const openContextMenu = (e: MouseEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        if (
-            (e.target as HTMLElement).closest("button") ||
-            (e.target as HTMLElement).closest(".viewport-options") ||
-            (e.target as HTMLElement).closest(".viewport-actions")
-        )
-            return;
-        if (!containerRef.current) return;
+    // useCallback so consumers memoizing on these (e.g. ViewportPane) stay stable.
+    const openContextMenu = useCallback(
+        (e: MouseEvent<HTMLDivElement>) => {
+            e.preventDefault();
+            if (
+                (e.target as HTMLElement).closest("button") ||
+                (e.target as HTMLElement).closest(".viewport-options") ||
+                (e.target as HTMLElement).closest(".viewport-actions")
+            )
+                return;
+            if (!containerRef.current) return;
 
-        const rect = containerRef.current.getBoundingClientRect();
-        setContextMenuPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-        setContextMenuAnimationState("fading-in");
-    };
+            const rect = containerRef.current.getBoundingClientRect();
+            setContextMenuPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+            setContextMenuAnimationState("fading-in");
+        },
+        [containerRef],
+    );
 
-    const requestClose = () => setContextMenuAnimationState("fading-out");
-    const onAnimationEnd = () => setContextMenuAnimationState("idle");
+    const requestClose = useCallback(() => setContextMenuAnimationState("fading-out"), []);
+    const onAnimationEnd = useCallback(() => setContextMenuAnimationState("idle"), []);
 
     return {
         contextMenuPos,
