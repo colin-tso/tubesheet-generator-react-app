@@ -11,6 +11,9 @@ concurrency:
 
 jobs:
     build:
+        permissions:
+            contents: write
+            pages: write
         runs-on: ubuntu-latest
 
         strategy:
@@ -48,5 +51,5 @@ jobs:
               env:
                   user_name: "github-actions[bot]"
                   user_email: "github-actions[bot]@users.noreply.github.com"
-                  github_token: ${{ SECRETS.GH_ORG_PAT }}
-                  repository: ${{ GITHUB.REPOSITORY }}
+                  github_token: ${{ secrets.GH_ORG_PAT }}
+                  repository: ${{ github.repository }}
