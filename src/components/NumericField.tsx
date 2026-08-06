@@ -1,8 +1,7 @@
 import { memo, useState } from "react";
 import type { KeyboardEvent, SyntheticEvent, SubmitEvent, InputHTMLAttributes } from "react";
-import { IMaskInput } from "react-imask";
+import { NumericFormat } from "react-number-format";
 import { utils } from "../utils";
-import { MASK_RADIX, MASK_THOUSANDS_SEPARATOR } from "../utils/maskFormat";
 
 export interface NumericFieldProps {
     id: string;
@@ -21,9 +20,19 @@ export interface NumericFieldProps {
     pairedLabel?: string;
     touched?: boolean;
     hideAsterisk?: boolean;
+    // True when "value" is a live-preview number shown for direct editing, not
+    // yet an actual user-committed value. Suppresses the valid/green state
+    // until the user overrides it for real.
+    isPreview?: boolean;
+    onFocus?: (e: SyntheticEvent<HTMLInputElement, Event>) => void;
     onBlur?: (e: SyntheticEvent<HTMLInputElement, Event>) => void;
     onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
-    onAccept?: (value: string) => void;
+    // "isUserEdit" is true for a real keystroke, and false when
+    // react-number-format re-fires onValueChange because "value" was set
+    // programmatically (e.g. a live preview updating) rather than typed by the
+    // user — react-number-format reports this directly via sourceInfo.source
+    // ("event" vs "prop"), instead of us having to infer it.
+    onAccept?: (value: string, isUserEdit: boolean) => void;
     onSubmit?: (e: SubmitEvent<HTMLInputElement>) => void;
 }
 
@@ -44,6 +53,8 @@ function NumericFieldImpl({
     pairedLabel,
     touched: touchedProp,
     hideAsterisk = false,
+    isPreview = false,
+    onFocus,
     onBlur,
     onKeyDown,
     onAccept,
@@ -78,8 +89,9 @@ function NumericFieldImpl({
     const errorId = `${id}-error`;
 
     // Positive feedback for a field that actually has a value and satisfies its
-    // own constraints, independent of "touched".
-    const isValid = !readOnly && !calculated && utils.isNumber(value) && !outOfRange;
+    // own constraints, independent of "touched". A displayed preview doesn't
+    // count until the user actually overrides it.
+    const isValid = !readOnly && !calculated && !isPreview && utils.isNumber(value) && !outOfRange;
 
     // Mirrors the error logic above for a paired field to satisft native HTML
     // validation triggered by the submit button
@@ -99,26 +111,26 @@ function NumericFieldImpl({
                 {required && !hideAsterisk && <span className="required-asterisk">*</span>}
             </label>
             <div className="input-group">
-                <IMaskInput
+                <NumericFormat
                     className={`value-input${calculated ? " calculated-field" : ""}${
                         hasError ? " field-invalid" : ""
-                    }${isValid ? " field-valid" : ""}`}
+                    }${isValid ? " field-valid" : ""}${isPreview ? " field-preview" : ""}`}
                     id={id}
                     name={id}
                     readOnly={readOnly}
                     type="text"
                     autoComplete="off"
                     placeholder={placeholder}
-                    mask={Number}
-                    scale={scale}
-                    min={0}
-                    radix={MASK_RADIX}
-                    thousandsSeparator={MASK_THOUSANDS_SEPARATOR}
-                    value={!utils.isNumber(value) ? "" : value.toString()}
+                    decimalScale={scale}
+                    allowNegative={false}
+                    thousandSeparator=","
+                    value={utils.isNumber(value) ? value : ""}
+                    onFocus={onFocus}
                     onBlur={handleBlur}
                     onKeyDown={onKeyDown}
-                    onAccept={onAccept}
-                    onChange={() => {}}
+                    onValueChange={(values, sourceInfo) =>
+                        onAccept?.(values.value, sourceInfo.source === "event")
+                    }
                     onSubmit={onSubmit}
                     inputMode={inputMode}
                     required={domRequired}
@@ -136,9 +148,8 @@ function NumericFieldImpl({
     );
 }
 
-// react-imask's underlying component unconditionally re-applies its "value"
-// prop on every update (not just when it actually changes), so if this field
-// re-rendered on every keystroke elsewhere in the app for unrelated reasons, it
-// would keep overriding whatever the user just typed. Memo means a re-render
-// only reaches the mask when one of this field's own props has changed.
+// react-number-format still re-runs formatting on every re-render reachable by
+// the mask, so an unrelated re-render mid-edit could still disrupt typing. Memo
+// means a re-render only reaches the input when one of this field's own props
+// has actually changed.
 export const NumericField = memo(NumericFieldImpl);

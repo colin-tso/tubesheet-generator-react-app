@@ -28,6 +28,14 @@ export const utils = {
             (typeof x === "string" && Number.isFinite(+x.replace(",", "")) && x.trim() !== "")
         );
     },
+    // Shared with the tubeClearance/pitchRatio paired-field preview so the
+    // live-preview number and the committed value use the same formula.
+    pitchRatioFromClearance(tubeOD: number | undefined, clearance: number): number | undefined {
+        return this.isNumber(tubeOD) && tubeOD > 0 ? 1 + clearance / tubeOD : undefined;
+    },
+    clearanceFromPitchRatio(tubeOD: number | undefined, pitchRatio: number): number | undefined {
+        return this.isNumber(tubeOD) ? (pitchRatio - 1) * tubeOD : undefined;
+    },
     stringToNumber(x: string) {
         return parseFloat(x.replace(",", ""));
     },
