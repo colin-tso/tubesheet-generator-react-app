@@ -62,7 +62,7 @@ npm install
 ## Key Dependencies
 
 - [`tubesheet-layout-generator`](https://github.com/colin-tso/tubesheet-generator) — the underlying layout calculation module (used via the `plugins/` wrapper)
-- `react-imask` — masked numeric inputs
+- `react-number-format` — masked numeric inputs
 - `lodash.memoize` — memoisation for calculation caching
 
 See `package.json` for the full dependency list.
