@@ -78,9 +78,7 @@ function fieldsReducer(state: FieldValues, action: FieldAction): FieldValues {
                 return state;
             }
             const pitchRatio =
-                utils.isNumber(state.tubeOD) && state.tubeOD > 0
-                    ? 1 + action.value / state.tubeOD
-                    : state.pitchRatio;
+                utils.pitchRatioFromClearance(state.tubeOD, action.value) ?? state.pitchRatio;
             return { ...state, tubeClearance: action.value, pitchRatio };
         }
 
@@ -91,9 +89,8 @@ function fieldsReducer(state: FieldValues, action: FieldAction): FieldValues {
             if (unchangedAtDisplayPrecision(state.pitchRatio, action.value)) {
                 return state;
             }
-            const tubeClearance = utils.isNumber(state.tubeOD)
-                ? (action.value - 1) * state.tubeOD
-                : state.tubeClearance;
+            const tubeClearance =
+                utils.clearanceFromPitchRatio(state.tubeOD, action.value) ?? state.tubeClearance;
             return { ...state, pitchRatio: action.value, tubeClearance };
         }
 
@@ -227,8 +224,9 @@ export function useLayoutForm({
         if (name === "tubeClearance") {
             const changed = !unchangedAtDisplayPrecision(fields.tubeClearance, parsed);
             dispatch({ type: "SET_TUBE_CLEARANCE", value: parsed });
-            if (changed && utils.isNumber(fields.tubeOD) && fields.tubeOD > 0) {
-                requestAllLayoutResults({ pitchRatio: 1 + parsed / fields.tubeOD });
+            const pitchRatio = utils.pitchRatioFromClearance(fields.tubeOD, parsed);
+            if (changed && utils.isNumber(pitchRatio)) {
+                requestAllLayoutResults({ pitchRatio });
             }
             return;
         }
