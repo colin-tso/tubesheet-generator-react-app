@@ -5,10 +5,14 @@ on:
             - dev
         types:
             - opened
+
 jobs:
     add_comment:
         name: "Add Comment"
         runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
+            contents: read
         steps:
             - uses: mshick/add-pr-comment@v1
               with:
