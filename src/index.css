@@ -797,7 +797,7 @@ input[type="text"].field-preview:focus {
 
   font-family: var(--font-mono);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink);
   text-align: center;
 }
