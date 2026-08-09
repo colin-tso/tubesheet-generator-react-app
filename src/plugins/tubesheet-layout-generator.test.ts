@@ -96,6 +96,40 @@ describe("TubeSheet — edge cases", () => {
     });
 });
 
+describe("TubeSheet — regression: findMinID hang on sparse tube fields", () => {
+    // Guards against findMinID's upper-bound search hanging when its initial
+    // diameter guess yields zero tubes (large tubeOD/pitch relative to the
+    // available OTL). Vitest's default per-test timeout also catches a
+    // regression here; the assertions confirm the correct output values.
+    const OTL_CLEARANCE_SPARSE = 150;
+    const TUBE_OD_SPARSE = 90.53;
+    const SHELL_ID_SPARSE = 400;
+
+    const expected: Record<string, { numTubes: number; minID: number; OTL: number }> = {
+        "30": { numTubes: 2, minID: 353.6925, OTL: 203.6925 },
+        "45": { numTubes: 1, minID: 240.53, OTL: 90.53 },
+        "60": { numTubes: 2, minID: 353.6925, OTL: 203.6925 },
+        "90": { numTubes: 2, minID: 353.6925, OTL: 203.6925 },
+        radial: { numTubes: 3, minID: 371.198799674342, OTL: 221.19879967435 },
+    };
+
+    it.each(LAYOUTS)("resolves without hanging for layout %s", (layout) => {
+        const ts = new TubeSheet(
+            OTL_CLEARANCE_SPARSE,
+            TUBE_OD_SPARSE,
+            PITCH_RATIO,
+            layout,
+            undefined,
+            SHELL_ID_SPARSE,
+        );
+        const ref = expected[String(layout)];
+
+        expect(ts.numTubes).toBe(ref.numTubes);
+        expect(ts.minID).toBeCloseTo(ref.minID, 6);
+        expect(ts.OTL).toBeCloseTo(ref.OTL, 6);
+    });
+});
+
 describe("getEffectiveShellID", () => {
     it("returns shellID when shellID is explicitly set", () => {
         expect(

@@ -603,6 +603,7 @@ const tubeFieldOTL = (
             }
             return OTL;
         }
+        return null;
     } catch {
         return null;
     }
@@ -979,7 +980,16 @@ const findMinID = memoize(
 
                     if (!haveUpperBound) {
                         let D_grow = haveLowerBound ? D_lowerBound : D_old;
-                        while (true) {
+                        // Bounded, with a finiteness check: an unbounded loop
+                        // here can hang forever if D_grow ever became NaN.
+                        const GROW_MAX_ITERATIONS = 1000;
+                        let growIterations = 0;
+                        while (growIterations < GROW_MAX_ITERATIONS) {
+                            if (!Number.isFinite(D_grow) || D_grow <= 0) {
+                                throw new Error(
+                                    "findMinID: diameter guess became non-finite while searching for an upper bound.",
+                                );
+                            }
                             D_grow = D_grow * BETA;
                             const numTubesUpper = tubeCount(
                                 D_grow,
@@ -1004,6 +1014,12 @@ const findMinID = memoize(
                                 haveUpperBound = true;
                                 break;
                             }
+                            growIterations++;
+                        }
+                        if (!haveUpperBound) {
+                            throw new Error(
+                                "findMinID: unable to bound a valid diameter within the iteration limit.",
+                            );
                         }
                     }
 
