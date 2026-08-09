@@ -28,8 +28,7 @@ interface PairedFieldRowProps {
     ) => number;
 }
 
-// A pinned preview: the field id currently showing a live-preview number that
-// the user has focused, plus the number it was frozen at when focus began.
+// Field id + value frozen when a live-preview field gains focus.
 interface PinnedField {
     id: string;
     value: number;
@@ -50,20 +49,16 @@ export function PairedFieldRow({
     const [rowTouched, setRowTouched] = useState(false);
     const [previewTargetId, setPreviewTargetId] = useState<string | undefined>(undefined);
     const [pinnedField, setPinnedField] = useState<PinnedField | null>(null);
-    // Synchronously-derived preview (tubeClearance/pitchRatio). The size row
-    // uses the async worker-backed livePreview.result instead.
+    // Sync preview for clearance/pitch; the size row uses livePreview.result.
     const [syncPreview, setSyncPreview] = useState<number | undefined>(undefined);
-    // Whether the pinned field was actually edited (vs. just focused/blurred
-    // without typing). Imperative so it can be read from stable callbacks.
+    // True once the pinned field was actually typed into, not just focused.
     const pinDirtyRef = useRef(false);
 
     const rowFieldIds = useMemo(() => row.map((cfg) => cfg.id), [row]);
     const isSizeRow = rowFieldIds.includes("minTubes") && rowFieldIds.includes("shellID");
     const isClearancePitchRow =
         rowFieldIds.includes("tubeClearance") && rowFieldIds.includes("pitchRatio");
-    // Both currently-paired rows support an editable live preview. A future
-    // paired row without a preview strategy below just falls back to plain
-    // paired-field behavior (no preview, no pinning).
+    // Only these two paired rows currently support a live preview.
     const hasLivePreview = isSizeRow || isClearancePitchRow;
 
     const livePreview = useLivePreview(requestSingle);
@@ -84,18 +79,18 @@ export function PairedFieldRow({
         previewByField: {} as Record<string, number | undefined>,
     });
 
-    // Clear draft only when the user empties the field or invalidates it.
+    // Only clears on empty/invalid input, not on blur.
     const clearDraft = useCallback(() => {
         setPreviewTargetId(undefined);
         setPinnedField(null);
         setSyncPreview(undefined);
         pinDirtyRef.current = false;
-        cancelPreview(); // stop any pending worker request (no-op if unused)
+        cancelPreview();
     }, [cancelPreview]);
 
     useEffect(() => clearDraft, [clearDraft]);
 
-    // The number currently shown as a live preview for a given field, if any.
+    // Current live-preview number for a field, if any.
     const previewNumberFor = useCallback(
         (fieldId: string): number | undefined => {
             if (!hasLivePreview || fieldId !== previewTargetId) return undefined;
@@ -121,7 +116,7 @@ export function PairedFieldRow({
                 }
                 return undefined;
             }
-            return syncPreview; // clearance/pitch: derived synchronously on accept
+            return syncPreview; // clearance/pitch
         },
         [
             hasLivePreview,
@@ -135,11 +130,8 @@ export function PairedFieldRow({
         ],
     );
 
-    // Snapshot each field's current preview after every render. Read from
-    // handleFieldFocus below via the ref (not as a useCallback dependency) so
-    // that callback's identity stays stable across keystrokes – otherwise it
-    // would break memo on the field currently being typed into as well, and an
-    // unrelated re-render mid-edit could disrupt the mask's own state.
+    // Snapshot latest previews/props into a ref so callbacks below stay
+    // referentially stable across keystrokes (avoids breaking field memo).
     useEffect(() => {
         latest.current = {
             onBlur,
@@ -159,16 +151,14 @@ export function PairedFieldRow({
         };
     });
 
-    // Entering a field that's showing a preview freezes that number as the
-    // field's controlled value for the rest of the edit session, so the mask
-    // isn't fought mid-edit by new preview results or previewTargetId flips.
+    // Focusing a previewed field freezes its shown value for the edit session.
     const handleFieldFocus = useCallback(
         (e: SyntheticEvent<HTMLInputElement>) => {
             if (!hasLivePreview) return;
             const id = e.currentTarget.id;
             if (utils.isNumber(latest.current.fieldValues[id])) return; // already real
             const shown = latest.current.previewByField[id];
-            if (!utils.isNumber(shown)) return; // nothing shown yet to pin
+            if (!utils.isNumber(shown)) return; // nothing to pin
             pinDirtyRef.current = false;
             setPinnedField({ id, value: shown });
         },
@@ -188,13 +178,11 @@ export function PairedFieldRow({
                 const wasEdited = pinDirtyRef.current;
                 setPinnedField(null);
                 pinDirtyRef.current = false;
-                // Untouched preview: leaving without typing must not commit the
-                // shown number as if the user had entered it.
+                // Don't commit an untouched preview as if the user typed it.
                 if (!wasEdited) return;
             }
 
-            // Do NOT clear draft or cancel preview on blur – keep showing last
-            // preview.
+            // Keep showing the last preview; don't clear on blur.
             latest.current.onBlur(e);
         },
         [rowFieldIds],
@@ -204,11 +192,11 @@ export function PairedFieldRow({
         const id = e.currentTarget.id;
         const isCommitKey = e.key === "Enter" || e.key === "NumpadEnter" || e.key === "Tab";
         if (id === latest.current.pinnedFieldId && !pinDirtyRef.current && isCommitKey) {
-            // Nothing typed yet – don't commit the untouched preview.
+            // Don't commit an untouched preview.
             if (e.key !== "Tab") e.preventDefault();
             return;
         }
-        // Do NOT clear draft or cancel preview – keep showing last preview.
+        // Keep showing the last preview.
         latest.current.onKeyDown(e);
     }, []);
 
@@ -218,20 +206,18 @@ export function PairedFieldRow({
 
     const handlePairFieldAccept = useCallback(
         (value: string, fieldId: string, isUserEdit: boolean) => {
-            // react-number-format re-fires onValueChange whenever a field's
-            // controlled "value" prop is updated even programmatically (e.g.
-            // the OTHER field's preview just changed and re-rendered this one)
-            // — sourceInfo.source distinguishes that from a real keystroke.
+            // sourceInfo.source distinguishes a real keystroke from a
+            // programmatic value update (e.g. the paired field's preview).
             if (!isUserEdit) return;
             if (fieldId === latest.current.pinnedFieldId) {
-                pinDirtyRef.current = true; // a real edit, not just a shown preview
+                pinDirtyRef.current = true; // real edit, not just a shown preview
             }
 
             latest.current.onAcceptEmpty(value, fieldId);
 
             const parsed = Number(value);
             if (value.trim() === "" || Number.isNaN(parsed)) {
-                clearDraft(); // clear draft and preview when field is emptied
+                clearDraft(); // field emptied
                 return;
             }
 
@@ -249,8 +235,7 @@ export function PairedFieldRow({
                     pitchRatio >= 1;
                 if (!geometryReady) return;
 
-                // useLivePreview already debounces – no extra debounce
-                // required.
+                // useLivePreview already debounces.
                 requestPreview({
                     OTLtoShell: OTLToShell,
                     tubeOD,
@@ -285,16 +270,27 @@ export function PairedFieldRow({
 
     const rowHint = row.find((cfg) => cfg.rowHint)?.rowHint;
 
+    // Shell ID's physical minimum is tubeOD + OTLtoShell; falls back to the
+    // static "> 0" config until both are known.
+    const shellIDMinReady =
+        utils.isNumber(fieldValues.tubeOD) && utils.isNumber(fieldValues.OTLtoShell);
+    const shellIDMin = shellIDMinReady
+        ? utils.round((fieldValues.tubeOD as number) + (fieldValues.OTLtoShell as number), 2)
+        : undefined;
+
     const fields = row.map((cfg, i) => {
         const isPinned = hasLivePreview && pinnedField?.id === cfg.id;
         let fieldValue = fieldValues[cfg.id];
         let isPreview = false;
         let placeholder = cfg.placeholder;
+        const isShellIDField = cfg.id === "shellID";
+        const fieldMin = isShellIDField && shellIDMinReady ? shellIDMin : cfg.min;
+        // Inclusive: the computed minimum is itself achievable.
+        const fieldMinExclusive = isShellIDField && shellIDMinReady ? false : cfg.minExclusive;
 
         if (hasLivePreview && fieldValue === undefined) {
             if (isPinned) {
-                // Frozen at focus time; the DOM (read on blur) holds whatever
-                // the user actually types, independent of this prop.
+                // Frozen at focus time; DOM (read on blur) holds the real typed value.
                 fieldValue = pinnedField!.value;
                 isPreview = true;
             } else {
@@ -311,11 +307,8 @@ export function PairedFieldRow({
                 }
             }
         } else if (hasLivePreview && cfg.id === previewTargetId) {
-            // Committed but still the dependent side of the pair (e.g. once
-            // tubeClearance/pitchRatio mutually derive each other on blur, both
-            // hold real numbers). Stays muted so the muted/valid contrast keeps
-            // showing which field is driving the pair versus which one is
-            // computed from it.
+            // Committed but still the dependent side of the pair – stays muted
+            // to show which field is driving vs. computed.
             isPreview = true;
         }
 
@@ -324,6 +317,8 @@ export function PairedFieldRow({
                 key={cfg.id}
                 {...cfg}
                 placeholder={placeholder}
+                min={fieldMin}
+                minExclusive={fieldMinExclusive}
                 value={fieldValue}
                 isPreview={isPreview}
                 pairedValue={cfg.pairedWith ? fieldValues[cfg.pairedWith] : undefined}

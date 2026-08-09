@@ -10,7 +10,9 @@ import { numericFieldConfigs } from "../constants/numericFieldConfigs";
 // Exercises the tubeClearance/pitchRatio pair (synchronous preview) end to end
 // through the real useLayoutForm reducer, since it needs no worker mock.
 const clearancePitchRow = numericFieldConfigs.filter((cfg) => cfg.row === "clearance-pitch");
+const sizeRow = numericFieldConfigs.filter((cfg) => cfg.row === "minTubes-shellID");
 const tubeODConfig = numericFieldConfigs.find((cfg) => cfg.id === "tubeOD")!;
+const OTLtoShellConfig = numericFieldConfigs.find((cfg) => cfg.id === "OTLtoShell")!;
 // Stable reference (as the real useTubeSheetWorker's requestSingle is) so it
 // doesn't itself cause the paired fields to lose memoization across renders.
 const stubRequestSingle = () => 0;
@@ -43,9 +45,29 @@ function Harness() {
                 onAccept={(value) => form.onAcceptEmpty(value, "tubeOD")}
                 onSubmit={form.inputOnSubmitHandler}
             />
+            <NumericField
+                {...OTLtoShellConfig}
+                value={form.OTLtoShell}
+                onBlur={form.onBlur}
+                onKeyDown={form.onKeyDown}
+                onAccept={(value) => form.onAcceptEmpty(value, "OTLtoShell")}
+                onSubmit={form.inputOnSubmitHandler}
+            />
             <button type="button">elsewhere</button>
             <PairedFieldRow
                 row={clearancePitchRow}
+                fieldValues={fieldValues}
+                layoutOption={form.layoutOption}
+                committedResult={null}
+                isCalculating={false}
+                onBlur={form.onBlur}
+                onKeyDown={form.onKeyDown}
+                onAcceptEmpty={form.onAcceptEmpty}
+                inputOnSubmitHandler={form.inputOnSubmitHandler}
+                requestSingle={stubRequestSingle}
+            />
+            <PairedFieldRow
+                row={sizeRow}
                 fieldValues={fieldValues}
                 layoutOption={form.layoutOption}
                 committedResult={null}
@@ -171,5 +193,52 @@ describe("PairedFieldRow live preview (tube clearance / pitch ratio)", () => {
         await user.type(clearanceInput, "3");
         expect(clearanceInput.value).toBe("123");
         expect(Number(pitchInput.value)).toBeCloseTo(5.92, 2); // 1 + 123/25
+    });
+});
+
+describe("PairedFieldRow shell ID minimum", () => {
+    it("falls back to the generic '> 0' minimum when tubeOD/OTLtoShell aren't known yet", async () => {
+        const user = userEvent.setup();
+        render(<Harness />);
+
+        const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
+        const elsewhere = screen.getByRole("button", { name: "elsewhere" });
+
+        await user.click(shellIDInput);
+        await user.type(shellIDInput, "0");
+        await user.click(elsewhere);
+
+        expect(screen.getByText("Must be greater than 0")).toBeInTheDocument();
+    });
+
+    it("uses tubeOD + OTLtoShell as the shell ID minimum once both are known", async () => {
+        const user = userEvent.setup();
+        render(<Harness />);
+
+        await setTubeOD(user, "25");
+
+        const otlInput = screen.getByLabelText(/^OTL to shell/) as HTMLInputElement;
+        await user.click(otlInput);
+        await user.type(otlInput, "5");
+        await user.tab();
+
+        const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
+        const elsewhere = screen.getByRole("button", { name: "elsewhere" });
+
+        // Below tubeOD (25) + OTLtoShell (5) = 30, so it should be flagged.
+        await user.click(shellIDInput);
+        await user.type(shellIDInput, "20");
+        await user.click(elsewhere);
+
+        expect(screen.getByText("Must be at least 30")).toBeInTheDocument();
+
+        // Exactly at the minimum is allowed (inclusive).
+        await user.click(shellIDInput);
+        await user.clear(shellIDInput);
+        await user.type(shellIDInput, "30");
+        await user.click(elsewhere);
+
+        expect(screen.queryByText("Must be at least 30")).not.toBeInTheDocument();
+        expect(shellIDInput).toHaveClass("field-valid");
     });
 });
