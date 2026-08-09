@@ -20,13 +20,27 @@ self.onmessage = (event: MessageEvent) => {
                 shellID,
             );
 
-            const minID = Math.min(
-                _30.minID ?? Infinity,
-                _45.minID ?? Infinity,
-                _60.minID ?? Infinity,
-                _90.minID ?? Infinity,
-                radial.minID ?? Infinity,
-            );
+            // Preferred layout: max tubes when shellID is pinned, else min shell ID.
+            const isShellIDPinned = shellID !== undefined && shellID !== null;
+
+            const bestValue = isShellIDPinned
+                ? Math.max(
+                      _30.numTubes ?? -Infinity,
+                      _45.numTubes ?? -Infinity,
+                      _60.numTubes ?? -Infinity,
+                      _90.numTubes ?? -Infinity,
+                      radial.numTubes ?? -Infinity,
+                  )
+                : Math.min(
+                      _30.minID ?? Infinity,
+                      _45.minID ?? Infinity,
+                      _60.minID ?? Infinity,
+                      _90.minID ?? Infinity,
+                      radial.minID ?? Infinity,
+                  );
+
+            const isPreferred = (ts: TubeSheet) =>
+                isShellIDPinned ? ts.numTubes === bestValue : ts.minID === bestValue;
 
             const markPreferred = (ts: TubeSheet, preferred: boolean) => ({
                 minID: ts.minID,
@@ -45,11 +59,11 @@ self.onmessage = (event: MessageEvent) => {
                 type: "ALL_RESULTS",
                 requestId,
                 payload: {
-                    30: markPreferred(_30, _30.minID === minID),
-                    45: markPreferred(_45, _45.minID === minID),
-                    60: markPreferred(_60, _60.minID === minID),
-                    90: markPreferred(_90, _90.minID === minID),
-                    radial: markPreferred(radial, radial.minID === minID),
+                    30: markPreferred(_30, isPreferred(_30)),
+                    45: markPreferred(_45, isPreferred(_45)),
+                    60: markPreferred(_60, isPreferred(_60)),
+                    90: markPreferred(_90, isPreferred(_90)),
+                    radial: markPreferred(radial, isPreferred(radial)),
                 },
             });
         }
