@@ -45,6 +45,8 @@
   --greenline-light: hsl(135, 74%, 42%);
   --greenline-glow-light: hsl(135, 74%, 42%, 20%);
   --preferred-light: hsl(214, 68%, 42%);
+  --preferred-badge-light: hsl(36, 95%, 32%);
+  --preferred-badge-tint-light: hsl(36, 95%, 42%);
   --box-shadow-light-1: hsla(0, 0%, 0%, 0.3);
   --box-shadow-light-2: hsla(0, 0%, 0%, 0.1);
 
@@ -70,6 +72,8 @@
   --greenline-dark: hsl(135, 84%, 66%);
   --greenline-glow-dark: hsl(135, 84%, 66%, 20%);
   --preferred-dark: hsl(212, 84%, 76%);
+  --preferred-badge-dark: hsl(38, 90%, 66%);
+  --preferred-badge-tint-dark: hsl(38, 90%, 86%);
   --box-shadow-dark-1: hsla(0, 0%, 0%, 0.7);
   --box-shadow-dark-2: hsla(0, 0%, 0%, 0.5);
 
@@ -95,6 +99,8 @@
   --greenline: var(--greenline-light);
   --greenline-glow: var(--greenline-glow-light);
   --preferred: var(--preferred-light);
+  --preferred-badge: var(--preferred-badge-light);
+  --preferred-badge-tint: var(--preferred-badge-tint-light);
   --box-shadow-1: var(--box-shadow-light-1);
   --box-shadow-2: var(--box-shadow-light-2);
 
@@ -130,6 +136,8 @@
   --greenline: var(--greenline-dark);
   --greenline-glow: var(--greenline-glow-dark);
   --preferred: var(--preferred-dark);
+  --preferred-badge: var(--preferred-badge-dark);
+  --preferred-badge-tint: var(--preferred-badge-tint-dark);
   --box-shadow-1: var(--box-shadow-dark-1);
   --box-shadow-2: var(--box-shadow-dark-2);
 }
@@ -680,8 +688,7 @@ input[type="text"].field-preview:focus {
 
 /* Selected/preferred rows draw their border and ring above their
    neighbors', instead of a neighbor's plain divider painting over them. */
-.layout-row:has(input:checked),
-.layout-row.preferred {
+.layout-row:has(input:checked) {
   z-index: 1;
 }
 
@@ -689,16 +696,20 @@ input[type="text"].field-preview:focus {
   background-color: var(--input-readonly-background);
 }
 
-.layout-row.preferred {
-  z-index: 4;
-  box-shadow: 0 0 0 2px var(--preferred);
+.layout-row:hover .row-badge {
+  color: var(--preferred-badge-tint);
 }
 
 .layout-row .row-badge {
   display: inline-flex;
+
   margin-left: 4px;
-  color: var(--preferred);
-  opacity: 0.55;
+
+  color: var(--preferred-badge);
+
+  opacity: 1;
+
+  transition: color var(--transition);
 }
 
 .layout-row .row-badge svg {
