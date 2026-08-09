@@ -2,14 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, SubmitEvent, SyntheticEvent } from "react";
 import { NumericField } from "./NumericField";
 import type { NumericFieldConfig } from "../constants/numericFieldConfigs";
+import { pairPreviewConfigs, type CommittedSizeResult } from "../constants/pairPreviewConfigs";
 import { useLivePreview } from "../hooks/useLivePreview";
 import type { SingleResultPayload } from "../hooks/useTubeSheetWorker";
 import { utils } from "../utils";
-
-interface CommittedSizeResult {
-    minID: number | null;
-    numTubes: number | null;
-}
 
 interface PairedFieldRowProps {
     row: NumericFieldConfig[];
@@ -55,11 +51,11 @@ export function PairedFieldRow({
     const pinDirtyRef = useRef(false);
 
     const rowFieldIds = useMemo(() => row.map((cfg) => cfg.id), [row]);
-    const isSizeRow = rowFieldIds.includes("minTubes") && rowFieldIds.includes("shellID");
-    const isClearancePitchRow =
-        rowFieldIds.includes("tubeClearance") && rowFieldIds.includes("pitchRatio");
-    // Only these two paired rows currently support a live preview.
-    const hasLivePreview = isSizeRow || isClearancePitchRow;
+    const rowId = row[0]?.row;
+    // Rows opt into a live preview via a pairPreviewConfigs entry.
+    const previewConfig = rowId ? pairPreviewConfigs[rowId] : undefined;
+    const hasLivePreview = !!previewConfig;
+    const isWorkerPreview = previewConfig?.kind === "worker";
 
     const livePreview = useLivePreview(requestSingle);
     const requestPreview = livePreview.request;
@@ -71,9 +67,6 @@ export function PairedFieldRow({
         onAcceptEmpty,
         inputOnSubmitHandler,
         fieldValues,
-        OTLToShell: fieldValues.OTLtoShell,
-        tubeOD: fieldValues.tubeOD,
-        pitchRatio: fieldValues.pitchRatio,
         layoutOption,
         pinnedFieldId: pinnedField?.id,
         previewByField: {} as Record<string, number | undefined>,
@@ -93,38 +86,19 @@ export function PairedFieldRow({
     // Current live-preview number for a field, if any.
     const previewNumberFor = useCallback(
         (fieldId: string): number | undefined => {
-            if (!hasLivePreview || fieldId !== previewTargetId) return undefined;
-            if (isSizeRow) {
-                if (fieldId === "shellID") {
-                    if (utils.isNumber(livePreview.result?.shellID))
-                        return livePreview.result.shellID;
-                    if (
-                        utils.isNumber(fieldValues.minTubes) &&
-                        utils.isNumber(committedResult?.minID)
-                    ) {
-                        return committedResult.minID;
-                    }
-                } else if (fieldId === "minTubes") {
-                    if (utils.isNumber(livePreview.result?.numTubes))
-                        return livePreview.result.numTubes;
-                    if (
-                        utils.isNumber(fieldValues.shellID) &&
-                        utils.isNumber(committedResult?.numTubes)
-                    ) {
-                        return committedResult.numTubes;
-                    }
-                }
-                return undefined;
+            if (!previewConfig || fieldId !== previewTargetId) return undefined;
+            if (previewConfig.kind === "worker") {
+                const fromResult = previewConfig.extractResult(fieldId, livePreview.result);
+                if (utils.isNumber(fromResult)) return fromResult;
+                return previewConfig.fallbackFromCommitted(fieldId, fieldValues, committedResult);
             }
-            return syncPreview; // clearance/pitch
+            return syncPreview; // formula-driven row
         },
         [
-            hasLivePreview,
-            isSizeRow,
+            previewConfig,
             previewTargetId,
             livePreview.result,
-            fieldValues.minTubes,
-            fieldValues.shellID,
+            fieldValues,
             committedResult,
             syncPreview,
         ],
@@ -139,9 +113,6 @@ export function PairedFieldRow({
             onAcceptEmpty,
             inputOnSubmitHandler,
             fieldValues,
-            OTLToShell: fieldValues.OTLtoShell,
-            tubeOD: fieldValues.tubeOD,
-            pitchRatio: fieldValues.pitchRatio,
             layoutOption,
             pinnedFieldId: pinnedField?.id,
             previewByField: {
@@ -224,35 +195,21 @@ export function PairedFieldRow({
             const otherId = row[0].id === fieldId ? row[1].id : row[0].id;
             setPreviewTargetId(otherId);
 
-            if (isSizeRow) {
-                const { OTLToShell, tubeOD, pitchRatio, layoutOption: lo } = latest.current;
-                const geometryReady =
-                    utils.isNumber(OTLToShell) &&
-                    OTLToShell >= 0 &&
-                    utils.isNumber(tubeOD) &&
-                    tubeOD > 0 &&
-                    utils.isNumber(pitchRatio) &&
-                    pitchRatio >= 1;
-                if (!geometryReady) return;
+            if (!previewConfig) return;
+            const ctx = {
+                ...latest.current.fieldValues,
+                layoutOption: latest.current.layoutOption,
+            };
 
+            if (previewConfig.kind === "worker") {
+                if (!previewConfig.isReady(ctx)) return;
                 // useLivePreview already debounces.
-                requestPreview({
-                    OTLtoShell: OTLToShell,
-                    tubeOD,
-                    pitchRatio,
-                    layoutOption: utils.isNumber(lo) ? lo : 30,
-                    minTubes: fieldId === "minTubes" ? parsed : undefined,
-                    shellID: fieldId === "shellID" ? parsed : undefined,
-                });
-            } else if (isClearancePitchRow) {
-                const preview =
-                    fieldId === "tubeClearance"
-                        ? utils.pitchRatioFromClearance(latest.current.tubeOD, parsed)
-                        : utils.clearanceFromPitchRatio(latest.current.tubeOD, parsed);
-                setSyncPreview(preview);
+                requestPreview(previewConfig.buildRequest(fieldId, parsed, ctx));
+            } else {
+                setSyncPreview(previewConfig.compute(fieldId, parsed, ctx));
             }
         },
-        [clearDraft, requestPreview, row, isSizeRow, isClearancePitchRow],
+        [clearDraft, requestPreview, row, previewConfig],
     );
 
     const acceptFieldA = useCallback(
@@ -270,23 +227,14 @@ export function PairedFieldRow({
 
     const rowHint = row.find((cfg) => cfg.rowHint)?.rowHint;
 
-    // Shell ID's physical minimum is tubeOD + OTLtoShell; falls back to the
-    // static "> 0" config until both are known.
-    const shellIDMinReady =
-        utils.isNumber(fieldValues.tubeOD) && utils.isNumber(fieldValues.OTLtoShell);
-    const shellIDMin = shellIDMinReady
-        ? utils.round((fieldValues.tubeOD as number) + (fieldValues.OTLtoShell as number), 2)
-        : undefined;
-
     const fields = row.map((cfg, i) => {
         const isPinned = hasLivePreview && pinnedField?.id === cfg.id;
         let fieldValue = fieldValues[cfg.id];
         let isPreview = false;
         let placeholder = cfg.placeholder;
-        const isShellIDField = cfg.id === "shellID";
-        const fieldMin = isShellIDField && shellIDMinReady ? shellIDMin : cfg.min;
-        // Inclusive: the computed minimum is itself achievable.
-        const fieldMinExclusive = isShellIDField && shellIDMinReady ? false : cfg.minExclusive;
+        const dynamicBound = cfg.dynamicMin?.(fieldValues);
+        const fieldMin = dynamicBound ? dynamicBound.min : cfg.min;
+        const fieldMinExclusive = dynamicBound ? dynamicBound.minExclusive : cfg.minExclusive;
 
         if (hasLivePreview && fieldValue === undefined) {
             if (isPinned) {
@@ -300,7 +248,7 @@ export function PairedFieldRow({
                     isPreview = true;
                 } else if (
                     cfg.id === previewTargetId &&
-                    isSizeRow &&
+                    isWorkerPreview &&
                     livePreview.status === "pending"
                 ) {
                     placeholder = "…";
