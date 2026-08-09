@@ -70,7 +70,7 @@ export function LayoutOptionsList({
                         // Hide stale values while calculating
                         const result = showLoadingBadge ? undefined : layoutResults[key];
                         const minIDValue =
-                            result && result.minID !== null ? (result.minID as number) : undefined;
+                            result && utils.isNumber(result.minID) ? result.minID : undefined;
 
                         return (
                             <label
