@@ -217,9 +217,9 @@ describe("PairedFieldRow shell ID minimum", () => {
 
         await setTubeOD(user, "25");
 
-        const otlInput = screen.getByLabelText(/^OTL to shell/) as HTMLInputElement;
-        await user.click(otlInput);
-        await user.type(otlInput, "5");
+        const OTLInput = screen.getByLabelText(/^OTL to shell/) as HTMLInputElement;
+        await user.click(OTLInput);
+        await user.type(OTLInput, "5");
         await user.tab();
 
         const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
