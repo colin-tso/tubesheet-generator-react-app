@@ -20,18 +20,15 @@ export interface NumericFieldProps {
     pairedLabel?: string;
     touched?: boolean;
     hideAsterisk?: boolean;
-    // True when "value" is a live-preview number shown for direct editing, not
-    // yet an actual user-committed value. Suppresses the valid/green state
-    // until the user overrides it for real.
+    // True when "value" is a live preview, not yet user-committed. Suppresses
+    // valid/error styling until the user overrides it for real.
     isPreview?: boolean;
     onFocus?: (e: SyntheticEvent<HTMLInputElement, Event>) => void;
     onBlur?: (e: SyntheticEvent<HTMLInputElement, Event>) => void;
     onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
-    // "isUserEdit" is true for a real keystroke, and false when
-    // react-number-format re-fires onValueChange because "value" was set
-    // programmatically (e.g. a live preview updating) rather than typed by the
-    // user — react-number-format reports this directly via sourceInfo.source
-    // ("event" vs "prop"), instead of us having to infer it.
+    // "isUserEdit" is true for a real keystroke, false when react-number-format
+    // re-fires onValueChange from a programmatic value change (e.g. a preview
+    // updating), per its sourceInfo.source ("event" vs "prop").
     onAccept?: (value: string, isUserEdit: boolean) => void;
     onSubmit?: (e: SubmitEvent<HTMLInputElement>) => void;
 }
@@ -60,22 +57,19 @@ function NumericFieldImpl({
     onAccept,
     onSubmit,
 }: NumericFieldProps) {
-    // Errors only surface once the user has actually left the field, so a
-    // freshly loaded/empty form isn't shown as invalid before they've typed
-    // anything. A parent can take over this decision via the "touched" prop
-    // (see PairedFieldRow). Otherwise it's tracked internally per-field.
+    // Errors only surface after the field is left, so a fresh form isn't shown
+    // as invalid up front. Parent can override via "touched" (see PairedFieldRow).
     const [internalTouched, setInternalTouched] = useState(false);
     const touched = touchedProp ?? internalTouched;
 
-    // A paired field (e.g. tube clearance / pitch ratio) can satisfy this
-    // requirement on its own — don't flag this one as missing once the other
-    // has a value.
+    // A paired field can satisfy "required" on its own once it has a value.
     const missingRequired = !utils.isNumber(value) && required && !utils.isNumber(pairedValue);
     const outOfRange =
         utils.isNumber(value) && utils.isNumber(min) && (minExclusive ? value <= min : value < min);
 
     const errorMessage = (() => {
-        if (!touched || readOnly) return undefined;
+        // Preview values (dependent/pinned) aren't user-committed, so never flag them.
+        if (!touched || readOnly || isPreview) return undefined;
         if (missingRequired) {
             return pairedLabel ? `Required (or ${pairedLabel})` : "Required";
         }
@@ -88,13 +82,10 @@ function NumericFieldImpl({
     const hasError = Boolean(errorMessage);
     const errorId = `${id}-error`;
 
-    // Positive feedback for a field that actually has a value and satisfies its
-    // own constraints, independent of "touched". A displayed preview doesn't
-    // count until the user actually overrides it.
+    // Valid/green state, independent of "touched". Previews don't count until overridden.
     const isValid = !readOnly && !calculated && !isPreview && utils.isNumber(value) && !outOfRange;
 
-    // Mirrors the error logic above for a paired field to satisft native HTML
-    // validation triggered by the submit button
+    // Mirrors missingRequired for native HTML validation on submit.
     const domRequired = required && !utils.isNumber(pairedValue);
 
     const handleBlur = (e: SyntheticEvent<HTMLInputElement, Event>) => {
@@ -148,8 +139,5 @@ function NumericFieldImpl({
     );
 }
 
-// react-number-format still re-runs formatting on every re-render reachable by
-// the mask, so an unrelated re-render mid-edit could still disrupt typing. Memo
-// means a re-render only reaches the input when one of this field's own props
-// has actually changed.
+// Memoized so unrelated re-renders don't reach the input mid-edit and disrupt typing.
 export const NumericField = memo(NumericFieldImpl);
