@@ -6,7 +6,8 @@ export interface Tube {
     y: number;
 }
 export type TubeField = Array<Tube>;
-export type TubeSheetLayout = 30 | 45 | 60 | 90 | "radial";
+export const TUBE_SHEET_LAYOUTS = [30, 45, 60, 90, "radial"] as const;
+export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 
 export interface ITubeSheetData {
     tubeField: TubeField | null;

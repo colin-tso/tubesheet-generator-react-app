@@ -52,4 +52,35 @@ describe("tubesheet.worker — known message types still work", () => {
 
         postMessageSpy.mockRestore();
     });
+
+    it("responds to CALCULATE_ALL with results keyed directly by layout", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_ALL",
+                requestId: "req-3",
+                payload: {
+                    OTLtoShell: 6.35,
+                    tubeOD: 19.05,
+                    pitchRatio: 1.25,
+                    minTubes: 50,
+                },
+            },
+        } as MessageEvent);
+
+        const sent = postMessageSpy.mock.calls[0][0] as {
+            type: string;
+            requestId: string;
+            payload: Record<string, unknown>;
+        };
+
+        expect(sent.type).toBe("ALL_RESULTS");
+        // payload should be keyed directly by layout (e.g. payload[30]),
+        // not wrapped in an extra { payload: {...} } level.
+        expect(sent.payload).toHaveProperty("30");
+        expect(sent.payload).toHaveProperty("radial");
+
+        postMessageSpy.mockRestore();
+    });
 });

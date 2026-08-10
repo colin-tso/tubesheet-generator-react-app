@@ -1,4 +1,8 @@
-import { TubeSheet } from "../plugins/tubesheet-layout-generator";
+import {
+    TubeSheet,
+    TUBE_SHEET_LAYOUTS,
+    type TubeSheetLayout,
+} from "../plugins/tubesheet-layout-generator";
 
 self.onmessage = (event: MessageEvent) => {
     const { type, requestId, payload } = event.data;
@@ -11,42 +15,23 @@ self.onmessage = (event: MessageEvent) => {
         if (type === "CALCULATE_ALL") {
             const { OTLtoShell, tubeOD, pitchRatio, minTubes, shellID } = payload;
 
-            const _30 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 30, minTubes, shellID);
-            const _45 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 45, minTubes, shellID);
-            const _60 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 60, minTubes, shellID);
-            const _90 = new TubeSheet(OTLtoShell, tubeOD, pitchRatio, 90, minTubes, shellID);
-            const radial = new TubeSheet(
-                OTLtoShell,
-                tubeOD,
-                pitchRatio,
-                "radial",
-                minTubes,
-                shellID,
-            );
+            const tubeSheets = Object.fromEntries(
+                TUBE_SHEET_LAYOUTS.map((layout) => [
+                    layout,
+                    new TubeSheet(OTLtoShell, tubeOD, pitchRatio, layout, minTubes, shellID),
+                ]),
+            ) as Record<TubeSheetLayout, TubeSheet>;
 
             // Preferred layout: max tubes when shellID is pinned, else min shell ID.
             const isShellIDPinned = shellID !== undefined && shellID !== null;
 
             const bestValue = isShellIDPinned
-                ? Math.max(
-                      _30.numTubes ?? -Infinity,
-                      _45.numTubes ?? -Infinity,
-                      _60.numTubes ?? -Infinity,
-                      _90.numTubes ?? -Infinity,
-                      radial.numTubes ?? -Infinity,
-                  )
-                : Math.min(
-                      _30.minID ?? Infinity,
-                      _45.minID ?? Infinity,
-                      _60.minID ?? Infinity,
-                      _90.minID ?? Infinity,
-                      radial.minID ?? Infinity,
-                  );
+                ? Math.max(...TUBE_SHEET_LAYOUTS.map((l) => tubeSheets[l].numTubes ?? -Infinity))
+                : Math.min(...TUBE_SHEET_LAYOUTS.map((l) => tubeSheets[l].minID ?? Infinity));
 
             const isPreferred = (ts: TubeSheet) =>
                 isShellIDPinned ? ts.numTubes === bestValue : ts.minID === bestValue;
-
-            const markPreferred = (ts: TubeSheet, preferred: boolean) => ({
+            const markPreferred = (ts: TubeSheet) => ({
                 minID: ts.minID,
                 numTubes: ts.numTubes,
                 OTL: ts.OTL,
@@ -55,7 +40,7 @@ self.onmessage = (event: MessageEvent) => {
                 tubeOD: ts.tubeOD,
                 pitchRatio: ts.pitchRatio,
                 shellID: ts.shellID,
-                preferred,
+                preferred: isPreferred(ts),
             });
 
             // Package data to send back (Workers cannot send class instances or DOM nodes)
@@ -63,11 +48,9 @@ self.onmessage = (event: MessageEvent) => {
                 type: "ALL_RESULTS",
                 requestId,
                 payload: {
-                    30: markPreferred(_30, isPreferred(_30)),
-                    45: markPreferred(_45, isPreferred(_45)),
-                    60: markPreferred(_60, isPreferred(_60)),
-                    90: markPreferred(_90, isPreferred(_90)),
-                    radial: markPreferred(radial, isPreferred(radial)),
+                    payload: Object.fromEntries(
+                        TUBE_SHEET_LAYOUTS.map((l) => [l, markPreferred(tubeSheets[l])]),
+                    ),
                 },
             });
         }
