@@ -12,7 +12,7 @@ export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 export interface ITubeSheetData {
     tubeField: TubeField | null;
     OTL: number | null;
-    shellID: number;
+    shellID?: number;
     minID: number | null;
     tubeOD: number;
     pitchRatio: number;
@@ -106,16 +106,16 @@ export class TubeSheet {
         this._minTubes = x;
         this.updateGeneratedProps();
     }
-    get minTubes() {
-        return this._minTubes as number;
+    get minTubes(): number | undefined {
+        return this._minTubes;
     }
 
     set shellID(x: number) {
         this._shellID = x;
         this.updateGeneratedProps();
     }
-    get shellID() {
-        return this._shellID as number;
+    get shellID(): number | undefined {
+        return this._shellID;
     }
 
     get tubeField() {
@@ -1089,8 +1089,9 @@ export const DRAWING_SAFE_CONTENT_RADIUS_FRACTION = 0.5 / (1 + VIEWBOX_PADDING_A
  * The TubeSheetData object.
  * @returns {number}
  * The effective shell ID. Returns 0 if both `ts.tubeField` and `ts.OTL` are
- * null. If `ts.shellID` is defined or `ts.minID` is not null, undefined, or 0,
- * returns `ts.shellID`. Otherwise, returns `ts.minID`.
+ * null. If `ts.shellID` is defined and non-zero, or `ts.minID` is null, 0, or
+ * NaN, returns `ts.shellID` (or 0 if `ts.shellID` is also unusable).
+ * Otherwise, returns `ts.minID`.
  */
 export const getEffectiveShellID = (
     ts: Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">,
@@ -1100,10 +1101,11 @@ export const getEffectiveShellID = (
     }
 
     if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
-        return ts.shellID;
+        // ts.shellID may be undefined here if minID is also unusable.
+        return ts.shellID ?? 0;
     }
 
-    if (ts.shellID === 0 || isNaN(ts.shellID)) {
+    if (ts.shellID === undefined || ts.shellID === 0 || isNaN(ts.shellID)) {
         return ts.minID;
     }
 

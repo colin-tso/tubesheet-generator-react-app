@@ -130,6 +130,20 @@ describe("TubeSheet — regression: findMinID hang on sparse tube fields", () =>
     });
 });
 
+describe("TubeSheet — minTubes/shellID getters when unset", () => {
+    it("returns undefined for shellID when constructed via minTubes", () => {
+        const ts = new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, 30, 50);
+        expect(ts.shellID).toBeUndefined();
+        expect(ts.minTubes).toBe(50);
+    });
+
+    it("returns undefined for minTubes when constructed via shellID", () => {
+        const ts = new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, 30, undefined, 500);
+        expect(ts.minTubes).toBeUndefined();
+        expect(ts.shellID).toBe(500);
+    });
+});
+
 describe("getEffectiveShellID", () => {
     it("returns shellID when shellID is explicitly set", () => {
         expect(
@@ -147,7 +161,7 @@ describe("getEffectiveShellID", () => {
             getEffectiveShellID({
                 tubeField: [{ x: 0, y: 0 }],
                 OTL: 10,
-                shellID: undefined as unknown as number,
+                shellID: undefined,
                 minID: 300,
             }),
         ).toBe(300);
@@ -158,7 +172,18 @@ describe("getEffectiveShellID", () => {
             getEffectiveShellID({
                 tubeField: null,
                 OTL: null,
-                shellID: undefined as unknown as number,
+                shellID: undefined,
+                minID: null,
+            }),
+        ).toBe(0);
+    });
+
+    it("returns 0, not undefined, when neither shellID nor minID is usable", () => {
+        expect(
+            getEffectiveShellID({
+                tubeField: [{ x: 0, y: 0 }],
+                OTL: 10,
+                shellID: undefined,
                 minID: null,
             }),
         ).toBe(0);

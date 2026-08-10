@@ -6,7 +6,7 @@ export type LayoutResults = Record<
     TubeSheetLayout,
     (ITubeSheetData & { preferred: boolean }) | null
 >;
-export type SingleResultPayload = (ITubeSheetData & { shellID?: number; numTubes?: number }) | null;
+export type SingleResultPayload = (ITubeSheetData & { numTubes?: number }) | null;
 
 const emptyLayoutResults: LayoutResults = Object.fromEntries(
     TUBE_SHEET_LAYOUTS.map((layout) => [layout, null]),
