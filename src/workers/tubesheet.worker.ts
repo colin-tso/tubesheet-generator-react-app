@@ -4,6 +4,10 @@ self.onmessage = (event: MessageEvent) => {
     const { type, requestId, payload } = event.data;
 
     try {
+        if (type !== "CALCULATE_ALL" && type !== "CALCULATE_SINGLE") {
+            throw new Error(`Unknown message type: ${type}`);
+        }
+
         if (type === "CALCULATE_ALL") {
             const { OTLtoShell, tubeOD, pitchRatio, minTubes, shellID } = payload;
 
