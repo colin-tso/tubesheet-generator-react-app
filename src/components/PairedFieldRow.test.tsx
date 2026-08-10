@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { PairedFieldRow } from "./PairedFieldRow";
 import { NumericField } from "./NumericField";
 import { useLayoutForm } from "../hooks/useLayoutForm";
 import { numericFieldConfigs } from "../constants/numericFieldConfigs";
+import type { SingleResultPayload } from "../hooks/useTubeSheetWorker";
 
 // Exercises the tubeClearance/pitchRatio pair (synchronous preview) end to end
 // through the real useLayoutForm reducer, since it needs no worker mock.
@@ -193,6 +194,127 @@ describe("PairedFieldRow live preview (tube clearance / pitch ratio)", () => {
         await user.type(clearanceInput, "3");
         expect(clearanceInput.value).toBe("123");
         expect(Number(pitchInput.value)).toBeCloseTo(5.92, 2); // 1 + 123/25
+    });
+});
+
+describe("PairedFieldRow live preview (min tubes / shell ID)", () => {
+    it("live-previews the paired minTubes value while shellID is still being typed, before commit", async () => {
+        // Worker stub: given a shellID request, "respond" with a distinct
+        // numTubes preview so it's obvious whether the UI picked it up.
+        const workerRequestSingle = (
+            payload: Record<string, unknown>,
+            callback: (payload: SingleResultPayload) => void,
+        ) => {
+            if (payload.shellID !== undefined) {
+                setTimeout(() => callback({ numTubes: 777 } as SingleResultPayload), 10);
+            } else if (payload.minTubes !== undefined) {
+                setTimeout(() => callback({ shellID: 88 } as SingleResultPayload), 10);
+            }
+            return 1;
+        };
+
+        function WorkerHarness() {
+            const form = useLayoutForm({
+                lastSingleResult: null,
+                postCalculateSingle: () => {},
+                postCalculateAll: () => {},
+            });
+
+            const fieldValues = {
+                minTubes: form.minTubes,
+                tubeOD: form.tubeOD,
+                OTLtoShell: form.OTLtoShell,
+                tubeClearance: form.tubeClearance,
+                pitchRatio: form.pitchRatio,
+                shellID: form.shellID,
+                actualTubes: form.actualTubes,
+                layoutOption: form.layoutOption,
+            };
+
+            return (
+                <>
+                    <NumericField
+                        {...tubeODConfig}
+                        value={form.tubeOD}
+                        onBlur={form.onBlur}
+                        onKeyDown={form.onKeyDown}
+                        onAccept={(value) => form.onAcceptEmpty(value, "tubeOD")}
+                        onSubmit={form.inputOnSubmitHandler}
+                    />
+                    <NumericField
+                        {...OTLtoShellConfig}
+                        value={form.OTLtoShell}
+                        onBlur={form.onBlur}
+                        onKeyDown={form.onKeyDown}
+                        onAccept={(value) => form.onAcceptEmpty(value, "OTLtoShell")}
+                        onSubmit={form.inputOnSubmitHandler}
+                    />
+                    <PairedFieldRow
+                        row={clearancePitchRow}
+                        fieldValues={fieldValues}
+                        layoutOption={form.layoutOption}
+                        committedResult={null}
+                        isCalculating={false}
+                        onBlur={form.onBlur}
+                        onKeyDown={form.onKeyDown}
+                        onAcceptEmpty={form.onAcceptEmpty}
+                        inputOnSubmitHandler={form.inputOnSubmitHandler}
+                        requestSingle={stubRequestSingle}
+                    />
+                    <PairedFieldRow
+                        row={sizeRow}
+                        fieldValues={fieldValues}
+                        layoutOption={form.layoutOption}
+                        committedResult={null}
+                        isCalculating={false}
+                        onBlur={form.onBlur}
+                        onKeyDown={form.onKeyDown}
+                        onAcceptEmpty={form.onAcceptEmpty}
+                        inputOnSubmitHandler={form.inputOnSubmitHandler}
+                        requestSingle={workerRequestSingle}
+                    />
+                </>
+            );
+        }
+
+        const user = userEvent.setup();
+        render(<WorkerHarness />);
+        await setTubeOD(user, "25");
+
+        const OTLInput = screen.getByLabelText(/^OTL to shell/) as HTMLInputElement;
+        await user.click(OTLInput);
+        await user.type(OTLInput, "5");
+        await user.tab();
+
+        // Commit tubeClearance so pitchRatio (required for the size-row live
+        // preview to be considered "ready") is actually defined.
+        const clearanceInput = screen.getByLabelText("Tube clearance") as HTMLInputElement;
+        await user.click(clearanceInput);
+        await user.type(clearanceInput, "5");
+        await user.tab();
+
+        const minTubesInput = screen.getByLabelText("Min # of tubes") as HTMLInputElement;
+        const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
+
+        // Commit minTubes = 500. shellID becomes the dependent preview side.
+        await user.click(minTubesInput);
+        await user.type(minTubesInput, "500");
+        await user.tab();
+        expect(Number(minTubesInput.value)).toBe(500);
+
+        // Now start typing into shellID (still uncommitted).
+        await user.click(shellIDInput);
+        await user.type(shellIDInput, "40");
+
+        // Wait past the 350ms debounce for the worker's mocked response.
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        });
+
+        // minTubes should now live-preview the worker's computed value (777),
+        // not keep showing the stale committed 500.
+        expect(Number(minTubesInput.value)).toBe(777);
+        expect(minTubesInput).toHaveClass("field-preview");
     });
 });
 

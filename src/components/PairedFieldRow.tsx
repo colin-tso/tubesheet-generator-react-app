@@ -256,7 +256,13 @@ export function PairedFieldRow({
             }
         } else if (hasLivePreview && cfg.id === previewTargetId) {
             // Committed but still the dependent side of the pair – stays muted
-            // to show which field is driving vs. computed.
+            // to show which field is driving vs. computed. Swap in the freshly
+            // computed preview number (once available) instead of leaving the
+            // stale committed value on screen.
+            const preview = previewNumberFor(cfg.id);
+            if (utils.isNumber(preview)) {
+                fieldValue = preview;
+            }
             isPreview = true;
         }
 
