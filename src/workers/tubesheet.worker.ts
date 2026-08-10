@@ -47,11 +47,9 @@ self.onmessage = (event: MessageEvent) => {
             self.postMessage({
                 type: "ALL_RESULTS",
                 requestId,
-                payload: {
-                    payload: Object.fromEntries(
-                        TUBE_SHEET_LAYOUTS.map((l) => [l, markPreferred(tubeSheets[l])]),
-                    ),
-                },
+                payload: Object.fromEntries(
+                    TUBE_SHEET_LAYOUTS.map((l) => [l, markPreferred(tubeSheets[l])]),
+                ),
             });
         }
 
