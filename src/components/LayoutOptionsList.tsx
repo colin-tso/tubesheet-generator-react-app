@@ -70,9 +70,7 @@ export function LayoutOptionsList({
                         // Hide stale values while calculating
                         const result = showLoadingBadge ? undefined : layoutResults[key];
                         const minIDValue =
-                            result && result.minID !== null
-                                ? (result.minID as number)
-                                : undefined;
+                            result && utils.isNumber(result.minID) ? result.minID : undefined;
 
                         return (
                             <label
@@ -89,7 +87,7 @@ export function LayoutOptionsList({
                                     disabled={showLoadingBadge}
                                     required={required}
                                 />
-                                <span className="row-angle">
+                                <span className="row-angle noselect">
                                     {label}
                                     {result?.preferred && (
                                         <span
@@ -111,7 +109,7 @@ export function LayoutOptionsList({
                                         }}
                                     />
                                 </span>
-                                <span className="row-stats">
+                                <span className="row-stats noselect">
                                     <span className="row-minid">
                                         {minIDValue !== undefined ? (
                                             utils.numFormat3SigFigs(minIDValue)

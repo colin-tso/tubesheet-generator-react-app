@@ -86,6 +86,13 @@ export function useLivePreview(
                     },
                     (response) => {
                         if (seq !== seqRef.current) return;
+                        // A response landed, so the safety timeout below no
+                        // longer applies — without this it would still fire
+                        // later and wrongly revert this result to null.
+                        if (timeoutRef.current) {
+                            clearTimeout(timeoutRef.current);
+                            timeoutRef.current = null;
+                        }
                         setResult({
                             shellID: response?.shellID ?? response?.minID ?? undefined,
                             numTubes: response?.numTubes ?? undefined,

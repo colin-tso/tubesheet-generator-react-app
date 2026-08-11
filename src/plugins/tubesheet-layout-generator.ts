@@ -6,12 +6,13 @@ export interface Tube {
     y: number;
 }
 export type TubeField = Array<Tube>;
-export type TubeSheetLayout = 30 | 45 | 60 | 90 | "radial";
+export const TUBE_SHEET_LAYOUTS = [30, 45, 60, 90, "radial"] as const;
+export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 
 export interface ITubeSheetData {
     tubeField: TubeField | null;
     OTL: number | null;
-    shellID: number;
+    shellID?: number;
     minID: number | null;
     tubeOD: number;
     pitchRatio: number;
@@ -105,16 +106,16 @@ export class TubeSheet {
         this._minTubes = x;
         this.updateGeneratedProps();
     }
-    get minTubes() {
-        return this._minTubes as number;
+    get minTubes(): number | undefined {
+        return this._minTubes;
     }
 
     set shellID(x: number) {
         this._shellID = x;
         this.updateGeneratedProps();
     }
-    get shellID() {
-        return this._shellID as number;
+    get shellID(): number | undefined {
+        return this._shellID;
     }
 
     get tubeField() {
@@ -603,6 +604,7 @@ const tubeFieldOTL = (
             }
             return OTL;
         }
+        return null;
     } catch {
         return null;
     }
@@ -979,7 +981,16 @@ const findMinID = memoize(
 
                     if (!haveUpperBound) {
                         let D_grow = haveLowerBound ? D_lowerBound : D_old;
-                        while (true) {
+                        // Bounded, with a finiteness check: an unbounded loop
+                        // here can hang forever if D_grow ever became NaN.
+                        const GROW_MAX_ITERATIONS = 1000;
+                        let growIterations = 0;
+                        while (growIterations < GROW_MAX_ITERATIONS) {
+                            if (!Number.isFinite(D_grow) || D_grow <= 0) {
+                                throw new Error(
+                                    "findMinID: diameter guess became non-finite while searching for an upper bound.",
+                                );
+                            }
                             D_grow = D_grow * BETA;
                             const numTubesUpper = tubeCount(
                                 D_grow,
@@ -1004,6 +1015,12 @@ const findMinID = memoize(
                                 haveUpperBound = true;
                                 break;
                             }
+                            growIterations++;
+                        }
+                        if (!haveUpperBound) {
+                            throw new Error(
+                                "findMinID: unable to bound a valid diameter within the iteration limit.",
+                            );
                         }
                     }
 
@@ -1072,8 +1089,9 @@ export const DRAWING_SAFE_CONTENT_RADIUS_FRACTION = 0.5 / (1 + VIEWBOX_PADDING_A
  * The TubeSheetData object.
  * @returns {number}
  * The effective shell ID. Returns 0 if both `ts.tubeField` and `ts.OTL` are
- * null. If `ts.shellID` is defined or `ts.minID` is not null, undefined, or 0,
- * returns `ts.shellID`. Otherwise, returns `ts.minID`.
+ * null. If `ts.shellID` is defined and non-zero, or `ts.minID` is null, 0, or
+ * NaN, returns `ts.shellID` (or 0 if `ts.shellID` is also unusable).
+ * Otherwise, returns `ts.minID`.
  */
 export const getEffectiveShellID = (
     ts: Pick<ITubeSheetData, "tubeField" | "OTL" | "shellID" | "minID">,
@@ -1083,10 +1101,11 @@ export const getEffectiveShellID = (
     }
 
     if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
-        return ts.shellID;
+        // ts.shellID may be undefined here if minID is also unusable.
+        return ts.shellID ?? 0;
     }
 
-    if (ts.shellID === 0 || isNaN(ts.shellID)) {
+    if (ts.shellID === undefined || ts.shellID === 0 || isNaN(ts.shellID)) {
         return ts.minID;
     }
 

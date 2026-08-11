@@ -25,7 +25,7 @@ export const utils = {
     isNumber(x: unknown): x is number {
         return (
             (typeof x === "number" && x - x === 0) ||
-            (typeof x === "string" && Number.isFinite(+x.replace(",", "")) && x.trim() !== "")
+            (typeof x === "string" && Number.isFinite(+x.replaceAll(",", "")) && x.trim() !== "")
         );
     },
     // Shared with the tubeClearance/pitchRatio paired-field preview so the
@@ -37,7 +37,7 @@ export const utils = {
         return this.isNumber(tubeOD) ? (pitchRatio - 1) * tubeOD : undefined;
     },
     stringToNumber(x: string) {
-        return parseFloat(x.replace(",", ""));
+        return parseFloat(x.replaceAll(",", ""));
     },
     symlog(x: number, c: number = 1) {
         return Math.sign(x) * Math.log10(Math.abs(x) / c + 1);
