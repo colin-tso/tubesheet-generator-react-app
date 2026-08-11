@@ -18,8 +18,8 @@ const OTLtoShellConfig = numericFieldConfigs.find((cfg) => cfg.id === "OTLtoShel
 // doesn't itself cause the paired fields to lose memoization across renders.
 const stubRequestSingle = () => 0;
 
-// Worker stub for the minTubes/shellID pair: echoes back a distinct number per
-// direction so it's obvious in assertions which preview was picked up.
+// Worker stub for the minTubes/shellID pair: echoes back a distinct number
+// per direction so it's obvious in assertions which preview was picked up.
 const workerRequestSingle = (
     payload: Record<string, unknown>,
     callback: (payload: SingleResultPayload) => void,
@@ -273,6 +273,30 @@ describe("PairedFieldRow live preview (tube clearance / pitch ratio)", () => {
         expect(clearanceInput.value).toBe("123");
         expect(Number(pitchInput.value)).toBeCloseTo(5.92, 2); // 1 + 123/25
     });
+
+    it("has no Tab-focus race to guard against: the preview is synchronous", async () => {
+        // compute() runs inline in the keystroke handler (no debounce/worker
+        // round trip), so Tab landing on pitchRatio right after committing
+        // tubeClearance can never arrive before its preview does -- typing
+        // over it should always land normally.
+        const user = userEvent.setup();
+        render(<Harness />);
+        await setTubeOD(user, "25");
+
+        const clearanceInput = screen.getByLabelText("Tube clearance") as HTMLInputElement;
+        await user.click(clearanceInput);
+        await user.type(clearanceInput, "5");
+        await user.tab(); // commits tubeClearance; Tab lands focus on pitchRatio next
+
+        expect(document.activeElement?.id).toBe("pitchRatio");
+
+        const pitchInput = screen.getByLabelText("Pitch ratio") as HTMLInputElement;
+        expect(Number(pitchInput.value)).toBeCloseTo(1.2, 2); // already available, no wait needed
+
+        // Typing on top of it lands normally.
+        await user.keyboard("9");
+        expect(pitchInput.value).not.toBe("");
+    });
 });
 
 describe("PairedFieldRow live preview (min tubes / shell ID)", () => {
@@ -368,6 +392,29 @@ describe("PairedFieldRow live preview (min tubes / shell ID)", () => {
         await user.tab();
         expect(Number(revertedShellIDInput.value)).toBe(45);
         expect(revertedShellIDInput).toHaveClass("field-valid");
+    });
+
+    it("pins the dependent field retroactively when Tab-focus arrives before its preview resolves", async () => {
+        // Regression test for the Tab-focus race: committing minTubes via Tab
+        // moves focus straight to shellID, before its debounced preview has
+        // resolved. Pinning must retry once the preview arrives, or the first
+        // keystroke gets wiped when previewTargetId flips away from shellID.
+        const user = userEvent.setup();
+        render(<WorkerHarness />);
+        await commitMinTubes(user);
+
+        expect(document.activeElement?.id).toBe("shellID"); // Tab landed here
+
+        // Let the debounced worker preview resolve while shellID stays focused.
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        });
+        const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
+        expect(Number(shellIDInput.value)).toBe(88);
+
+        // Type directly on top of the now-settled preview.
+        await user.keyboard("4");
+        expect(shellIDInput.value).not.toBe(""); // the keystroke must land, not vanish
     });
 });
 

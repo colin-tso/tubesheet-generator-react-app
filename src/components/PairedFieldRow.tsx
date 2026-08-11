@@ -49,6 +49,10 @@ export function PairedFieldRow({
     const [syncPreview, setSyncPreview] = useState<number | undefined>(undefined);
     // True once the pinned field was actually typed into, not just focused.
     const pinDirtyRef = useRef(false);
+    // Which field in the row is currently focused (if any) -- lets a preview
+    // that resolves after focus (e.g. Tab lands here before a debounced worker
+    // result arrives) still get pinned retroactively.
+    const focusedFieldIdRef = useRef<string | undefined>(undefined);
     // Row-level preview state snapshotted on focus, restored on Escape.
     const editSnapshotRef = useRef<{
         previewTargetId: string | undefined;
@@ -131,19 +135,33 @@ export function PairedFieldRow({
         };
     });
 
+    // A preview can resolve after focus (e.g. Tab lands on the dependent field
+    // before its debounced worker value arrives) -- pin it retroactively so the
+    // first keystroke doesn't fight the value that just showed up.
+    useEffect(() => {
+        const focusedId = focusedFieldIdRef.current;
+        if (!focusedId || pinnedField?.id === focusedId || pinDirtyRef.current) return;
+        if (fieldValues[focusedId] !== undefined) return; // already committed
+        const preview = previewNumberFor(focusedId);
+        if (utils.isNumber(preview)) {
+            setPinnedField({ id: focusedId, value: preview });
+        }
+    }, [fieldValues, pinnedField, previewNumberFor]);
+
     // Focusing a previewed field freezes its shown value for the edit session,
     // and snapshots row state so Escape can restore it.
     const handleFieldFocus = useCallback(
         (e: SyntheticEvent<HTMLInputElement>) => {
             if (!hasLivePreview) return;
+            const id = e.currentTarget.id;
+            focusedFieldIdRef.current = id;
             editSnapshotRef.current = {
                 previewTargetId: latest.current.previewTargetId,
                 syncPreview: latest.current.syncPreview,
             };
-            const id = e.currentTarget.id;
             if (utils.isNumber(latest.current.fieldValues[id])) return; // already real
             const shown = latest.current.previewByField[id];
-            if (!utils.isNumber(shown)) return; // nothing to pin
+            if (!utils.isNumber(shown)) return; // nothing to pin yet; retried above
             pinDirtyRef.current = false;
             setPinnedField({ id, value: shown });
         },
@@ -154,6 +172,7 @@ export function PairedFieldRow({
     // what it was before this field was focused.
     const handleFieldEscape = useCallback(() => {
         if (!hasLivePreview) return;
+        focusedFieldIdRef.current = undefined;
         pinDirtyRef.current = false; // set before NumericField's blur() fires
         setPinnedField(null);
         cancelPreview();
@@ -171,6 +190,7 @@ export function PairedFieldRow({
             }
 
             const id = e.currentTarget.id;
+            if (focusedFieldIdRef.current === id) focusedFieldIdRef.current = undefined;
             if (id === latest.current.pinnedFieldId) {
                 const wasEdited = pinDirtyRef.current;
                 setPinnedField(null);
