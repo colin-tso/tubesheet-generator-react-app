@@ -18,6 +18,84 @@ const OTLtoShellConfig = numericFieldConfigs.find((cfg) => cfg.id === "OTLtoShel
 // doesn't itself cause the paired fields to lose memoization across renders.
 const stubRequestSingle = () => 0;
 
+// Worker stub for the minTubes/shellID pair: echoes back a distinct number per
+// direction so it's obvious in assertions which preview was picked up.
+const workerRequestSingle = (
+    payload: Record<string, unknown>,
+    callback: (payload: SingleResultPayload) => void,
+) => {
+    if (payload.shellID !== undefined) {
+        setTimeout(() => callback({ numTubes: 777 } as SingleResultPayload), 10);
+    } else if (payload.minTubes !== undefined) {
+        setTimeout(() => callback({ shellID: 88 } as SingleResultPayload), 10);
+    }
+    return 1;
+};
+
+function WorkerHarness() {
+    const form = useLayoutForm({
+        lastSingleResult: null,
+        postCalculateSingle: () => {},
+        postCalculateAll: () => {},
+    });
+
+    const fieldValues = {
+        minTubes: form.minTubes,
+        tubeOD: form.tubeOD,
+        OTLtoShell: form.OTLtoShell,
+        tubeClearance: form.tubeClearance,
+        pitchRatio: form.pitchRatio,
+        shellID: form.shellID,
+        actualTubes: form.actualTubes,
+        layoutOption: form.layoutOption,
+    };
+
+    return (
+        <>
+            <NumericField
+                {...tubeODConfig}
+                value={form.tubeOD}
+                onBlur={form.onBlur}
+                onKeyDown={form.onKeyDown}
+                onAccept={(value) => form.onAcceptEmpty(value, "tubeOD")}
+                onSubmit={form.inputOnSubmitHandler}
+            />
+            <NumericField
+                {...OTLtoShellConfig}
+                value={form.OTLtoShell}
+                onBlur={form.onBlur}
+                onKeyDown={form.onKeyDown}
+                onAccept={(value) => form.onAcceptEmpty(value, "OTLtoShell")}
+                onSubmit={form.inputOnSubmitHandler}
+            />
+            <PairedFieldRow
+                row={clearancePitchRow}
+                fieldValues={fieldValues}
+                layoutOption={form.layoutOption}
+                committedResult={null}
+                isCalculating={false}
+                onBlur={form.onBlur}
+                onKeyDown={form.onKeyDown}
+                onAcceptEmpty={form.onAcceptEmpty}
+                inputOnSubmitHandler={form.inputOnSubmitHandler}
+                requestSingle={stubRequestSingle}
+            />
+            <PairedFieldRow
+                row={sizeRow}
+                fieldValues={fieldValues}
+                layoutOption={form.layoutOption}
+                committedResult={null}
+                isCalculating={false}
+                onBlur={form.onBlur}
+                onKeyDown={form.onKeyDown}
+                onAcceptEmpty={form.onAcceptEmpty}
+                inputOnSubmitHandler={form.inputOnSubmitHandler}
+                requestSingle={workerRequestSingle}
+            />
+        </>
+    );
+}
+
 function Harness() {
     const form = useLayoutForm({
         lastSingleResult: null,
@@ -198,87 +276,9 @@ describe("PairedFieldRow live preview (tube clearance / pitch ratio)", () => {
 });
 
 describe("PairedFieldRow live preview (min tubes / shell ID)", () => {
-    it("live-previews the paired minTubes value while shellID is still being typed, before commit", async () => {
-        // Worker stub: given a shellID request, "respond" with a distinct
-        // numTubes preview so it's obvious whether the UI picked it up.
-        const workerRequestSingle = (
-            payload: Record<string, unknown>,
-            callback: (payload: SingleResultPayload) => void,
-        ) => {
-            if (payload.shellID !== undefined) {
-                setTimeout(() => callback({ numTubes: 777 } as SingleResultPayload), 10);
-            } else if (payload.minTubes !== undefined) {
-                setTimeout(() => callback({ shellID: 88 } as SingleResultPayload), 10);
-            }
-            return 1;
-        };
-
-        function WorkerHarness() {
-            const form = useLayoutForm({
-                lastSingleResult: null,
-                postCalculateSingle: () => {},
-                postCalculateAll: () => {},
-            });
-
-            const fieldValues = {
-                minTubes: form.minTubes,
-                tubeOD: form.tubeOD,
-                OTLtoShell: form.OTLtoShell,
-                tubeClearance: form.tubeClearance,
-                pitchRatio: form.pitchRatio,
-                shellID: form.shellID,
-                actualTubes: form.actualTubes,
-                layoutOption: form.layoutOption,
-            };
-
-            return (
-                <>
-                    <NumericField
-                        {...tubeODConfig}
-                        value={form.tubeOD}
-                        onBlur={form.onBlur}
-                        onKeyDown={form.onKeyDown}
-                        onAccept={(value) => form.onAcceptEmpty(value, "tubeOD")}
-                        onSubmit={form.inputOnSubmitHandler}
-                    />
-                    <NumericField
-                        {...OTLtoShellConfig}
-                        value={form.OTLtoShell}
-                        onBlur={form.onBlur}
-                        onKeyDown={form.onKeyDown}
-                        onAccept={(value) => form.onAcceptEmpty(value, "OTLtoShell")}
-                        onSubmit={form.inputOnSubmitHandler}
-                    />
-                    <PairedFieldRow
-                        row={clearancePitchRow}
-                        fieldValues={fieldValues}
-                        layoutOption={form.layoutOption}
-                        committedResult={null}
-                        isCalculating={false}
-                        onBlur={form.onBlur}
-                        onKeyDown={form.onKeyDown}
-                        onAcceptEmpty={form.onAcceptEmpty}
-                        inputOnSubmitHandler={form.inputOnSubmitHandler}
-                        requestSingle={stubRequestSingle}
-                    />
-                    <PairedFieldRow
-                        row={sizeRow}
-                        fieldValues={fieldValues}
-                        layoutOption={form.layoutOption}
-                        committedResult={null}
-                        isCalculating={false}
-                        onBlur={form.onBlur}
-                        onKeyDown={form.onKeyDown}
-                        onAcceptEmpty={form.onAcceptEmpty}
-                        inputOnSubmitHandler={form.inputOnSubmitHandler}
-                        requestSingle={workerRequestSingle}
-                    />
-                </>
-            );
-        }
-
-        const user = userEvent.setup();
-        render(<WorkerHarness />);
+    // Commits tubeOD/OTLtoShell/tubeClearance and minTubes=500 so shellID is
+    // ready to live-preview off the worker stub (shellID -> 88).
+    async function commitMinTubes(user: ReturnType<typeof userEvent.setup>) {
         await setTubeOD(user, "25");
 
         const OTLInput = screen.getByLabelText(/^OTL to shell/) as HTMLInputElement;
@@ -294,13 +294,19 @@ describe("PairedFieldRow live preview (min tubes / shell ID)", () => {
         await user.tab();
 
         const minTubesInput = screen.getByLabelText("Min # of tubes") as HTMLInputElement;
-        const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
-
-        // Commit minTubes = 500. shellID becomes the dependent preview side.
         await user.click(minTubesInput);
         await user.type(minTubesInput, "500");
         await user.tab();
         expect(Number(minTubesInput.value)).toBe(500);
+    }
+
+    it("live-previews the paired minTubes value while shellID is still being typed, before commit", async () => {
+        const user = userEvent.setup();
+        render(<WorkerHarness />);
+        await commitMinTubes(user);
+
+        const minTubesInput = screen.getByLabelText("Min # of tubes") as HTMLInputElement;
+        const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
 
         // Now start typing into shellID (still uncommitted).
         await user.click(shellIDInput);
@@ -315,6 +321,53 @@ describe("PairedFieldRow live preview (min tubes / shell ID)", () => {
         // not keep showing the stale committed 500.
         expect(Number(minTubesInput.value)).toBe(777);
         expect(minTubesInput).toHaveClass("field-preview");
+    });
+
+    it("Escape cancels an in-progress edit and restores the prior live preview", async () => {
+        const user = userEvent.setup();
+        render(<WorkerHarness />);
+        await commitMinTubes(user);
+
+        const minTubesInput = screen.getByLabelText("Min # of tubes") as HTMLInputElement;
+        const shellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
+
+        // Pre-edit: minTubes is its own committed, non-muted value.
+        expect(minTubesInput).toHaveClass("field-valid");
+        expect(minTubesInput).not.toHaveClass("field-preview");
+
+        // Start typing into shellID, then back out before committing.
+        await user.click(shellIDInput);
+        await user.type(shellIDInput, "40");
+        expect(shellIDInput.value).toBe("40");
+        await user.keyboard("{Escape}");
+
+        // The Escape revert remounts the input (typing is uncontrolled, so a
+        // fresh mount is what forces the DOM text to reset) -- re-query it.
+        const revertedShellIDInput = screen.getByLabelText("Shell ID") as HTMLInputElement;
+
+        // Nothing from the cancelled edit was committed, and focus is released.
+        expect(revertedShellIDInput.value).not.toBe("40");
+        expect(revertedShellIDInput).not.toHaveClass("field-valid");
+        expect(document.activeElement).not.toBe(revertedShellIDInput);
+
+        // minTubes goes back to its own committed, non-muted display -- the
+        // in-progress "shellID is driving" flip is undone.
+        expect(Number(minTubesInput.value)).toBe(500);
+        expect(minTubesInput).not.toHaveClass("field-preview");
+        expect(minTubesInput).toHaveClass("field-valid");
+
+        // The cancelled edit's debounced request doesn't resurrect itself.
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        });
+        expect(Number(minTubesInput.value)).toBe(500);
+
+        // A real commit still works normally afterwards.
+        await user.click(revertedShellIDInput);
+        await user.type(revertedShellIDInput, "45");
+        await user.tab();
+        expect(Number(revertedShellIDInput.value)).toBe(45);
+        expect(revertedShellIDInput).toHaveClass("field-valid");
     });
 });
 

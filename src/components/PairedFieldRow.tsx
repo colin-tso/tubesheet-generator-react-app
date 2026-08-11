@@ -49,6 +49,11 @@ export function PairedFieldRow({
     const [syncPreview, setSyncPreview] = useState<number | undefined>(undefined);
     // True once the pinned field was actually typed into, not just focused.
     const pinDirtyRef = useRef(false);
+    // Row-level preview state snapshotted on focus, restored on Escape.
+    const editSnapshotRef = useRef<{
+        previewTargetId: string | undefined;
+        syncPreview: number | undefined;
+    } | null>(null);
 
     const rowFieldIds = useMemo(() => row.map((cfg) => cfg.id), [row]);
     const rowId = row[0]?.row;
@@ -70,6 +75,8 @@ export function PairedFieldRow({
         layoutOption,
         pinnedFieldId: pinnedField?.id,
         previewByField: {} as Record<string, number | undefined>,
+        previewTargetId,
+        syncPreview,
     });
 
     // Only clears on empty/invalid input, not on blur.
@@ -119,13 +126,20 @@ export function PairedFieldRow({
                 [row[0].id]: previewNumberFor(row[0].id),
                 [row[1].id]: previewNumberFor(row[1].id),
             },
+            previewTargetId,
+            syncPreview,
         };
     });
 
-    // Focusing a previewed field freezes its shown value for the edit session.
+    // Focusing a previewed field freezes its shown value for the edit session,
+    // and snapshots row state so Escape can restore it.
     const handleFieldFocus = useCallback(
         (e: SyntheticEvent<HTMLInputElement>) => {
             if (!hasLivePreview) return;
+            editSnapshotRef.current = {
+                previewTargetId: latest.current.previewTargetId,
+                syncPreview: latest.current.syncPreview,
+            };
             const id = e.currentTarget.id;
             if (utils.isNumber(latest.current.fieldValues[id])) return; // already real
             const shown = latest.current.previewByField[id];
@@ -135,6 +149,18 @@ export function PairedFieldRow({
         },
         [hasLivePreview],
     );
+
+    // Cancel this edit session: undo the pin and restore the previewed side to
+    // what it was before this field was focused.
+    const handleFieldEscape = useCallback(() => {
+        if (!hasLivePreview) return;
+        pinDirtyRef.current = false; // set before NumericField's blur() fires
+        setPinnedField(null);
+        cancelPreview();
+        const snapshot = editSnapshotRef.current;
+        setPreviewTargetId(snapshot?.previewTargetId);
+        setSyncPreview(snapshot?.syncPreview);
+    }, [hasLivePreview, cancelPreview]);
 
     const handleFieldBlur = useCallback(
         (e: SyntheticEvent<HTMLInputElement>) => {
@@ -238,7 +264,8 @@ export function PairedFieldRow({
 
         if (hasLivePreview && fieldValue === undefined) {
             if (isPinned) {
-                // Frozen at focus time; DOM (read on blur) holds the real typed value.
+                // Frozen at focus time; DOM (read on blur) holds the real typed
+                // value.
                 fieldValue = pinnedField!.value;
                 isPreview = true;
             } else {
@@ -282,6 +309,7 @@ export function PairedFieldRow({
                 onFocus={cfg.calculated ? undefined : handleFieldFocus}
                 onBlur={cfg.calculated ? undefined : handleFieldBlur}
                 onKeyDown={cfg.calculated ? undefined : handleFieldKeyDown}
+                onEscape={cfg.calculated ? undefined : handleFieldEscape}
                 onAccept={
                     cfg.calculated
                         ? undefined
