@@ -1,23 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateTubeSheetSVG, ITubeSheetData } from "../plugins/tubesheet-layout-generator";
+import { TUBE_SHEET_LAYOUTS, type TubeSheetLayout } from "../plugins/tubesheet-layout-generator";
 
-export type LayoutResults = {
-    30: (ITubeSheetData & { preferred: boolean }) | null;
-    45: (ITubeSheetData & { preferred: boolean }) | null;
-    60: (ITubeSheetData & { preferred: boolean }) | null;
-    90: (ITubeSheetData & { preferred: boolean }) | null;
-    radial: (ITubeSheetData & { preferred: boolean }) | null;
-};
+export type LayoutResults = Record<
+    TubeSheetLayout,
+    (ITubeSheetData & { preferred: boolean }) | null
+>;
+export type SingleResultPayload = (ITubeSheetData & { numTubes?: number }) | null;
 
-export type SingleResultPayload = (ITubeSheetData & { shellID?: number; numTubes?: number }) | null;
-
-const emptyLayoutResults: LayoutResults = {
-    "30": null,
-    "45": null,
-    "60": null,
-    "90": null,
-    radial: null,
-};
+const emptyLayoutResults: LayoutResults = Object.fromEntries(
+    TUBE_SHEET_LAYOUTS.map((layout) => [layout, null]),
+) as LayoutResults;
 
 // Loading badge is debounced so brief calculations don't cause a flash
 // and is held visible for a minimum duration once shown.

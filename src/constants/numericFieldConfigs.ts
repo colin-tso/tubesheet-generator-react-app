@@ -1,4 +1,6 @@
 import type { NumericFieldProps } from "../components/NumericField";
+import type { PairPreviewContext } from "./pairPreviewConfigs";
+import { utils } from "../utils";
 
 export type NumericFieldConfig = Omit<NumericFieldProps, "value" | "pairedValue"> & {
     // Fields sharing the same "row" id are rendered side-by-side as a pair.
@@ -11,6 +13,9 @@ export type NumericFieldConfig = Omit<NumericFieldProps, "value" | "pairedValue"
     // Fields sharing the same "group" label are rendered together inside one
     // titled card, so related inputs read as a set rather than a flat list.
     group?: string;
+    // Overrides the static min/minExclusive once enough sibling values are
+    // known to compute a tighter, physically-derived minimum.
+    dynamicMin?: (ctx: PairPreviewContext) => { min: number; minExclusive: boolean } | undefined;
 };
 
 export const numericFieldConfigs: NumericFieldConfig[] = [
@@ -42,6 +47,11 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         pairedWith: "minTubes",
         pairedLabel: "Min # of tubes",
         group: "Design Constraint",
+        // Physical minimum is tubeOD + OTLtoShell once both are known.
+        dynamicMin: (ctx) =>
+            utils.isNumber(ctx.tubeOD) && utils.isNumber(ctx.OTLtoShell)
+                ? { min: utils.round(ctx.tubeOD + ctx.OTLtoShell, 2), minExclusive: false }
+                : undefined,
     },
     {
         id: "tubeOD",

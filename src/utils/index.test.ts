@@ -4,6 +4,7 @@ import {
     getEffectiveShellID,
     type TubeSheetLayout,
 } from "../plugins/tubesheet-layout-generator";
+import { utils } from "./index";
 
 // Fixed set of realistic inputs reused across cases.
 const OTL_CLEARANCE = 6.35;
@@ -97,6 +98,24 @@ describe("TubeSheet — edge cases", () => {
         expect(() => new TubeSheet(OTL_CLEARANCE, TUBE_OD, 0.5, 30, undefined, 500)).toThrow(
             /pitch ratio/i,
         );
+    });
+});
+
+describe("utils — comma-formatted number round-trip", () => {
+    // numberWithCommas adds a separator every 3 digits, so values >= 1e6 get
+    // more than one comma; isNumber/stringToNumber must strip all of them.
+    it.each([
+        ["1,234", 1234],
+        ["1,234,567", 1234567],
+        ["12,345,678", 12345678],
+    ])("parses %s back to %d", (formatted, expected) => {
+        expect(utils.isNumber(formatted)).toBe(true);
+        expect(utils.stringToNumber(formatted)).toBe(expected);
+    });
+
+    it("round-trips numberWithCommas output through stringToNumber", () => {
+        const n = 12345678;
+        expect(utils.stringToNumber(utils.numberWithCommas(n))).toBe(n);
     });
 });
 

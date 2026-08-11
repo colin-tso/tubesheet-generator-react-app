@@ -3,7 +3,7 @@ import { ITubeSheetData, getEffectiveShellID } from "../plugins/tubesheet-layout
 import { utils } from "../utils/";
 
 export interface TubeSheetDataTableProps {
-    data: (ITubeSheetData & { shellID?: number; numTubes?: number }) | null;
+    data: (ITubeSheetData & { numTubes?: number }) | null;
     layoutLabel: string;
     requestedTubes?: number;
     visible: boolean;
