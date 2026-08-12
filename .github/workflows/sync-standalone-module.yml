@@ -1,8 +1,9 @@
 name: "Sync standalone tubesheet-generator module"
 
 # Keeps colin-tso/tubesheet-generator's src/modules.ts + tests/modules.test.ts
-# (and the LRUCache dependency) in sync with this repo's
-# src/plugins/tubesheet-layout-generator.ts(.test.ts).
+# + README.md (and the LRUCache dependency) in sync with this repo's
+#   src/plugins/tubesheet-layout-generator.ts(.test.ts) and
+#   docs/tubesheet-generator-plugin-readme.md.
 on:
     push:
         branches:
@@ -11,6 +12,7 @@ on:
             - "src/plugins/tubesheet-layout-generator.ts"
             - "src/plugins/tubesheet-layout-generator.test.ts"
             - "src/utils/LRUCache.ts"
+            - "docs/tubesheet-generator-plugin-readme.md"
 
 concurrency:
     group: sync-standalone-module
@@ -37,12 +39,13 @@ jobs:
               with:
                   node-version: "24.x"
 
-            - name: Copy module, test file, and dependency; rewrite import paths
+            - name: Copy module, test file, README, and dependency; rewrite import paths
               run: |
                   mkdir -p target/src/utils target/tests
                   cp source/src/utils/LRUCache.ts target/src/utils/LRUCache.ts
                   cp source/src/plugins/tubesheet-layout-generator.ts target/src/modules.ts
                   cp source/src/plugins/tubesheet-layout-generator.test.ts target/tests/modules.test.ts
+                  cp source/docs/tubesheet-generator-plugin-readme.md target/README.md
                   # The plugin lives at src/plugins/ (imports are "../utils/LRUCache"
                   # and "./tubesheet-layout-generator"). The standalone layout is
                   # src/modules.ts + tests/modules.test.ts, one level shallower each.
