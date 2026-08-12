@@ -13,9 +13,7 @@ on:
             - "src/plugins/tubesheet-layout-generator.test.ts"
             - "src/utils/LRUCache.ts"
             - "docs/tubesheet-generator-plugin-readme.md"
-
-permissions:
-    contents: read
+            - "package.json"
 
 concurrency:
     group: sync-standalone-module
@@ -49,11 +47,32 @@ jobs:
                   cp source/src/plugins/tubesheet-layout-generator.ts target/src/modules.ts
                   cp source/src/plugins/tubesheet-layout-generator.test.ts target/tests/modules.test.ts
                   cp source/docs/tubesheet-generator-plugin-readme.md target/README.md
-                  # The plugin lives at src/plugins/ (imports are "../utils/LRUCache"
-                  # and "./tubesheet-layout-generator"). The standalone layout is
-                  # src/modules.ts + tests/modules.test.ts, one level shallower each.
+                  # The plugin lives at src/plugins/ (imports are
+                  # "../utils/LRUCache" and "./tubesheet-layout-generator"). The
+                  # standalone layout is src/modules.ts + tests/modules.test.ts,
+                  # one level shallower each.
                   sed -i 's#"\.\./utils/LRUCache"#"./utils/LRUCache"#' target/src/modules.ts
                   sed -i 's#"\./tubesheet-layout-generator"#"../src/modules"#' target/tests/modules.test.ts
+
+            - name: Sync shared dependency versions from source package.json
+              run: |
+                  # Sync lodash.memoize runtime dependency
+                  sync_dep() {
+                      local pkg="$1" section="$2"
+                      local version
+                      version=$(jq -r --arg p "$pkg" '.dependencies[$p] // .devDependencies[$p] // empty' source/package.json)
+                      if [ -z "$version" ]; then
+                          echo "::warning::${pkg} not found in source package.json — leaving target's version as-is."
+                          return
+                      fi
+                      jq --arg p "$pkg" --arg v "$version" --arg s "$section" \
+                          '.[$s][$p] = $v' target/package.json > target/package.json.tmp
+                      mv target/package.json.tmp target/package.json
+                      echo "Synced ${pkg}@${version} into target ${section}"
+                  }
+
+                  sync_dep "lodash.memoize" "dependencies"
+                  sync_dep "@types/lodash.memoize" "devDependencies"
 
             - name: Install target dependencies
               working-directory: target
@@ -86,5 +105,6 @@ jobs:
                     exit 0
                   fi
                   SOURCE_SHA=$(cd ../source && git rev-parse --short HEAD)
+                  TARGET_BRANCH=$(git branch --show-current)
                   git commit -m "Sync modules.ts from tubesheet-generator-react-app@${SOURCE_SHA}"
-                  git push origin HEAD:main
+                  git push origin "HEAD:${TARGET_BRANCH}"
