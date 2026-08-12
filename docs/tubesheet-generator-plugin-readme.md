@@ -3,8 +3,9 @@
 A TypeScript module for computing tube sheet layouts for shell-and-tube heat exchangers: given a tube OD, pitch ratio, and layout angle, the module will
 determine how many tubes fit, where each one sits, and the resulting outer tube limit (OTL) and minimum shell ID.
 
-> **This repo is auto-synced — don't edit `src/modules.ts`,
-> `src/utils/LRUCache.ts`, or `tests/modules.test.ts` directly.** They're mirrored from [`tubesheet-generator-react-app`](https://github.com/colin-tso/tubesheet-generator-react-app) (`src/plugins/tubesheet-layout-generator.ts` and its test file) by a GitHub Actions workflow every time that source changes. Any manual edits to those three files will be overwritten on the next sync. If something here needs fixing, fix it in the react-app repo instead — everything else in this repo (`package.json`, `tsconfig.json`, `vitest.config.ts`, this README) is maintained locally and is safe to edit.
+> **This repo is auto-synced — don't edit `src/modules.ts`, `src/utils/LRUCache.ts`, or `tests/modules.test.ts` directly.**
+>
+> They're mirrored from [`tubesheet-generator-react-app`](https://github.com/colin-tso/tubesheet-generator-react-app) (`src/plugins/tubesheet-layout-generator.ts` and its test file) by a GitHub Actions workflow every time that source changes. Any manual edits to those three files will be overwritten on the next sync. If something here needs fixing, fix it in the react-app repo instead — everything else in this repo (`package.json`, `tsconfig.json`, `vitest.config.ts`, this README) is maintained locally and is safe to edit.
 
 ## Install
 
