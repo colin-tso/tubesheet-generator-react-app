@@ -87,4 +87,4 @@ jobs:
                   fi
                   SOURCE_SHA=$(cd ../source && git rev-parse --short HEAD)
                   git commit -m "Sync modules.ts from tubesheet-generator-react-app@${SOURCE_SHA}"
-                  git push origin HEAD:master
+                  git push origin HEAD:main
