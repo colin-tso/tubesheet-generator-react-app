@@ -1,9 +1,11 @@
 name: "Sync standalone tubesheet-generator module"
 
 # Keeps colin-tso/tubesheet-generator's src/modules.ts + tests/modules.test.ts
-# + README.md (and the LRUCache dependency) in sync with this repo's
+# + README.md in sync with this repo's
 #   src/plugins/tubesheet-layout-generator.ts(.test.ts) and
-#   docs/tubesheet-generator-plugin-readme.md.
+#   docs/tubesheet-generator-plugin-readme.md. Any files those import relatively
+#   (however deep) are discovered and synced automatically — see
+#   scripts/sync-relative-imports.mjs.
 on:
     push:
         branches:
@@ -11,7 +13,7 @@ on:
         paths:
             - "src/plugins/tubesheet-layout-generator.ts"
             - "src/plugins/tubesheet-layout-generator.test.ts"
-            - "src/utils/LRUCache.ts"
+            - "src/utils/**"
             - "docs/tubesheet-generator-plugin-readme.md"
             - "package.json"
 
@@ -40,45 +42,55 @@ jobs:
               with:
                   node-version: "24.x"
 
-            - name: Copy module, test file, README, and dependency; rewrite import paths
+            - name: Copy module, test file, and README; recursively sync relative-import dependencies
               run: |
-                  mkdir -p target/src/utils target/tests
-                  cp source/src/utils/LRUCache.ts target/src/utils/LRUCache.ts
-                  cp source/src/plugins/tubesheet-layout-generator.ts target/src/modules.ts
-                  cp source/src/plugins/tubesheet-layout-generator.test.ts target/tests/modules.test.ts
+                  # Discover all relative imports into src/modules.ts and its
+                  # test file, and copy into target repo with new local path.
+                  # See source/scripts/sync-relative-imports.mjs.
+                  mkdir -p target/tests
+                  node source/scripts/sync-relative-imports.mjs source target
                   cp source/docs/tubesheet-generator-plugin-readme.md target/README.md
-                  # The plugin lives at src/plugins/ (imports are
-                  # "../utils/LRUCache" and "./tubesheet-layout-generator"). The
-                  # standalone layout is src/modules.ts + tests/modules.test.ts,
-                  # one level shallower each.
-                  sed -i 's#"\.\./utils/LRUCache"#"./utils/LRUCache"#' target/src/modules.ts
-                  sed -i 's#"\./tubesheet-layout-generator"#"../src/modules"#' target/tests/modules.test.ts
 
-            - name: Sync shared dependency versions from source package.json
+            - name: Sync runtime dependency versions from source package.json
               run: |
-                  # Sync lodash.memoize runtime dependency
-                  sync_dep() {
-                      local pkg="$1" section="$2"
-                      local version
+                  # Detect the module's actual runtime dependencies by
+                  # extracting its bare (non-relative) import specifiers, skip
+                  # Node built-ins, and pull each one's version straight from
+                  # source's package.json.
+                  IMPORTS=$(grep -rhoP "(?<=from [\"'])[^\"'.][^\"']*(?=[\"'])" target/src | tr -d '\r' | sort -u)
+                  echo "Detected bare imports: ${IMPORTS:-none}"
+
+                  for pkg in $IMPORTS; do
+                      if node -e "process.exit(require('node:module').isBuiltin('$pkg') ? 0 : 1)"; then
+                          continue
+                      fi
+
                       version=$(jq -r --arg p "$pkg" '.dependencies[$p] // .devDependencies[$p] // empty' source/package.json)
                       if [ -z "$version" ]; then
-                          echo "::warning::${pkg} not found in source package.json — leaving target's version as-is."
-                          return
+                          echo "::warning::${pkg} is imported by modules.ts but not found in source package.json — skipping."
+                          continue
                       fi
-                      jq --arg p "$pkg" --arg v "$version" --arg s "$section" \
-                          '.[$s][$p] = $v' target/package.json > target/package.json.tmp
-                      mv target/package.json.tmp target/package.json
-                      echo "Synced ${pkg}@${version} into target ${section}"
-                  }
 
-                  sync_dep "lodash.memoize" "dependencies"
-                  sync_dep "@types/lodash.memoize" "devDependencies"
+                      jq --arg p "$pkg" --arg v "$version" '.dependencies[$p] = $v' target/package.json > target/package.json.tmp
+                      mv target/package.json.tmp target/package.json
+                      echo "Synced ${pkg}@${version} into target dependencies"
+
+                      # Mirror @types/<pkg> too, if the source repo has it –
+                      # common for packages that ship without their own types.
+                      types_pkg="@types/${pkg}"
+                      types_version=$(jq -r --arg p "$types_pkg" '.dependencies[$p] // .devDependencies[$p] // empty' source/package.json)
+                      if [ -n "$types_version" ]; then
+                          jq --arg p "$types_pkg" --arg v "$types_version" '.devDependencies[$p] = $v' target/package.json > target/package.json.tmp
+                          mv target/package.json.tmp target/package.json
+                          echo "Synced ${types_pkg}@${types_version} into target devDependencies"
+                      fi
+                  done
 
             - name: Install target dependencies
               working-directory: target
               run: npm install
 
-            - name: Run tests (gate — do not push on failure)
+            - name: Run tests (gate – do not push on failure)
               working-directory: target
               run: npx vitest run
 
@@ -86,11 +98,10 @@ jobs:
               working-directory: target
               run: |
                   npx tsc
-                  # Node's ESM loader requires explicit extensions on relative
-                  # imports, but the shared source (bundler-resolved, no
-                  # extension needed) doesn't have one. Patch it into the
-                  # compiled output only.
-                  sed -i 's#from "\./utils/LRUCache"#from "./utils/LRUCache.js"#' src/modules.js
+                  # Patch .js extensions onto every relative import in every
+                  # compiled file – whatever tsc emitted, not just modules.js.
+                  # See ../source/scripts/fix-esm-extensions.mjs.
+                  node ../source/scripts/fix-esm-extensions.mjs src
 
             - name: Commit and push if changed
               working-directory: target
