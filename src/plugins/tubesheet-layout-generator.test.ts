@@ -94,6 +94,18 @@ describe("TubeSheet — edge cases", () => {
             /pitch ratio/i,
         );
     });
+
+    it("returns null tubeField/minID and zero numTubes without throwing when neither minTubes nor shellID is given", () => {
+        // Backported from the legacy standalone-module jest suite. Neither
+        // sizing input is provided, so there's nothing to derive a shell size
+        // from.
+        const ts = new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, 30);
+
+        expect(ts.tubeField).toBeNull();
+        expect(ts.minID).toBeNull();
+        expect(ts.OTL).toBeNull();
+        expect(ts.numTubes).toBe(0);
+    });
 });
 
 describe("TubeSheet — regression: findMinID hang on sparse tube fields", () => {
@@ -127,6 +139,128 @@ describe("TubeSheet — regression: findMinID hang on sparse tube fields", () =>
         expect(ts.numTubes).toBe(ref.numTubes);
         expect(ts.minID).toBeCloseTo(ref.minID, 6);
         expect(ts.OTL).toBeCloseTo(ref.OTL, 6);
+    });
+});
+
+describe("TubeSheet — exact tube field regression (backported from legacy jest suite)", () => {
+    // These check every tube's exact (x, y), which would also catch a change
+    // that preserves count and symmetry but subtly shuffles where individual
+    // tubes land.
+
+    const closeTo = (actual: number, expected: number, precision = 6) =>
+        expect(Math.abs(actual - expected)).toBeLessThan(Math.pow(10, -precision) / 2);
+
+    const OTL_CLEARANCE_LEGACY = 40;
+    const TUBE_OD_LEGACY = 95.3;
+    const PITCH_RATIO_LEGACY = (95.3 + 20) / 95.3;
+
+    it("matches the exact tube field for a 30-degree layout", () => {
+        const ts = new TubeSheet(OTL_CLEARANCE_LEGACY, TUBE_OD_LEGACY, PITCH_RATIO_LEGACY, 30, 12);
+        const expected = [
+            { x: 0, y: -199.70545811269156 },
+            { x: -172.95, y: -99.85272905634578 },
+            { x: -57.65, y: -99.85272905634578 },
+            { x: 57.65, y: -99.85272905634578 },
+            { x: 172.95, y: -99.85272905634578 },
+            { x: -115.3, y: 0 },
+            { x: 0, y: 0 },
+            { x: 115.3, y: 0 },
+            { x: -172.95, y: 99.85272905634578 },
+            { x: -57.65, y: 99.85272905634578 },
+            { x: 57.65, y: 99.85272905634578 },
+            { x: 172.95, y: 99.85272905634578 },
+            { x: 0, y: 199.70545811269156 },
+        ];
+
+        expect(ts.numTubes).toBe(13);
+        expect(ts.tubeField).toHaveLength(expected.length);
+        ts.tubeField!.forEach((p, i) => {
+            closeTo(p.x, expected[i].x);
+            closeTo(p.y, expected[i].y);
+        });
+        closeTo(ts.minID!, 534.71091622539);
+    });
+
+    it("matches the exact tube field for a 60-degree layout", () => {
+        const ts = new TubeSheet(OTL_CLEARANCE_LEGACY, TUBE_OD_LEGACY, PITCH_RATIO_LEGACY, 60, 5);
+        const expected = [
+            { x: 0, y: -115.3 },
+            { x: -99.85272905634578, y: -57.65 },
+            { x: 99.85272905634578, y: -57.65 },
+            { x: 0, y: 0 },
+            { x: -99.85272905634578, y: 57.65 },
+            { x: 99.85272905634578, y: 57.65 },
+            { x: 0, y: 115.3 },
+        ];
+
+        expect(ts.numTubes).toBe(7);
+        expect(ts.tubeField).toHaveLength(expected.length);
+        ts.tubeField!.forEach((p, i) => {
+            closeTo(p.x, expected[i].x);
+            closeTo(p.y, expected[i].y);
+        });
+        closeTo(ts.minID!, 365.90000000001);
+    });
+
+    it("matches the exact tube field for a 45-degree layout", () => {
+        const ts = new TubeSheet(OTL_CLEARANCE_LEGACY, TUBE_OD_LEGACY, PITCH_RATIO_LEGACY, 45, 10);
+        const expected = [
+            { x: -81.52941187080894, y: -163.05882374161789 },
+            { x: 81.52941187080894, y: -163.05882374161789 },
+            { x: -163.0588237416179, y: -81.52941187080894 },
+            { x: 0, y: -81.52941187080894 },
+            { x: 163.0588237416179, y: -81.52941187080894 },
+            { x: -81.52941187080894, y: 0 },
+            { x: 81.52941187080894, y: 0 },
+            { x: -163.0588237416179, y: 81.52941187080894 },
+            { x: 0, y: 81.52941187080894 },
+            { x: 163.0588237416179, y: 81.52941187080894 },
+            { x: -81.52941187080894, y: 163.05882374161789 },
+            { x: 81.52941187080894, y: 163.05882374161789 },
+        ];
+
+        expect(ts.numTubes).toBe(12);
+        expect(ts.tubeField).toHaveLength(expected.length);
+        ts.tubeField!.forEach((p, i) => {
+            closeTo(p.x, expected[i].x);
+            closeTo(p.y, expected[i].y);
+        });
+        closeTo(ts.minID!, 499.91061421742);
+    });
+
+    it("matches the exact tube field for a radial layout", () => {
+        const ts = new TubeSheet(
+            OTL_CLEARANCE_LEGACY,
+            TUBE_OD_LEGACY,
+            PITCH_RATIO_LEGACY,
+            "radial",
+            15,
+        );
+        const expected = [
+            { x: 0, y: 277.2811849744992 },
+            { x: 112.78041836460781, y: 253.30896702321152 },
+            { x: 206.06007781603927, y: 185.53732743388937 },
+            { x: 263.71007781603925, y: 85.68459837754357 },
+            { x: 275.7622096307997, y: -28.983776158418344 },
+            { x: 240.13255017936828, y: -138.64059248724953 },
+            { x: 162.98179126619192, y: -224.32519086479317 },
+            { x: 57.650000000000105, y: -271.2219258114329 },
+            { x: -57.64999999999995, y: -271.2219258114329 },
+            { x: -162.9817912661919, y: -224.32519086479317 },
+            { x: -240.13255017936822, y: -138.64059248724968 },
+            { x: -275.7622096307997, y: -28.98377615841856 },
+            { x: -263.7100778160393, y: 85.68459837754354 },
+            { x: -206.06007781603932, y: 185.5373274338893 },
+            { x: -112.78041836460801, y: 253.30896702321144 },
+        ];
+
+        expect(ts.numTubes).toBe(15);
+        expect(ts.tubeField).toHaveLength(expected.length);
+        ts.tubeField!.forEach((p, i) => {
+            closeTo(p.x, expected[i].x);
+            closeTo(p.y, expected[i].y);
+        });
+        closeTo(ts.minID!, 689.8623699489983);
     });
 });
 
