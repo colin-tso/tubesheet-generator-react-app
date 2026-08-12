@@ -1,0 +1,84 @@
+name: "Sync standalone tubesheet-generator module"
+
+# Keeps colin-tso/tubesheet-generator's src/modules.ts + tests/modules.test.ts
+# (and the LRUCache dependency) in sync with this repo's
+# src/plugins/tubesheet-layout-generator.ts(.test.ts).
+on:
+    push:
+        branches:
+            - master
+        paths:
+            - "src/plugins/tubesheet-layout-generator.ts"
+            - "src/plugins/tubesheet-layout-generator.test.ts"
+            - "src/utils/LRUCache.ts"
+
+concurrency:
+    group: sync-standalone-module
+    cancel-in-progress: false
+
+jobs:
+    sync:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout react-app (source)
+              uses: actions/checkout@v4
+              with:
+                  path: source
+
+            - name: Checkout standalone repo (target)
+              uses: actions/checkout@v4
+              with:
+                  repository: colin-tso/tubesheet-generator
+                  token: ${{ secrets.GH_ORG_PAT }}
+                  path: target
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24.x"
+
+            - name: Copy module, test file, and dependency; rewrite import paths
+              run: |
+                  mkdir -p target/src/utils target/tests
+                  cp source/src/utils/LRUCache.ts target/src/utils/LRUCache.ts
+                  cp source/src/plugins/tubesheet-layout-generator.ts target/src/modules.ts
+                  cp source/src/plugins/tubesheet-layout-generator.test.ts target/tests/modules.test.ts
+                  # The plugin lives at src/plugins/ (imports are "../utils/LRUCache"
+                  # and "./tubesheet-layout-generator"). The standalone layout is
+                  # src/modules.ts + tests/modules.test.ts, one level shallower each.
+                  sed -i 's#"\.\./utils/LRUCache"#"./utils/LRUCache"#' target/src/modules.ts
+                  sed -i 's#"\./tubesheet-layout-generator"#"../src/modules"#' target/tests/modules.test.ts
+
+            - name: Install target dependencies
+              working-directory: target
+              run: npm install
+
+            - name: Run tests (gate — do not push on failure)
+              working-directory: target
+              run: npx vitest run
+
+            - name: Compile module for distribution
+              working-directory: target
+              run: |
+                  npx tsc
+                  # Node's ESM loader requires explicit extensions on relative
+                  # imports, but the shared source (bundler-resolved, no
+                  # extension needed) doesn't have one. Patch it into the
+                  # compiled output only.
+                  sed -i 's#from "\./utils/LRUCache"#from "./utils/LRUCache.js"#' src/modules.js
+
+            - name: Commit and push if changed
+              working-directory: target
+              env:
+                  GH_TOKEN: ${{ secrets.GH_ORG_PAT }}
+              run: |
+                  git config user.name "${{ secrets.GH_ORG_NAME }}"
+                  git config user.email "${{ secrets.GH_ORG_EMAIL }}"
+                  git add -A
+                  if git diff --cached --quiet; then
+                    echo "No changes to sync."
+                    exit 0
+                  fi
+                  SOURCE_SHA=$(cd ../source && git rev-parse --short HEAD)
+                  git commit -m "Sync modules.ts from tubesheet-generator-react-app@${SOURCE_SHA}"
+                  git push origin HEAD:master
