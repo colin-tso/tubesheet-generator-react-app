@@ -1,12 +1,19 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
-
 @font-face {
   font-family: "Commit Mono";
-  font-weight: 400 400 600 650 700;
+  font-weight: 400 700;
   font-style: normal;
 
   font-display: swap;
-  src: url("./fonts/CommitMono VariableFont.woff2") format("woff2");
+  src: url("/fonts/CommitMono VariableFont.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  font-style: normal;
+
+  font-display: swap;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
 }
 
 /* ============================================================
@@ -14,7 +21,7 @@
    ============================================================ */
 :root {
   --font-ui: "Inter", Arial, "Segoe UI", -apple-system, BlinkMacSystemFont, "Noto Sans", Helvetica, sans-serif;
-  --font-mono: "Commit Mono", "IBM Plex Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+  --font-mono: "Commit Mono", "SFMono-Regular", Consolas, Menlo, monospace;
   --font-monochrome-emoji: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", monospace;
 
   --radius-sm: 3px;
