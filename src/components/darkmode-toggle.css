@@ -76,3 +76,10 @@
   height: calc(32px * var(--toggle-scale));
   fill: var(--dm);
 }
+
+/* Outline focus around the toggle container when focused via keyboard */
+.toggle:has(input:focus-visible) {
+  outline: 1px solid var(--blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--blue-glow);
+}

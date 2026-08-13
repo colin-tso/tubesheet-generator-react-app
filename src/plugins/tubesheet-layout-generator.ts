@@ -1342,6 +1342,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
     );
 
     mergedSVG.setAttribute("title", "Tubesheet Layout Drawing");
+    mergedSVG.setAttribute("aria-label", "Tubesheet Layout Drawing");
     mergedSVG.setAttribute(
         "desc",
         `Shell ID: ${round(shellIDForSVG(), 2)} mm; OTL: ${round(ts.OTL, 2)} mm; Tube OD: ${

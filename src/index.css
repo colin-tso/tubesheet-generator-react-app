@@ -1,12 +1,19 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
-
 @font-face {
   font-family: "Commit Mono";
-  font-weight: 400 400 600 650 700;
+  font-weight: 400 700;
   font-style: normal;
 
   font-display: swap;
-  src: url("./fonts/CommitMono VariableFont.woff2") format("woff2");
+  src: url("/fonts/CommitMono-VariableFont.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  font-style: normal;
+
+  font-display: swap;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
 }
 
 /* ============================================================
@@ -14,7 +21,7 @@
    ============================================================ */
 :root {
   --font-ui: "Inter", Arial, "Segoe UI", -apple-system, BlinkMacSystemFont, "Noto Sans", Helvetica, sans-serif;
-  --font-mono: "Commit Mono", "IBM Plex Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+  --font-mono: "Commit Mono", "SFMono-Regular", Consolas, Menlo, monospace;
   --font-monochrome-emoji: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", monospace;
 
   --radius-sm: 3px;
@@ -941,9 +948,12 @@ footer a {
    Viewport (drawing canvas)
    ============================================================ */
 .viewport {
+  touch-action: none;
+
   position: relative;
 
   overflow: hidden;
+  overscroll-behavior: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -966,6 +976,8 @@ footer a {
     5rem 5rem,
     1rem 1rem,
     1rem 1rem;
+
+  -webkit-tap-highlight-color: transparent;
 }
 
 .viewport::before,
@@ -1623,8 +1635,12 @@ footer a {
    ============================================================ */
 
 .context-menu {
+  touch-action: none;
+
   position: absolute;
   z-index: 50;
+
+  overscroll-behavior: none;
 
   min-width: 150px;
   margin: 0;
@@ -1640,8 +1656,12 @@ footer a {
   background-color: var(--panel);
   outline: none;
   box-shadow: var(--elevation-high);
+
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* Outline removed since keyboard navigation uses a roving .focus class
+   to visually highlight the active menu item. */
 .context-menu:focus,
 .context-menu:focus-visible {
   outline: none;
@@ -1836,5 +1856,19 @@ footer a {
   .tubesheet-data-table th,
   .tubesheet-data-table td {
     padding: 5px 9px;
+  }
+}
+
+/* ============================================================
+   Accessibility
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
