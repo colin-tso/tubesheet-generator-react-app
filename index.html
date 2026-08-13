@@ -5,11 +5,25 @@
         <title>Tubesheet Layout Generator</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="Tubesheet Layout Generator" content="Tubesheet Layout Generator" />
-        <meta name="theme-color" content="#1C4A75" />
+        <meta name="theme-color" id="theme-color-meta" content="#F9F8F6" />
+        <link
+            rel="preload"
+            href="/fonts/CommitMono-VariableFont.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="/fonts/InterVariable.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="mask-icon" href="/mask-icon.svg" color="#1C4A75" />
+        <link rel="mask-icon" href="/mask-icon.svg" color="#10161E" />
         <link rel="manifest" href="/manifest.webmanifest" />
 
         <meta property="og:type" content="website" />
@@ -20,6 +34,25 @@
         <meta name="twitter:title" content="Tubesheet Layout Generator" />
         <meta name="twitter:description" content="Shell & tube layout drawings, in the browser" />
         <meta name="twitter:image" content="/og-image.png" />
+
+        <script>
+            (function () {
+                try {
+                    var THEME_COLOR_LIGHT = "#F9F8F6";
+                    var THEME_COLOR_DARK = "#10161E";
+                    var stored = localStorage.getItem("theme-preference");
+                    var isDark =
+                        stored === "dark" ||
+                        (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+                    var docEl = document.documentElement;
+                    docEl.setAttribute("data-theme", isDark ? "dark" : "light");
+                    docEl.style.setProperty("color-scheme", isDark ? "dark" : "light");
+                    var meta = document.getElementById("theme-color-meta");
+                    if (meta)
+                        meta.setAttribute("content", isDark ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+                } catch (e) {}
+            })();
+        </script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
