@@ -7,7 +7,7 @@
     </clipPath>
   </defs>
   <g clip-path="url(#squircle)">
-    <rect x="0" y="0" width="512" height="512" fill="#1C4A75"/>
+    <rect x="0" y="0" width="512" height="512" fill="#10161E"/>
   </g>
   <!-- shell ring, tube triangle flipped 180deg: single tube now at bottom, pair at top -->
   <circle cx="256" cy="256" r="210" fill="none" stroke="#FFFFFF" stroke-width="26"/>
