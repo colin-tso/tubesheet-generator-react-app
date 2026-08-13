@@ -60,8 +60,7 @@ export default function ThemeToggle() {
                     name="toggle"
                     type="checkbox"
                     checked={isEnabled}
-                    onClick={toggleState}
-                    readOnly
+                    onChange={toggleState}
                 />
             </div>
         </label>
