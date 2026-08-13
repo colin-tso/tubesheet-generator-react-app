@@ -948,9 +948,12 @@ footer a {
    Viewport (drawing canvas)
    ============================================================ */
 .viewport {
+  touch-action: none;
+
   position: relative;
 
   overflow: hidden;
+  overscroll-behavior: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -973,6 +976,8 @@ footer a {
     5rem 5rem,
     1rem 1rem,
     1rem 1rem;
+
+  -webkit-tap-highlight-color: transparent;
 }
 
 .viewport::before,
@@ -1630,8 +1635,12 @@ footer a {
    ============================================================ */
 
 .context-menu {
+  touch-action: none;
+
   position: absolute;
   z-index: 50;
+
+  overscroll-behavior: none;
 
   min-width: 150px;
   margin: 0;
@@ -1647,6 +1656,8 @@ footer a {
   background-color: var(--panel);
   outline: none;
   box-shadow: var(--elevation-high);
+
+  -webkit-tap-highlight-color: transparent;
 }
 
 .context-menu:focus,
