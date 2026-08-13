@@ -35,6 +35,20 @@
         <meta name="twitter:title" content="Tubesheet Layout Generator" />
         <meta name="twitter:description" content="Shell & tube layout drawings, in the browser" />
         <meta name="twitter:image" content="/og-image.png" />
+
+        <script>
+            (function () {
+                try {
+                    var stored = localStorage.getItem("theme-preference");
+                    var isDark =
+                        stored === "dark" ||
+                        (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+                    var docEl = document.documentElement;
+                    docEl.setAttribute("data-theme", isDark ? "dark" : "light");
+                    docEl.style.setProperty("color-scheme", isDark ? "dark" : "light");
+                } catch (e) {}
+            })();
+        </script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
