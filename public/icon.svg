@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" title="Tubesheet Layout Generator">
   <title>Tubesheet Layout Generator</title>
+  <style>
+    .bg { fill: #F9F8F6; }
+    .glyph { fill: #10161E; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #10161E; }
+      .glyph { fill: #F9F8F6; }
+    }
+  </style>
   <defs>
     <clipPath id="squircle">
       <rect x="0" y="0" width="512" height="512" rx="112" ry="112"/>
