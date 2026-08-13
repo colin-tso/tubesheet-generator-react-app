@@ -1660,6 +1660,8 @@ footer a {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Outline removed since keyboard navigation uses a roving .focus class
+   to visually highlight the active menu item. */
 .context-menu:focus,
 .context-menu:focus-visible {
   outline: none;
