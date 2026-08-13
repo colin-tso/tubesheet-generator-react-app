@@ -351,7 +351,7 @@ export function PairedFieldRow({
                 <span className="field-row-or">or</span>
                 {fields[1]}
             </div>
-            {rowHint && <p className="field-row-hint">{rowHint}</p>}
+            {rowHint ? <p className="field-row-hint">{rowHint}</p> : null}
         </div>
     );
 }

@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { TubeSheetSVG } from "../TubeSheetSVG";
 import { TubeSheetDataTable } from "../TubeSheetDataTable";
 import { ShellOTLTooltip } from "../ShellOTLTooltip";
-import { ContextMenu, type ContextMenuItem } from "../context-menu";
+import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
 import TableIcon from "../../assets/table-icon.svg?react";
 import TableOffIcon from "../../assets/table-off-icon.svg?react";
 import GridIcon from "../../assets/grid-icon.svg?react";
