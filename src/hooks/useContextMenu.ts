@@ -8,8 +8,8 @@ interface Position {
 
 export type AnimationLifecycle = "idle" | "fading-in" | "fading-out";
 
-// Position, open/close and fade lifecycle for the custom right-click
-// context menu shown over the drawing viewport.
+// Position, open/close and fade lifecycle for the custom right-click context
+// menu shown over the drawing viewport.
 export function useContextMenu(containerRef: RefObject<HTMLDivElement | null>) {
     const [contextMenuPos, setContextMenuPos] = useState<Position>({ x: 0, y: 0 });
     const [contextMenuAnimationState, setContextMenuAnimationState] =
@@ -33,7 +33,8 @@ export function useContextMenu(containerRef: RefObject<HTMLDivElement | null>) {
         };
     }, [contextMenuAnimationState]);
 
-    // useCallback so consumers memoizing on these (e.g. ViewportPane) stay stable.
+    // useCallback so consumers memoizing on these (e.g. Viewport.Frame) stay
+    // stable.
     const openContextMenu = useCallback(
         (e: MouseEvent<HTMLDivElement>) => {
             e.preventDefault();
