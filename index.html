@@ -5,8 +5,7 @@
         <title>Tubesheet Layout Generator</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="Tubesheet Layout Generator" content="Tubesheet Layout Generator" />
-        <meta name="theme-color" content="#10161E" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#10161E" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" id="theme-color-meta" content="#F9F8F6" />
         <link
             rel="preload"
             href="/fonts/CommitMono-VariableFont.woff2"
@@ -39,6 +38,8 @@
         <script>
             (function () {
                 try {
+                    var THEME_COLOR_LIGHT = "#F9F8F6";
+                    var THEME_COLOR_DARK = "#10161E";
                     var stored = localStorage.getItem("theme-preference");
                     var isDark =
                         stored === "dark" ||
@@ -46,6 +47,9 @@
                     var docEl = document.documentElement;
                     docEl.setAttribute("data-theme", isDark ? "dark" : "light");
                     docEl.style.setProperty("color-scheme", isDark ? "dark" : "light");
+                    var meta = document.getElementById("theme-color-meta");
+                    if (meta)
+                        meta.setAttribute("content", isDark ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
                 } catch (e) {}
             })();
         </script>
