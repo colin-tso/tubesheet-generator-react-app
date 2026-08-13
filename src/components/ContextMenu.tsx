@@ -165,7 +165,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                             isFirstSelectable ? "first" : ""
                         } ${isLastSelectable ? "last" : ""}`}
                     >
-                        {item.icon && <span className="icon">{item.icon}</span>}
+                        {item.icon ? <span className="icon">{item.icon}</span> : null}
                         {item.label}
                     </li>
                 );

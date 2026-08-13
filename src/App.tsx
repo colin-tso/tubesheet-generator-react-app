@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { ReactNode, SubmitEvent } from "react";
 import packageJson from "../package.json";
 import {
     TubeSheet,
@@ -10,17 +9,12 @@ import { NumericField } from "./components/NumericField";
 import { PairedFieldRow } from "./components/PairedFieldRow";
 import { utils } from "./utils/";
 import ThemeToggle from "./components/DarkmodeToggle";
-import { ContextMenuItem } from "./components/context-menu";
-import SaveIcon from "./assets/save-icon.svg?react";
-import CopyIcon from "./assets/copy-icon.svg?react";
 import { useTubeSheetWorker } from "./hooks/useTubeSheetWorker";
 import { useLayoutForm } from "./hooks/useLayoutForm";
-import { useSvgExportActions } from "./hooks/useSvgExportActions";
-import { useContextMenu } from "./hooks/useContextMenu";
-import { useViewportFooterReserve } from "./hooks/useViewportFooterReserve";
 import { LayoutOptionsList } from "./components/LayoutOptionsList";
-import { ViewportPane } from "./components/ViewportPane";
 import { FormFooter } from "./components/FormFooter";
+import { Viewport } from "./components/viewport/Viewport";
+import { useViewportContext } from "./components/viewport/ViewportContext";
 import { numericFieldConfigs } from "./constants/numericFieldConfigs";
 import type { NumericFieldConfig } from "./constants/numericFieldConfigs";
 import { layoutOptionRows } from "./constants/layoutOptionRows";
@@ -75,22 +69,39 @@ const numericFieldGroups: NumericFieldGroup[] = numericFieldRows.reduce<NumericF
     [],
 );
 
+// Applies the wait cursor app-wide while a worker calculation or clipboard copy
+// is in flight. Reads viewport state via context so it can sit above both the
+// form and the viewport without either needing an "isBusy" prop.
+function BusyRow({ children }: { children: ReactNode }) {
+    const { state } = useViewportContext();
+    return <div className={`row-pane${state.isBusy ? " app-busy" : ""}`}>{children}</div>;
+}
+
+// The input form's background grid follows the same showGrid preference as the
+// viewport, so it also reads state from context rather than a prop.
+function FormPane({
+    children,
+    onSubmit,
+}: {
+    children: ReactNode;
+    onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+}) {
+    const { state } = useViewportContext();
+    return (
+        <form
+            className={`column-pane left${state.showGrid ? "" : " grid-hidden"}`}
+            onSubmit={onSubmit}
+        >
+            {children}
+        </form>
+    );
+}
+
 // --- App component ---
 const App = () => {
     // Worker lifecycle, calculation results, loading/error/status state.
-    const {
-        layoutResults,
-        drawingSVG,
-        lastSingleResult,
-        isCalculating,
-        showLoadingBadge,
-        calcError,
-        announcement,
-        onDrawingRendered,
-        postCalculateSingle,
-        postCalculateAll,
-        requestSingle,
-    } = useTubeSheetWorker(placeholderSVG);
+    const worker = useTubeSheetWorker(placeholderSVG);
+    const { layoutResults, lastSingleResult, isCalculating, showLoadingBadge } = worker;
 
     // All calculation-input field state, validation, and input handlers.
     const {
@@ -109,33 +120,11 @@ const App = () => {
         onLayoutOptionChange,
         formOnSubmitHandler,
         inputOnSubmitHandler,
-    } = useLayoutForm({ lastSingleResult, postCalculateSingle, postCalculateAll });
-
-    // Copy-to-clipboard / download-as-file actions for the drawing.
-    const { copyState, downloadSVG, copySVG, copyReady } = useSvgExportActions(drawingSVG);
-    // True while a worker-backed operation is running (layout calculation or
-    // clipboard copy), used to show a loading cursor across the whole app.
-    const isBusy = isCalculating || copyState === "pending";
-
-    // Show/hide grid state
-    const [showGrid, setShowGrid] = useState<boolean>(() => {
-        const stored = window.localStorage.getItem("view-options.showGrid");
-        return stored === null ? true : stored === "true";
+    } = useLayoutForm({
+        lastSingleResult,
+        postCalculateSingle: worker.postCalculateSingle,
+        postCalculateAll: worker.postCalculateAll,
     });
-
-    // Show/hide table state
-    const [showTable, setShowTable] = useState<boolean>(() => {
-        const stored = window.localStorage.getItem("view-options.showTable");
-        return stored === null ? true : stored === "true";
-    });
-
-    useEffect(() => {
-        window.localStorage.setItem("view-options.showGrid", String(showGrid));
-    }, [showGrid]);
-
-    useEffect(() => {
-        window.localStorage.setItem("view-options.showTable", String(showTable));
-    }, [showTable]);
 
     // Input field current values, keyed to match numericFieldConfigs ids.
     const fieldValues: Record<string, number | undefined> = {
@@ -147,210 +136,136 @@ const App = () => {
         shellID,
     };
 
-    // Context menu
-    const containerRef = useRef<HTMLDivElement>(null);
-    const {
-        contextMenuPos,
-        contextMenuAnimationState,
-        openContextMenu,
-        requestClose,
-        onAnimationEnd,
-    } = useContextMenu(containerRef);
-
-    // Drawing table
+    // Drawing table label/requested-tube count for the current committed
+    // layout.
     const drawingTableLabel =
         layoutOptionRows.find((row) => row.key === lastSingleResult?.layout)?.label ?? "—";
     const drawingTableRequestedTubes = utils.isNumber(shellID) ? undefined : minTubes;
 
-    // Reserve table space only if it overlaps the drawing.
-    const footerRef = useRef<HTMLDivElement>(null);
-    const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
-    const { viewportBottomReserve } = useViewportFooterReserve({
-        containerRef,
-        footerRef,
-        tableEl,
-        showTable,
-        lastSingleResult,
-        basePadding: VIEWPORT_BASE_PADDING,
-    });
-
-    // Stable references so ViewportPane's memo isn't broken every render.
-    const onToggleGrid = useCallback(() => setShowGrid((v) => !v), []);
-    const onToggleTable = useCallback(() => setShowTable((v) => !v), []);
-
-    const viewportStyle = useMemo(
-        () =>
-            ({
-                "--viewport-footer-reserve": `${viewportBottomReserve}px`,
-            }) as CSSProperties,
-        [viewportBottomReserve],
-    );
-
-    const handleContextMenuCopyAction = useCallback(() => {
-        copySVG();
-        requestClose(); // Initiates the safe unmount fade out
-    }, [copySVG, requestClose]);
-    const handleContextMenuSaveAction = useCallback(() => {
-        downloadSVG();
-        requestClose(); // Initiates the safe unmount fade out
-    }, [downloadSVG, requestClose]);
-
-    // Stable reference so ViewportPane's memo isn't broken every render.
-    const menuConfig: ContextMenuItem[] = useMemo(
-        () => [
-            {
-                label: "Copy Image",
-                icon: <CopyIcon />,
-                onClick: () => handleContextMenuCopyAction(),
-                disabled: !copyReady,
-            },
-            { label: "", isDivider: true, onClick: () => {} },
-            {
-                label: "Save Image",
-                icon: <SaveIcon />,
-                onClick: () => handleContextMenuSaveAction(),
-            },
-        ],
-        [handleContextMenuCopyAction, handleContextMenuSaveAction, copyReady],
-    );
-
     // JSX return
     return (
-        <div className={`row-pane${isBusy ? " app-busy" : ""}`}>
-            <form
-                className={`column-pane left${showGrid ? "" : " grid-hidden"}`}
-                onSubmit={formOnSubmitHandler}
-            >
-                <div className="title-block">
-                    <div>
-                        <span className="eyebrow">Calculator & Visualiser for</span>
-                        <h1>
-                            Tubesheet Layouts
-                            <small className="version-text">v{packageJson.version}</small>
-                            <small>by Colin Tso</small>
-                        </h1>
+        <Viewport.Provider
+            worker={worker}
+            placeholderSVG={placeholderSVG}
+            drawingTableLabel={drawingTableLabel}
+            drawingTableRequestedTubes={drawingTableRequestedTubes}
+            basePadding={VIEWPORT_BASE_PADDING}
+        >
+            <BusyRow>
+                <FormPane onSubmit={formOnSubmitHandler}>
+                    <div className="title-block">
+                        <div>
+                            <span className="eyebrow">Calculator & Visualiser for</span>
+                            <h1>
+                                Tubesheet Layouts
+                                <small className="version-text">v{packageJson.version}</small>
+                                <small>by Colin Tso</small>
+                            </h1>
+                        </div>
+                        <ThemeToggle />
                     </div>
-                    <ThemeToggle />
-                </div>
-                <div className="form-scroll">
-                    <div className="section">
-                        <h2>Calculation Inputs</h2>
-                        <div className="field-group-stack">
-                            {numericFieldGroups.map((group) => (
-                                <div
-                                    className="field-group-card"
-                                    key={group.label ?? group.rows[0]?.[0]?.id}
-                                >
-                                    {group.label && (
-                                        <h3 className="field-group-title">
-                                            {group.label}
-                                            {group.rows.length === 1 &&
-                                                group.rows[0].length === 2 &&
-                                                group.rows[0].some((cfg) => cfg.required) && (
-                                                    <span className="required-asterisk">*</span>
-                                                )}
-                                        </h3>
-                                    )}
-                                    {group.rows.map((row) => {
-                                        if (row.length === 1) {
-                                            const cfg = row[0];
+                    <div className="form-scroll">
+                        <div className="section">
+                            <h2>Calculation Inputs</h2>
+                            <div className="field-group-stack">
+                                {numericFieldGroups.map((group) => (
+                                    <div
+                                        className="field-group-card"
+                                        key={group.label ?? group.rows[0]?.[0]?.id}
+                                    >
+                                        {group.label && (
+                                            <h3 className="field-group-title">
+                                                {group.label}
+                                                {group.rows.length === 1 &&
+                                                    group.rows[0].length === 2 &&
+                                                    group.rows[0].some((cfg) => cfg.required) && (
+                                                        <span className="required-asterisk">*</span>
+                                                    )}
+                                            </h3>
+                                        )}
+                                        {group.rows.map((row) => {
+                                            if (row.length === 1) {
+                                                const cfg = row[0];
+                                                return (
+                                                    <NumericField
+                                                        key={cfg.id}
+                                                        {...cfg}
+                                                        value={fieldValues[cfg.id]}
+                                                        pairedValue={
+                                                            cfg.pairedWith
+                                                                ? fieldValues[cfg.pairedWith]
+                                                                : undefined
+                                                        }
+                                                        readOnly={cfg.calculated || isCalculating}
+                                                        onBlur={cfg.calculated ? undefined : onBlur}
+                                                        onKeyDown={
+                                                            cfg.calculated ? undefined : onKeyDown
+                                                        }
+                                                        onAccept={
+                                                            cfg.calculated
+                                                                ? undefined
+                                                                : (value) =>
+                                                                      onAcceptEmpty(value, cfg.id)
+                                                        }
+                                                        onSubmit={
+                                                            cfg.calculated
+                                                                ? undefined
+                                                                : inputOnSubmitHandler
+                                                        }
+                                                    />
+                                                );
+                                            }
+
                                             return (
-                                                <NumericField
-                                                    key={cfg.id}
-                                                    {...cfg}
-                                                    value={fieldValues[cfg.id]}
-                                                    pairedValue={
-                                                        cfg.pairedWith
-                                                            ? fieldValues[cfg.pairedWith]
-                                                            : undefined
-                                                    }
-                                                    readOnly={cfg.calculated || isCalculating}
-                                                    onBlur={cfg.calculated ? undefined : onBlur}
-                                                    onKeyDown={
-                                                        cfg.calculated ? undefined : onKeyDown
-                                                    }
-                                                    onAccept={
-                                                        cfg.calculated
-                                                            ? undefined
-                                                            : (value) =>
-                                                                  onAcceptEmpty(value, cfg.id)
-                                                    }
-                                                    onSubmit={
-                                                        cfg.calculated
-                                                            ? undefined
-                                                            : inputOnSubmitHandler
-                                                    }
+                                                <PairedFieldRow
+                                                    key={row.map((cfg) => cfg.id).join("-")}
+                                                    row={row}
+                                                    fieldValues={fieldValues}
+                                                    layoutOption={layoutOption}
+                                                    committedResult={lastSingleResult}
+                                                    isCalculating={isCalculating}
+                                                    onBlur={onBlur}
+                                                    onKeyDown={onKeyDown}
+                                                    onAcceptEmpty={onAcceptEmpty}
+                                                    inputOnSubmitHandler={inputOnSubmitHandler}
+                                                    requestSingle={worker.requestSingle}
                                                 />
                                             );
-                                        }
-
-                                        return (
-                                            <PairedFieldRow
-                                                key={row.map((cfg) => cfg.id).join("-")}
-                                                row={row}
-                                                fieldValues={fieldValues}
-                                                layoutOption={layoutOption}
-                                                committedResult={lastSingleResult}
-                                                isCalculating={isCalculating}
-                                                onBlur={onBlur}
-                                                onKeyDown={onKeyDown}
-                                                onAcceptEmpty={onAcceptEmpty}
-                                                inputOnSubmitHandler={inputOnSubmitHandler}
-                                                requestSingle={requestSingle}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            ))}
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+                        <LayoutOptionsList
+                            rows={layoutOptionRows}
+                            layoutResults={layoutResults}
+                            showLoadingBadge={showLoadingBadge}
+                            onLayoutOptionChange={onLayoutOptionChange}
+                        />
+                        {/* Disabled while a calculation is in flight */}
+                        <button
+                            type="submit"
+                            className="generate-button"
+                            disabled={
+                                !layoutInputsDefined || !layoutOptionSelected || isCalculating
+                            }
+                        >
+                            Regenerate Drawing
+                        </button>
                     </div>
-                    <LayoutOptionsList
-                        rows={layoutOptionRows}
-                        layoutResults={layoutResults}
-                        showLoadingBadge={showLoadingBadge}
-                        onLayoutOptionChange={onLayoutOptionChange}
-                    />
-                    {/* Disabled while a calculation is in flight */}
-                    <button
-                        type="submit"
-                        className="generate-button"
-                        disabled={!layoutInputsDefined || !layoutOptionSelected || isCalculating}
-                    >
-                        Regenerate Drawing
-                    </button>
-                </div>
-                <FormFooter />
-            </form>
-            <ViewportPane
-                containerRef={containerRef}
-                footerRef={footerRef}
-                showGrid={showGrid}
-                showTable={showTable}
-                onToggleGrid={onToggleGrid}
-                onToggleTable={onToggleTable}
-                viewportStyle={viewportStyle}
-                onContextMenu={openContextMenu}
-                contextMenuAnimationState={contextMenuAnimationState}
-                contextMenuPos={contextMenuPos}
-                menuConfig={menuConfig}
-                onContextMenuAnimationEnd={onAnimationEnd}
-                onContextMenuRequestClose={requestClose}
-                calcError={calcError}
-                showLoadingBadge={showLoadingBadge}
-                announcement={announcement}
-                drawingSVG={drawingSVG}
-                placeholderSVG={placeholderSVG}
-                onDrawingRendered={onDrawingRendered}
-                lastSingleResult={lastSingleResult}
-                drawingTableLabel={drawingTableLabel}
-                drawingTableRequestedTubes={drawingTableRequestedTubes}
-                onTableRef={setTableEl}
-                copyState={copyState}
-                copyReady={copyReady}
-                onCopySVG={copySVG}
-                onDownloadSVG={downloadSVG}
-            />
-        </div>
+                    <FormFooter />
+                </FormPane>
+                <Viewport.Frame>
+                    <Viewport.ContextMenu />
+                    <Viewport.Toolbar />
+                    <Viewport.Drawing />
+                    <Viewport.Footer>
+                        <Viewport.Table />
+                        <Viewport.ExportActions />
+                    </Viewport.Footer>
+                </Viewport.Frame>
+            </BusyRow>
+        </Viewport.Provider>
     );
 };
 

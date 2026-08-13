@@ -132,7 +132,7 @@ function NumericFieldImpl({
         <div className="field">
             <label className="field-label" htmlFor={id}>
                 {label}
-                {required && !hideAsterisk && <span className="required-asterisk">*</span>}
+                {required && !hideAsterisk ? <span className="required-asterisk">*</span> : null}
             </label>
             <div className="input-group">
                 <NumericFormat
@@ -162,7 +162,7 @@ function NumericFieldImpl({
                     aria-invalid={hasError}
                     aria-describedby={hasError ? errorId : undefined}
                 />
-                {units && <span className="units">{units}</span>}
+                {units ? <span className="units">{units}</span> : null}
             </div>
             {hasError && (
                 <p className="field-error" id={errorId} role="alert">
