@@ -36,6 +36,7 @@ jobs:
                   UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
                   PR_TITLE: ${{ github.event.pull_request.title }}
+                  PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
               run: |
                   bump="patch"
                   if [ "$UPDATE_TYPE" = "version-update:semver-major" ]; then
@@ -57,7 +58,7 @@ jobs:
                   git config user.name "${{ secrets.GH_ORG_NAME }}"
                   git add .changeset
                   git commit -m "chore: add changeset for dependency update"
-                  git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+                  git push origin "HEAD:$PR_HEAD_REF"
 
             - name: Enable auto-merge for patch/minor updates
               if: |
