@@ -6,8 +6,6 @@ updates:
       target-branch: "dev"
       schedule:
           interval: "weekly"
-      labels:
-          - "patch"
       open-pull-requests-limit: 10
 
     # GitHub Actions workflow dependencies
@@ -16,5 +14,3 @@ updates:
       target-branch: "dev"
       schedule:
           interval: "weekly"
-      labels:
-          - "patch"
