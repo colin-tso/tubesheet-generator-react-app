@@ -23,13 +23,22 @@ jobs:
                   git config --global user.email "${{ secrets.GH_ORG_EMAIL }}"
                   git config --global user.name "${{ secrets.GH_ORG_NAME }}"
             - name: Apply version bump (major)
-              if: contains(github.event.pull_request.labels.*.name, 'major')
+              if: |
+                  github.event.pull_request.user.login != 'dependabot[bot]' &&
+                  contains(github.event.pull_request.labels.*.name, 'major')
               run: npm version major
             - name: Apply version bump (minor)
-              if: contains(github.event.pull_request.labels.*.name, 'minor')
+              if: |
+                  github.event.pull_request.user.login != 'dependabot[bot]' &&
+                  contains(github.event.pull_request.labels.*.name, 'minor')
               run: npm version minor
             - name: Apply version bump (patch)
-              if: contains(github.event.pull_request.labels.*.name, 'patch')
+              if: |
+                  github.event.pull_request.user.login != 'dependabot[bot]' &&
+                  contains(github.event.pull_request.labels.*.name, 'patch')
+              run: npm version patch
+            - name: Apply version bump (patch - dependabot)
+              if: github.event.pull_request.user.login == 'dependabot[bot]'
               run: npm version patch
             - name: Git push version bump
               run: git push origin dev --follow-tags --force
