@@ -8,6 +8,8 @@ updates:
           interval: "weekly"
       open-pull-requests-limit: 10
       rebase-strategy: "auto"
+      labels:
+          - "dependencies"
 
     # GitHub Actions workflow dependencies
     - package-ecosystem: "github-actions"
@@ -15,3 +17,5 @@ updates:
       target-branch: "dev"
       schedule:
           interval: "weekly"
+      labels:
+          - "dependencies"
