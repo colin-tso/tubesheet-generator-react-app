@@ -4,8 +4,10 @@ name: "Sync standalone tubesheet-generator module"
 # + README.md in sync with this repo's
 #   src/plugins/tubesheet-layout-generator.ts(.test.ts) and
 #   docs/tubesheet-generator-plugin-readme.md. Any files those import relatively
-#   (however deep) are discovered and synced automatically — see
-#   scripts/sync-relative-imports.mjs.
+#   (however deep) are discovered and synced automatically – see
+#   scripts/sync-relative-imports.mjs. Also mirrors this repo's package.json
+#   license field and any bare-import dependency versions into the target's
+#   package.json.
 on:
     push:
         branches:
@@ -51,6 +53,17 @@ jobs:
                   node source/scripts/sync-relative-imports.mjs source target
                   cp source/docs/tubesheet-generator-plugin-readme.md target/README.md
 
+            - name: Sync license from source package.json
+              run: |
+                  LICENSE=$(jq -r '.license // empty' source/package.json)
+                  if [ -z "$LICENSE" ]; then
+                      echo "::warning::No license field found in source package.json – skipping."
+                  else
+                      jq --arg l "$LICENSE" '.license = $l' target/package.json > target/package.json.tmp
+                      mv target/package.json.tmp target/package.json
+                      echo "Synced license (${LICENSE}) into target package.json"
+                  fi
+
             - name: Sync runtime dependency versions from source package.json
               run: |
                   # Detect the module's actual runtime dependencies by
@@ -67,7 +80,7 @@ jobs:
 
                       version=$(jq -r --arg p "$pkg" '.dependencies[$p] // .devDependencies[$p] // empty' source/package.json)
                       if [ -z "$version" ]; then
-                          echo "::warning::${pkg} is imported by modules.ts but not found in source package.json — skipping."
+                          echo "::warning::${pkg} is imported by modules.ts but not found in source package.json – skipping."
                           continue
                       fi
 
