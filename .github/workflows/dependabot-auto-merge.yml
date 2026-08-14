@@ -16,9 +16,48 @@ jobs:
         steps:
             - name: Fetch Dependabot metadata
               id: metadata
-              uses: dependabot/fetch-metadata@v3
+              uses: dependabot/fetch-metadata@v2
               with:
                   github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+            # Only production dependency bumps get a changeset (and therefore
+            # a version bump on dev). Dev-only dependency updates are left
+            # unlabeled here on purpose.
+            - name: Checkout PR branch
+              if: contains(github.event.pull_request.labels.*.name, 'dependencies:production')
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.ref }}
+                  token: ${{ secrets.GH_ORG_PAT }}
+
+            - name: Add changeset for production dependency update
+              if: contains(github.event.pull_request.labels.*.name, 'dependencies:production')
+              env:
+                  UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+                  PR_TITLE: ${{ github.event.pull_request.title }}
+              run: |
+                  bump="patch"
+                  if [ "$UPDATE_TYPE" = "version-update:semver-major" ]; then
+                    bump="major"
+                  elif [ "$UPDATE_TYPE" = "version-update:semver-minor" ]; then
+                    bump="minor"
+                  fi
+
+                  mkdir -p .changeset
+                  cat > ".changeset/dependabot-${PR_NUMBER}.md" <<EOF
+                  ---
+                  "tubesheet-generator-react-app": ${bump}
+                  ---
+
+                  ${PR_TITLE}
+                  EOF
+
+                  git config user.email "${{ secrets.GH_ORG_EMAIL }}"
+                  git config user.name "${{ secrets.GH_ORG_NAME }}"
+                  git add .changeset
+                  git commit -m "chore: add changeset for dependency update"
+                  git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
 
             - name: Enable auto-merge for patch/minor updates
               if: |
