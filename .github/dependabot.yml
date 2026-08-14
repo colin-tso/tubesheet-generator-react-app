@@ -7,6 +7,7 @@ updates:
       schedule:
           interval: "weekly"
       open-pull-requests-limit: 10
+      rebase-strategy: "auto"
 
     # GitHub Actions workflow dependencies
     - package-ecosystem: "github-actions"
