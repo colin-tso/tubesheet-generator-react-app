@@ -9,6 +9,8 @@ on:
             - synchronize
             - labeled
             - unlabeled
+permissions:
+    contents: read
 jobs:
     check_changeset:
         name: "Check For Changeset"
