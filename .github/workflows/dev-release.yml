@@ -1,0 +1,45 @@
+name: "Dev - Version Packages"
+on:
+    push:
+        branches:
+            - dev
+
+# Only one version PR should ever be in flight; queue runs rather than
+# letting them race each other.
+concurrency:
+    group: dev-version-packages
+    cancel-in-progress: false
+
+jobs:
+    version:
+        name: "Version Packages"
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  token: ${{ secrets.GH_ORG_PAT }}
+                  fetch-depth: 0
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: "24.x"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Git config
+              run: |
+                  git config --global user.email "${{ secrets.GH_ORG_EMAIL }}"
+                  git config --global user.name "${{ secrets.GH_ORG_NAME }}"
+
+            - name: Create/update "Version Packages" PR
+              uses: changesets/action@v1
+              with:
+                  commit: "chore: version packages"
+                  title: "chore: version packages"
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GH_ORG_PAT }}
