@@ -1,6 +1,6 @@
 version: 2
 updates:
-    # npm dependencies
+    # npm production dependencies
     - package-ecosystem: "npm"
       directory: "/"
       target-branch: "dev"
@@ -8,8 +8,25 @@ updates:
           interval: "weekly"
       open-pull-requests-limit: 10
       rebase-strategy: "auto"
+      allow:
+          - dependency-type: "production"
       labels:
           - "dependencies"
+          - "dependencies:production"
+
+    # npm development dependencies
+    - package-ecosystem: "npm"
+      directory: "/"
+      target-branch: "dev"
+      schedule:
+          interval: "weekly"
+      open-pull-requests-limit: 10
+      rebase-strategy: "auto"
+      allow:
+          - dependency-type: "development"
+      labels:
+          - "dependencies"
+          - "dependencies:development"
 
     # GitHub Actions workflow dependencies
     - package-ecosystem: "github-actions"
