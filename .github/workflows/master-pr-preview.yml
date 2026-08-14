@@ -38,13 +38,13 @@ jobs:
             PREVIEW_UMBRELLA_DIR: pr-preview
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             # No need to build if the PR is being closed - the preview is just
             # removed.
             - name: Set up Node.js
               if: github.event.action != 'closed'
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v7
               with:
                   node-version: "24.x"
                   cache: "npm"
