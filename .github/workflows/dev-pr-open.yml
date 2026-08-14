@@ -9,6 +9,7 @@ on:
 jobs:
     add_comment:
         name: "Add Comment"
+        if: github.actor != 'dependabot[bot]'
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
@@ -16,5 +17,14 @@ jobs:
         steps:
             - uses: mshick/add-pr-comment@v3
               with:
-                  message: Please set a versioning label of either `major`, `minor`, or `patch` to the pull request.
+                  message: |
+                      Thanks for the PR! Please add a changeset describing this change:
+
+                      ```
+                      npx changeset
+                      ```
+
+                      Commit the generated file in `.changeset/`. It's what drives the version bump and changelog entry once this is merged.
+
+                      If this PR doesn't need a version bump (docs, CI, tests, etc.), add the `no-changeset` label instead.
                   repo-token: ${{ secrets.GITHUB_TOKEN }}
