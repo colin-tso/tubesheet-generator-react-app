@@ -14,6 +14,10 @@ export function FormFooter() {
                     View this repo on GitHub
                 </a>
                 <br />
+                <a className="github-button" href="#/docs">
+                    How the layout math works
+                </a>
+                <br />
                 Released under a GPL 3.0 license.{" "}
                 <a
                     href="https://www.gnu.org/licenses/gpl-3.0.en.html"

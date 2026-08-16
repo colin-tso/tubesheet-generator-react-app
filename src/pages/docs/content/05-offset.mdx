@@ -1,0 +1,15 @@
+import { Note } from "../Note";
+
+Do not confuse $C$ with the field’s **offset** ($s$); they solve different problems. $C$ is baked into the pattern itself and staggers alternating rows. **Offset** is a single shift applied to the *whole field*, deciding whether a tube sits exactly on the sheet’s vertical centreline or straddles it:
+
+:::Formula{id="offset" label="Offset"}
+$$
+\begin{align}
+s = \begin{cases} \dfrac{d_x}{2} & \text{if enabled} \\[1em] \ 0 & \text{otherwise} \end{cases}
+\end{align}
+$$
+:::
+
+Because the boundary is a circle, one choice of offset can pack more tubes than the other: shifting the whole grid changes which tube centres end up close enough to the edge to fit. The calculator tries both, counts the tubes each one produces, and keeps whichever gives more.
+
+<Note> **AUTO** generates the field twice, once with offset off and once with offset on, and keeps the result with the higher tube count. Regenerating the same inputs never gives a worse answer than either option alone. </Note>

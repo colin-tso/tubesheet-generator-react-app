@@ -1,0 +1,7 @@
+The generator never walks the whole circle. It builds the tube positions for one quarter of the field, then mirrors that quarter across both axes to complete the rest. This works because every layout here is symmetric about the sheet’s centre.
+
+1. Starting from the centre, step outward row by row using a **row index** ($j$): $y = j \cdot d_y$, and, within each row, column by column using a **column index** ($i$): $x = C \cdot (\text{row parity}) + i \cdot d_x - s$.
+2. Keep a candidate tube only if its centre is within $( \text{OTL}_\text{max} - D_\text{tube} ) / 2$ of the origin, meaning the whole tube, including its radius, stays inside the max OTL. Stop walking a row as soon as a tube falls outside that radius, since every following tube in the row would be even further out.
+3. Mirror the resulting quarter horizontally, then vertically, and merge everything into one set, removing duplicate coordinates. Points that land on an axis appear in more than one mirrored copy.
+
+The result is sorted by row, then by column, and handed off as the final tube field: the same array the drawing, the tube count, and the actual-OTL calculation all read from.

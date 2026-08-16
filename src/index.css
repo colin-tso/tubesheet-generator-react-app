@@ -1871,4 +1871,13 @@ footer a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+
+  /* The View Transition pseudo-element tree (used for the calculator <->
+     docs page swap in Root.tsx) isn't matched by *::before/*::after above,
+     so it needs its own override to honor reduced motion. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
