@@ -1864,13 +1864,14 @@ footer a {
 /* ============================================================
    View transitions — calculator <-> docs slide (see Root.tsx)
    ============================================================
-   Both page roots share one view-transition-name so the browser treats the swap
-   as a single named transition (old = the page being left, new = the page being
-   entered) instead of the default whole-document cross-fade. Root.tsx sets
-   data-view-transition-direction on <html> right before starting the transition
-   so the slide direction matches the navigation direction; it clears the
-   attribute once the transition finishes, so in-page docs hash changes (which
-   don't cross the calculator/docs boundary) fall back to the browser's default
+   Both page roots share one view-transition-name so the browser treats
+   the swap as a single named transition (old = the page being left, new
+   = the page being entered) instead of the default whole-document
+   cross-fade. Root.tsx sets data-view-transition-direction on <html>
+   right before starting the transition so the slide direction matches
+   the navigation direction; it clears the attribute once the transition
+   finishes, so in-page docs hash changes (which don't cross the
+   calculator/docs boundary) fall back to the browser's default
    cross-fade instead of re-triggering a slide. */
 .row-pane,
 .docs-page {
@@ -1896,19 +1897,19 @@ footer a {
   animation-fill-mode: both;
 }
 
-html[data-view-transition-direction="forward"]::view-transition-old(page-content) {
+:root[data-view-transition-direction="forward"]::view-transition-old(page-content) {
   animation-name: docs-slide-out-to-left;
 }
 
-html[data-view-transition-direction="forward"]::view-transition-new(page-content) {
+:root[data-view-transition-direction="forward"]::view-transition-new(page-content) {
   animation-name: docs-slide-in-from-right;
 }
 
-html[data-view-transition-direction="back"]::view-transition-old(page-content) {
+:root[data-view-transition-direction="back"]::view-transition-old(page-content) {
   animation-name: docs-slide-out-to-right;
 }
 
-html[data-view-transition-direction="back"]::view-transition-new(page-content) {
+:root[data-view-transition-direction="back"]::view-transition-new(page-content) {
   animation-name: docs-slide-in-from-left;
 }
 
@@ -1940,6 +1941,27 @@ html[data-view-transition-direction="back"]::view-transition-new(page-content) {
   }
 }
 
+/* Fallback for browsers Root.tsx decided shouldn't attempt the slide: either
+   the View Transition API isn't there at all, or (Firefox) it's there but
+   doesn't apply the slide keyframes above to a same-document named transition
+   group, so it's treated the same as unsupported. Root sets
+   data-page-transition="fade" up front in both cases, so this reads that single
+   JS-made decision instead of re-deriving support in CSS — see the comment
+   above supportsPageSlideTransition in Root.tsx. There's no equivalent fade-out
+   for the outgoing page: React unmounts it synchronously, and animating that
+   exit without the View Transition API would mean keeping it mounted past the
+   swap, which is out of scope here. */
+:root[data-page-transition="fade"] .row-pane,
+:root[data-page-transition="fade"] .docs-page {
+  animation: page-fade-in var(--page-slide-duration) var(--page-slide-easing) both;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* ============================================================
    Accessibility
    ============================================================ */
@@ -1953,9 +1975,9 @@ html[data-view-transition-direction="back"]::view-transition-new(page-content) {
     animation-iteration-count: 1 !important;
   }
 
-  /* The View Transition pseudo-element tree (used for the calculator <->
-     docs page swap in Root.tsx) isn't matched by *::before/*::after above,
-     so it needs its own override to honor reduced motion. */
+  /* The View Transition pseudo-element tree (used for the calculator <-> docs
+     page swap in Root.tsx) isn't matched by *::before/*::after above, so it
+     needs its own override to honor reduced motion. */
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
