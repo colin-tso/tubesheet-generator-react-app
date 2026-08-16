@@ -29,6 +29,8 @@
   --transition: 0.15s ease;
   --tooltip-transition: cubic-bezier(0, 0, 0.2, 1);
   --options-btn-font-size: 12.5px;
+  --page-slide-duration: 320ms;
+  --page-slide-easing: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Color palette — light */
   --paper-light: hsl(48, 20%, 97%);
@@ -1856,6 +1858,85 @@ footer a {
   .tubesheet-data-table th,
   .tubesheet-data-table td {
     padding: 5px 9px;
+  }
+}
+
+/* ============================================================
+   View transitions — calculator <-> docs slide (see Root.tsx)
+   ============================================================
+   Both page roots share one view-transition-name so the browser treats the swap
+   as a single named transition (old = the page being left, new = the page being
+   entered) instead of the default whole-document cross-fade. Root.tsx sets
+   data-view-transition-direction on <html> right before starting the transition
+   so the slide direction matches the navigation direction; it clears the
+   attribute once the transition finishes, so in-page docs hash changes (which
+   don't cross the calculator/docs boundary) fall back to the browser's default
+   cross-fade instead of re-triggering a slide. */
+.row-pane,
+.docs-page {
+  view-transition-name: page-content;
+}
+
+/* Let .row-pane/.docs-page's own animation-name declarations below drive
+   the motion; without this the group also animates the old/new capture
+   sizes into each other, which reads as an unwanted zoom under the
+   slide. */
+::view-transition-group(page-content) {
+  animation: none;
+}
+
+::view-transition-old(page-content),
+::view-transition-new(page-content) {
+  height: 100%;
+
+  mix-blend-mode: normal;
+
+  animation-duration: var(--page-slide-duration);
+  animation-timing-function: var(--page-slide-easing);
+  animation-fill-mode: both;
+}
+
+html[data-view-transition-direction="forward"]::view-transition-old(page-content) {
+  animation-name: docs-slide-out-to-left;
+}
+
+html[data-view-transition-direction="forward"]::view-transition-new(page-content) {
+  animation-name: docs-slide-in-from-right;
+}
+
+html[data-view-transition-direction="back"]::view-transition-old(page-content) {
+  animation-name: docs-slide-out-to-right;
+}
+
+html[data-view-transition-direction="back"]::view-transition-new(page-content) {
+  animation-name: docs-slide-in-from-left;
+}
+
+@keyframes docs-slide-out-to-left {
+  to {
+    transform: translateX(-6%);
+    opacity: 0;
+  }
+}
+
+@keyframes docs-slide-in-from-right {
+  from {
+    transform: translateX(6%);
+    opacity: 0;
+  }
+}
+
+@keyframes docs-slide-out-to-right {
+  to {
+    transform: translateX(6%);
+    opacity: 0;
+  }
+}
+
+@keyframes docs-slide-in-from-left {
+  from {
+    transform: translateX(-6%);
+    opacity: 0;
   }
 }
 
