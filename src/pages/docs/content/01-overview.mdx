@@ -1,0 +1,11 @@
+A tubesheet layout is a repeating pattern of tube centres, packed as densely as the geometry allows inside a circular boundary. The calculator needs five inputs to fully determine that pattern:
+
+- **Tube OD** ($D_\text{tube}$): the outer diameter of a single tube.
+- **Pitch ratio** ($P_\text{ratio}$): how far apart tube centres sit, expressed as a multiple of the tube OD.
+- **Layout**: the angle of the repeating pattern (30°, 45°, 60°, 90°, or a single-ring radial layout).
+- **OTL clearance** ($\text{OTL}_\text{clear}$): the minimum gap left between the outermost tube walls and the shell ID.
+- Either 
+    - a **shell ID** ($D_\text{shell}$): to solve for the tube count it can hold, or
+    - a **minimum tube count** ($n_\text{min}$): to solve for the smallest shell ID that can hold it.
+
+Everything else, including the tube field, the OTL, and the shell ID when it is not a direct input, is derived from those five values.

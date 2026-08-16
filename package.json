@@ -6,10 +6,13 @@
     "homepage": "https://colin-tso.github.io/tubesheet-generator-react-app/",
     "private": true,
     "dependencies": {
+        "@mdx-js/rollup": "^3.1.1",
+        "katex": "^0.18.4",
         "lodash.memoize": "^4.1.2",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
-        "react-number-format": "^5.4.5"
+        "react-number-format": "^5.4.5",
+        "remark-gfm": "^4.0.1"
     },
     "scripts": {
         "start": "vite --host",
@@ -42,6 +45,7 @@
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
         "@types/lodash.memoize": "^4.1.9",
+        "@types/mdx": "^2.0.14",
         "@types/node": "^26.2.0",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
@@ -53,6 +57,10 @@
         "gh-pages": "^6.3.0",
         "globals": "^17.8.0",
         "jsdom": "^30.0.1",
+        "rehype-katex": "^7.0.1",
+        "remark-directive": "^4.0.0",
+        "remark-directive-mdx": "^0.1.1",
+        "remark-math": "^6.0.0",
         "stylelint": "^17.14.0",
         "stylelint-config-clean-order": "^10.0.0",
         "stylelint-config-standard": "^40.0.0",
@@ -68,5 +76,8 @@
     "engines": {
         "npm": ">=8.3.0"
     },
-    "type": "module"
+    "type": "module",
+    "overrides": {
+        "katex": "$katex"
+    }
 }
