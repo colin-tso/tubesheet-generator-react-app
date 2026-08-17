@@ -2,15 +2,15 @@
 | --- | --- | --- |
 | Angle between radial tubes | $\theta_\text{radial}$ | Angle subtended by neighbouring tubes on a radial ring. |
 | Column index | $i$ | Which column a tube belongs to, counting outward from the centre. |
+| Field offset | $S$ | Whole-field shift (0 or $\dfrac{dx}{2}$) chosen automatically to maximise tube count. |
 | Layout angle | $\theta$ | Named angle (30°/45°/60°/90°) between the pitch line and the row direction: $\arctan(C / dy).$ |
-| Offset | $s$ | Whole-field shift (0 or dx/2) chosen automatically to maximise tube count. |
 | OTL | $\text{OTL}$ | Outer Tube Limit: diameter of the smallest circle enclosing every tube, wall-to-wall. |
-| <span class="docs-glossary-subterm">Actual OTL</span> | $\text{OTL}_\text{act}$ | The OTL actually measured from the generated tube field. |
+| <span class="docs-glossary-subterm">Actual OTL</span> | $\text{OTL}_\text{act}$ | The actual OTL measured from the generated tube field. |
 | <span class="docs-glossary-subterm">Maximum allowable OTL</span> | $\text{OTL}_\text{max}$ | The maximum OTL the pattern is allowed to reach, set by the shell ID and OTL clearance. |
-| <span class="docs-glossary-subterm">OTL clearance</span> | $\text{OTL}_\text{clear}$ | Minimum diametrical gap left between the outermost tube walls and the shell ID. |
-| Packing factor | $k$ | Empirical density constant (0.84 triangular, 0.61 square) used to seed the shell-ID search. |
-| Pitch | $P$ | Centre-to-centre distance between neighbouring tubes. |
-| <span class="docs-glossary-subterm">Pitch (tube) clearance</span> | $P_\text{clear}$ | Wall-to-wall gap between neighbouring tubes: pitch − tubeOD. |
+| <span class="docs-glossary-subterm">OTL clearance</span> | $\text{OTL}_\text{clear}$ | The diametrical gap between the outermost tube walls and the shell ID. |
+| Packing factor | $k$ | Empirical density constant (0.84 triangular, 0.61 square) used to seed the shell ID search algorithm. |
+| Pitch | $P_t$ | Centre-to-centre distance between neighbouring tubes. |
+| <span class="docs-glossary-subterm">Pitch (tube) clearance</span> | $P_\text{clear}$ | Wall-to-wall gap between neighbouring tubes: $P-D_\text{tube}$. |
 | <span class="docs-glossary-subterm">Pitch ratio</span> | $P_\text{ratio}$ | Pitch expressed as a multiple of the tube OD. |
 | Ring diameter | $D_\text{ring}$ | Diameter of the single ring in a radial layout. |
 | Row | | One horizontal line of tubes in the pattern. |
@@ -25,3 +25,4 @@
 | <span class="docs-glossary-subterm">Actual tube count</span> | $n_\text{act}$ | Number of tubes the generator actually produced for a given shell. |
 | <span class="docs-glossary-subterm">Minimum tube count</span> | $n_\text{min}$ | Target minimum number of tubes, used to solve for the smallest shell ID. |
 | Tube OD | $D_\text{tube}$ | Outer diameter of one tube. |
+| Tube position | $x,\ y$ | The horizontal and vertical positions of a tube relative to the middle of the tube sheet. |

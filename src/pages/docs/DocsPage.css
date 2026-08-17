@@ -230,6 +230,10 @@
   color: var(--ink);
 }
 
+.docs-section ol ol {
+  list-style-type: lower-alpha;
+}
+
 .docs-section li {
   margin: 4px 0;
 }
@@ -341,7 +345,10 @@
    text size (14.5px in .docs-formula and .docs-section p). Radicals and
    floor/ceil brackets scale with their content through KaTeX's own Size
    fonts, so they track this automatically. */
-.docs-section .katex,
+.docs-section .katex {
+  font-size: 1em;
+}
+.docs-formula .katex,
 .docs-eq-preview .katex {
   font-size: 1em;
 }
@@ -597,6 +604,14 @@
 .docs-diagram-label-angle {
   font-weight: 700;
   fill: var(--preferred-badge);
+}
+
+#patterns > table td {
+  vertical-align: middle;
+}
+
+#glossary > table td {
+  vertical-align: middle;
 }
 
 @media (max-width: 860px) {

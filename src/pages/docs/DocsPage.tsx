@@ -26,7 +26,7 @@ const SECTIONS = [
     { id: "pitch", index: "02", title: "Pitch & pitch ratio", Content: Pitch },
     { id: "otl", index: "03", title: "OTL & shell ID", Content: Otl },
     { id: "patterns", index: "04", title: "Layout patterns", Content: Patterns },
-    { id: "offset", index: "05", title: "Row offset & AUTO", Content: Offset },
+    { id: "offset", index: "05", title: "Offsets", Content: Offset },
     { id: "filling", index: "06", title: "Filling the circle", Content: Filling },
     { id: "radial", index: "07", title: "Radial layout", Content: Radial },
     { id: "solving", index: "08", title: "Solving for shell ID", Content: Solving },
@@ -153,7 +153,7 @@ export function DocsPage() {
                             href={`#/docs/${s.id}`}
                             aria-current={activeId === s.id ? "location" : undefined}
                         >
-                            {s.title}
+                            {[s.index, s.title].join(" ")}
                         </a>
                     ))}
                 </nav>

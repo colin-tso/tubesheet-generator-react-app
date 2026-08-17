@@ -1,30 +1,34 @@
 Tube OD 19.05 mm, pitch ratio 1.25, OTL clearance 12.7 mm, 30° layout.
 
+Using (<EqRef id="pitch" />) and (<EqRef id="pitch" />):
+
 :::Formula{id="example-pitch" label="Pitch"}
 $$
-\begin{align}
+\begin{align*}
 P = 19.05 \times 1.25 = 23.8125\ \text{mm}
-\end{align}
+\end{align*}
 $$
 :::
 
 :::Formula{id="example-dxdyc" label="dx, dy, C (30°)"}
 $$
-\begin{align}
+\begin{align*}
 d_x = 23.8125\ \text{mm}, \quad d_y = 20.6230\ \text{mm}, \quad C = 11.9063\ \text{mm}
-\end{align}
+\end{align*}
 $$
 :::
 
 ### Solve for number of tubes, given a 500 mm shell
 
-With $\text{OTL}_\text{max} = 500 - 12.7 = 487.3\ \text{mm}$ (<EqRef id="otl-max" />), the generator produces:
+With (<EqRef id="otl-max" />) and the “filling the circle” algorithm, the generator produces:
 
 :::Formula{id="example-forward-result" label="Result"}
 $$
-\begin{align}
-n_\text{act} = 349, \quad \text{OTL}_\text{act} = 478.33\ \text{mm}
-\end{align}
+\begin{align*}
+\text{OTL}_\text{max} &= 500 - 12.7 = 487.3\ \text{mm}\\
+n_\text{act} &= 349 \\
+\text{OTL}_\text{act} &= 478.33\ \text{mm}
+\end{align*}
 $$
 :::
 
@@ -36,9 +40,9 @@ Solving for the smallest shell ID ($D_\text{shell, min}$, <EqRef id="solving-ini
 
 :::Formula{id="example-inverse-result" label="Result"}
 $$
-\begin{align}
+\begin{align*}
 D_\text{shell, min} = 500.20\ \text{mm}, \quad n_\text{act} = 352
-\end{align}
+\end{align*}
 $$
 :::
 
