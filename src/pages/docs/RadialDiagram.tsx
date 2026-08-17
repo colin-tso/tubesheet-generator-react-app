@@ -85,7 +85,7 @@ export function RadialDiagram() {
                 fill="none"
             />
 
-            <circle cx={0} cy={0} r={4} className="docs-diagram-tube-highlight" />
+            <circle cx={0} cy={0} r={TUBE_R} className="docs-diagram-tube-highlight" />
 
             <line x1={0} y1={0} x2={p0.x} y2={p0.y} className="docs-diagram-guide-dashed" />
             <line

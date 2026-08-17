@@ -420,16 +420,27 @@ generateTubeField.cache = new LRUCache(
 ) as unknown as typeof generateTubeField.cache;
 
 /**
+ * Innermost patterns ("seeds") for the radial layout. Each seed is either the
+ * central tube (count 1) or a ring of exactly 2-5 tubes at the smallest radius
+ * that keeps adjacent tubes on the ring one pitch apart (radius =
+ * pitch/(2*sin(pi/count))). Outward rings are then placed one pitch further
+ * out. No larger seed is worth trying: a six-tube ring at radius pitch never
+ * beats the central-tube layout that fits in the same shell, and any ring
+ * beyond pitch is dominated by combining an inner seed with that same ring.
+ */
+const RADIAL_SEED_COUNTS = [1, 2, 3, 4, 5] as const;
+
+/**
  * Generates a radial tube field comprised of concentric rings of tubes.
  *
- * Rings are spaced exactly one pitch apart, measured from the centre outwards,
- * and each ring holds the greatest number of tubes whose within-ring chord
- * length is at least one pitch. Two full-ring candidates are generated — one
- * with a central tube and rings on integer pitch multiples, and one without a
- * central tube and rings on odd pitch multiples. Three further standalone
- * candidates fill the sub-pitch radius range: rings of exactly 3, 4 or 5
- * tubes, sized so their within-ring chord is exactly one pitch. The candidate
- * holding the most tubes is returned.
+ * One candidate is built for each seed in {@link RADIAL_SEED_COUNTS}: the seed
+ * pattern itself (the central tube, or a ring of 2-5 tubes), followed by full
+ * rings placed one pitch further out at every step, each holding the greatest
+ * number of tubes whose within-ring chord is at least one pitch. All rings
+ * share the same start angle, so the tube pair aligned radially across two
+ * adjacent rings is exactly one pitch apart and every other cross-ring pair is
+ * farther, keeping the whole field pitch-clearance. The candidate holding the
+ * most tubes is returned.
  *
  * @param {number} shellID      The shell ID.
  * @param {number} OTLClearance The OTL clearance.
@@ -458,13 +469,8 @@ const radialTubeField = (
         return [];
     }
 
-    // Ring radii are exact multiples of the pitch, so a ring that precisely
-    // reaches the OTL boundary can be excluded by floating-point error (e.g. `2
-    // * pitch` landing a hair above `maxCentreDist`). Treat rings within this
-    //   tolerance of the boundary as in-bounds.
-
-    // Floating-point guard: at radii that are exact multiples of the pitch, `PI
-    // / asin(pitch / (2 * radius))` can undershoot an exact integer (e.g.
+    // Floating-point guard: at radii that are exact pitch multiples, `PI /
+    // asin(pitch / (2 * radius))` can undershoot an exact integer (e.g.
     // 5.999999999999999 instead of 6), dropping a tube from the ring. Floor
     // with an epsilon of a few machine ulps to recover exact integers, then
     // verify the chosen count against the chord length and drop a tube if it
@@ -493,54 +499,33 @@ const radialTubeField = (
         }
     };
 
-    // Candidate layout with a central tube: rings on integer pitch multiples.
-    const centreTubeField: TubeField = [{ x: 0, y: 0 }];
-    for (let k = 1; k * pitch <= maxCentreDist + BOUND_TOLERANCE; k++) {
-        placeRing(k * pitch, centreTubeField);
-    }
-
-    // Candidate layout without a central tube: rings on odd pitch multiples,
-    // the innermost at pitch/2 — the smallest radius that admits a ring whose
-    // within-ring chord is at least one pitch.
-    const ringTubeField: TubeField = [];
-    for (let k = 1; ((2 * k - 1) * pitch) / 2 <= maxCentreDist + BOUND_TOLERANCE; k++) {
-        placeRing(((2 * k - 1) * pitch) / 2, ringTubeField);
-    }
-
-    // Standalone ring of exactly `count` tubes, sized so the chord between
-    // adjacent tubes is exactly one pitch: radius = pitch / (2*sin(pi/count)).
-    // Such a ring is only well-formed on its own — stacking partial rings or
-    // adding a central tube would put some tubes closer than one pitch apart
-    // (the innermost partial ring sits inside pitch/2 of the centre), so it is
-    // not merged into the candidates above.
-    const partialRingField = (count: number): TubeField => {
-        const radius = pitch / (2 * Math.sin(Math.PI / count));
-        if (radius > maxCentreDist + BOUND_TOLERANCE) {
+    // Build one candidate per seed: the seed pattern itself, then full rings at
+    // seedRadius + k*pitch for k = 1, 2, ... . The seed ring (count 2-5) sits at
+    // the smallest radius admitting exactly `count` tubes one pitch apart; the
+    // seed ring's own within-ring chord is exactly one pitch, so no ring is
+    // ever stacked on a closer sub-pitch neighbour.
+    const buildSeedField = (count: number): TubeField => {
+        const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
+        if (seedRadius > maxCentreDist + BOUND_TOLERANCE) {
             return [];
         }
         const tubeField: TubeField = [];
-        placeRing(radius, tubeField);
+        if (count === 1) {
+            tubeField.push({ x: 0, y: 0 });
+        } else {
+            placeRing(seedRadius, tubeField);
+        }
+        for (let k = 1; seedRadius + k * pitch <= maxCentreDist + BOUND_TOLERANCE; k++) {
+            placeRing(seedRadius + k * pitch, tubeField);
+        }
         return tubeField;
     };
 
-    // Rings of 3, 4 or 5 tubes fill the sub-pitch radius range between the
-    // innermost ring-only ring (pitch/2, which holds 2) and the first full ring
-    // (pitch, which holds 6). This makes minTubes 3-5 resolve to exactly that
-    // many tubes instead of jumping straight to the 7-tube layout.
-    const triangleField = partialRingField(3);
-    const squareField = partialRingField(4);
-    const pentagonField = partialRingField(5);
-
     // Keep the layout holding the most tubes, matching the `offset="AUTO"`
     // "keep the better result" behaviour used elsewhere in the module. On a
-    // tie the central-tube layout wins, preserving the pre-existing behaviour.
-    const candidates: TubeField[] = [
-        centreTubeField,
-        ringTubeField,
-        triangleField,
-        squareField,
-        pentagonField,
-    ];
+    // tie the earliest seed (the central-tube layout) wins, preserving the
+    // pre-existing behaviour.
+    const candidates: TubeField[] = RADIAL_SEED_COUNTS.map(buildSeedField);
     let bestField = candidates[0];
     for (const candidate of candidates) {
         if (candidate.length > bestField.length) {
