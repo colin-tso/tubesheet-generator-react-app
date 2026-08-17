@@ -152,6 +152,10 @@ export class TubeSheet {
         tubeField: TubeField | null;
         OTL: number | null;
     } {
+        if (!TUBE_SHEET_LAYOUTS.includes(this._layout)) {
+            throw new Error(`Invalid tube layout: ${String(this._layout)}`);
+        }
+
         let minID: number | null = null;
         let effectiveShellID: number | null = null;
 
@@ -716,6 +720,12 @@ const findMinID = memoize(
         const HEURISTIC_MAX_ITERATIONS: number = 20;
         const BISECT_MAX_ITERATIONS: number = 100;
         const DECIMAL_PLACES = 8;
+        // Shared cap for any "grow/shrink the diameter guess until it works"
+        // search below. Every such loop must terminate: an invalid layout (or
+        // pathological inputs) previously spun forever because tubeFieldOTL
+        // kept returning null. 1000 steps of the 1.1 multiplier spans an
+        // astronomically wide diameter range, matching the radial path's cap.
+        const BOUND_MAX_ITERATIONS: number = 1000;
 
         if (tubeOD <= 0) {
             throw new Error("Tube outer diameter must be greater than 0");
@@ -725,6 +735,9 @@ const findMinID = memoize(
         }
         if (OTLClearance < 0) {
             throw new Error("OTL clearance must be 0 or greater");
+        }
+        if (!TUBE_SHEET_LAYOUTS.includes(layout)) {
+            throw new Error(`Invalid tube layout: ${String(layout)}`);
         }
         // shortcircuit when target number of tubes = 1
         if (minTubes === 1) {
@@ -878,7 +891,11 @@ const findMinID = memoize(
                         }
                     }
 
-                    // Increase diameter guess until valid tubefield is obtained
+                    // Increase diameter guess until valid tubefield is
+                    // obtained. Bounded: previously an invalid layout (or any
+                    // input that always yields an empty field) made this loop
+                    // forever.
+                    let growOldIterations = 0;
                     while (
                         tubeFieldOTL(
                             D_old,
@@ -887,9 +904,21 @@ const findMinID = memoize(
                             pitchRatio,
                             layout,
                             offsetOption,
-                        ) === null
+                        ) === null &&
+                        growOldIterations < BOUND_MAX_ITERATIONS
                     ) {
                         D_old = D_old * BETA;
+                        if (!Number.isFinite(D_old) || D_old <= 0) {
+                            throw new Error(
+                                "findMinID: diameter guess became non-finite while searching for a valid tubefield.",
+                            );
+                        }
+                        growOldIterations++;
+                    }
+                    if (growOldIterations >= BOUND_MAX_ITERATIONS) {
+                        throw new Error(
+                            "findMinID: unable to find a valid diameter within the iteration limit.",
+                        );
                     }
 
                     // Save first guess of tube count into memory
@@ -1049,7 +1078,16 @@ const findMinID = memoize(
                     const minValidID = tubeOD + OTLClearance + Math.pow(10, -DECIMAL_PLACES);
                     if (!haveLowerBound) {
                         let D_shrink = haveUpperBound ? D_upperBound : D_old;
-                        while (true) {
+                        // Bounded, with a finiteness check: an unbounded loop
+                        // here can hang forever if D_shrink never drops below
+                        // the minimum valid diameter.
+                        let shrinkIterations = 0;
+                        while (shrinkIterations < BOUND_MAX_ITERATIONS) {
+                            if (!Number.isFinite(D_shrink) || D_shrink <= 0) {
+                                throw new Error(
+                                    "findMinID: diameter guess became non-finite while searching for a lower bound.",
+                                );
+                            }
                             D_shrink = D_shrink / BETA;
                             if (D_shrink <= minValidID) {
                                 D_lowerBound = minValidID;
@@ -1069,6 +1107,12 @@ const findMinID = memoize(
                                 haveLowerBound = true;
                                 break;
                             }
+                            shrinkIterations++;
+                        }
+                        if (!haveLowerBound) {
+                            throw new Error(
+                                "findMinID: unable to find a valid lower bound within the iteration limit.",
+                            );
                         }
                     }
 
@@ -1076,9 +1120,8 @@ const findMinID = memoize(
                         let D_grow = haveLowerBound ? D_lowerBound : D_old;
                         // Bounded, with a finiteness check: an unbounded loop
                         // here can hang forever if D_grow ever became NaN.
-                        const GROW_MAX_ITERATIONS = 1000;
                         let growIterations = 0;
-                        while (growIterations < GROW_MAX_ITERATIONS) {
+                        while (growIterations < BOUND_MAX_ITERATIONS) {
                             if (!Number.isFinite(D_grow) || D_grow <= 0) {
                                 throw new Error(
                                     "findMinID: diameter guess became non-finite while searching for an upper bound.",
