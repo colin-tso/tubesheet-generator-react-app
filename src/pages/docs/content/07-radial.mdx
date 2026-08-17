@@ -1,0 +1,37 @@
+import { RadialDiagram } from "../RadialDiagram";
+
+Radial is a different pattern entirely. Instead of rows and columns, it places tubes evenly around a single ring, sized so that neighbouring tubes on the ring sit exactly one pitch apart.
+
+<div className="docs-diagram-svg-standalone">
+  <RadialDiagram />
+</div>
+
+The number of tubes that fit, the **actual tube count** ($n_\text{act}$), comes from estimating how many pitch-length chords fit around a ring sized to the max OTL, then rounding down to a whole number of tubes:
+
+:::Formula{id="radial-tube-count" label="Tube count"}
+$$
+\begin{align}
+n_\text{act} = \left\lfloor \pi \cdot {\left[\arcsin\!\left(\frac{P}{\text{OTL}_\text{max} - D_\text{tube}}\right)\right]^{-1}} \right\rfloor
+\end{align}
+$$
+:::
+
+With that whole number fixed, the **ring diameter** ($D_\text{ring}$) is recalculated so the chord between adjacent tubes is exactly one pitch, rather than the approximate value from the estimate above:
+
+:::Formula{id="radial-ring-diameter" label="Ring diameter"}
+$$
+\begin{align}
+D_\text{ring} = P \cdot \left[{\sin\!\left( \frac{\pi}{n_\text{act}} \right)}\right]^{-1}
+\end{align}
+$$
+:::
+
+:::Formula{id="radial-angle" label="Angle between tubes"}
+$$
+\begin{align}
+\theta_\text{radial} = \frac{2\pi}{n_\text{act}}
+\end{align}
+$$
+:::
+
+This produces a *single* ring of tubes, not concentric rings.
