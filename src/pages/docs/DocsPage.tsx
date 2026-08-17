@@ -6,7 +6,8 @@ import "katex/dist/katex.min.css";
 import ThemeToggle from "../../components/DarkmodeToggle";
 import { Section } from "./Section";
 import { Formula } from "./Formula";
-import { EquationRegistryProvider, EqRef } from "./EquationRegistry";
+import { Table } from "./Table";
+import { DocsRegistryProvider, EqRef, TableRef } from "./DocsRegistry";
 
 import Overview from "./content/01-overview.mdx";
 import Pitch from "./content/02-pitch.mdx";
@@ -19,8 +20,8 @@ import Solving from "./content/08-solving.mdx";
 import Example from "./content/09-example.mdx";
 import Glossary from "./content/10-glossary.mdx";
 
-// Single source of truth for section order, ids, numbering, and the TOC. Adding
-// a new topic means adding one entry here and one .mdx file.
+// Single source of truth for section order, ids, numbering, and the TOC.
+// Adding a new topic means adding one entry here and one .mdx file.
 const SECTIONS = [
     { id: "overview", index: "01", title: "Overview", Content: Overview },
     { id: "pitch", index: "02", title: "Pitch & pitch ratio", Content: Pitch },
@@ -39,15 +40,15 @@ const SECTIONS = [
 const JUMP_HIGHLIGHT_MS = 2000;
 
 // Scrolls to the section named by the hash's second segment (e.g.
-// "#/docs/patterns" -> id="patterns"), on mount and on every hash change. Also
-// focuses the target, since scrollIntoView alone gives screen readers and
-// keyboard users no cue, and briefly highlights it. `:target` can't do any of
-// this: the hash is always "#/docs/<id>", never a bare "#<id>".
+// "#/docs/patterns" -> id="patterns"), on mount and on every hash change.
+// Also focuses the target, since scrollIntoView alone gives screen readers
+// and keyboard users no cue, and briefly highlights it. `:target` can't do
+// any of this: the hash is always "#/docs/<id>", never a bare "#<id>".
 //
 // Re-clicking a link to the section already named in the hash doesn't fire
-// `hashchange` (same-value assignment is a browser no-op), so a delegated click
-// listener below jumps directly whenever a link's href already matches the
-// current hash. Other clicks fall through to `hashchange`.
+// `hashchange` (same-value assignment is a browser no-op), so a delegated
+// click listener below jumps directly whenever a link's href already
+// matches the current hash. Other clicks fall through to `hashchange`.
 function useHashScroll() {
     useEffect(() => {
         let highlightTimer: ReturnType<typeof setTimeout> | undefined;
@@ -79,8 +80,7 @@ function useHashScroll() {
 
         const onHashChange = () => jumpToHash(window.location.hash);
 
-        // Delegated to cover every in-page docs link without each needing its
-        // own handler.
+        // Delegated to cover every in-page docs link without each needing its own handler.
         const onClick = (e: MouseEvent) => {
             const anchor = (e.target as HTMLElement)?.closest?.("a[href^='#/docs/']");
             if (!(anchor instanceof HTMLAnchorElement)) return;
@@ -104,8 +104,8 @@ function useHashScroll() {
 }
 
 // Tracks which section is nearest the top of the viewport while the reader
-// scrolls, so the table of contents can mark it with aria-current instead of
-// only reflecting the (much coarser) URL hash.
+// scrolls, so the table of contents can mark it with aria-current instead
+// of only reflecting the (much coarser) URL hash.
 function useActiveSection(sectionIds: string[]) {
     const [activeId, setActiveId] = useState(sectionIds[0]);
 
@@ -120,8 +120,8 @@ function useActiveSection(sectionIds: string[]) {
                 }
             },
             // Narrow band near the top of the viewport, below the sticky
-            // topbar, so the "active" section is whichever heading just crossed
-            // it.
+            // topbar, so the "active" section is whichever heading just
+            // crossed it.
             { rootMargin: "-84px 0px -70% 0px" },
         );
 
@@ -195,13 +195,13 @@ export function DocsPage() {
                         directly.
                     </div>
 
-                    <EquationRegistryProvider>
+                    <DocsRegistryProvider>
                         {SECTIONS.map(({ id, index, title, Content }) => (
                             <Section key={id} id={id} index={index} title={title}>
-                                <Content components={{ Formula, EqRef }} />
+                                <Content components={{ Formula, EqRef, Table, TableRef }} />
                             </Section>
                         ))}
-                    </EquationRegistryProvider>
+                    </DocsRegistryProvider>
                 </main>
             </div>
         </div>

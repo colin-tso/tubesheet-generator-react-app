@@ -21,7 +21,7 @@ export const EquationPreviewContext = createContext<EquationPreviewContextValue 
 export function useEquationPreview(): EquationPreviewContextValue {
     const ctx = useContext(EquationPreviewContext);
     if (!ctx) {
-        throw new Error("useEquationPreview must be used within EquationRegistryProvider");
+        throw new Error("useEquationPreview must be used within DocsRegistryProvider");
     }
     return ctx;
 }

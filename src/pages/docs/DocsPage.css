@@ -353,19 +353,20 @@
   font-size: 1em;
 }
 
-.docs-eq-ref {
+/* Shared link style for cross-reference links (EqRef, TableRef). */
+.docs-ref-link {
   font-weight: 600;
   color: var(--blue);
   text-decoration: none;
   white-space: nowrap;
 }
 
-.docs-eq-ref:hover {
+.docs-ref-link:hover {
   color: var(--blue-bright);
   text-decoration: underline;
 }
 
-.docs-eq-ref:focus-visible {
+.docs-ref-link:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
@@ -425,7 +426,7 @@
 }
 
 /* Hides the auto-generated "(N)" tag KaTeX's eqn-num counter renders (see the
-   comment atop EquationRegistry.tsx). Cloning that element into this second,
+   comment atop DocsRegistry.tsx). Cloning that element into this second,
    live DOM location wouldn't just be redundant with the number EqRef already
    shows next to the link — .eqn-num's number comes from a CSS counter that
    increments once per matching element in document order, so the clone would
@@ -462,6 +463,42 @@
   color: var(--ink);
   white-space: nowrap;
 }
+
+/* --- Table wrapper (numbered, deep-linkable tables via the Table
+   component in Table.tsx) --- Only tables authored with the `Table`
+   directive get this; plain markdown tables (e.g. the glossary) render as
+   bare .docs-section table with no figure/caption. */
+.docs-table {
+  scroll-margin-top: 84px;
+
+  margin: 20px 0 28px;
+  padding: 2px 0;
+  border-radius: var(--radius-md);
+
+  transition: box-shadow 200ms ease;
+}
+
+.docs-table > .docs-table-body > table {
+  margin: 0 0 8px;
+}
+
+/* Briefly highlight a table jumped to via a TableRef link or deep link,
+   mirroring .docs-formula.docs-jump-highlight. */
+.docs-table.docs-jump-highlight {
+  box-shadow: 0 0 0 2px var(--blue-glow);
+}
+
+.docs-table-caption {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.docs-table-caption-index {
+  font-weight: 600;
+  color: var(--ink);
+}
+
 .docs-glossary-subterm {
   padding-left: 20px;
 }
@@ -606,7 +643,7 @@
   fill: var(--preferred-badge);
 }
 
-#patterns > table td {
+#patterns table td {
   vertical-align: middle;
 }
 

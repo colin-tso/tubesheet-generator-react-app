@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useEquationPreview } from "./EquationPreviewContext";
 
-// Gap between the EqRef link and the panel, and the minimum distance it
-// keeps from the window edge — same shape as the shell/OTL hover tooltip's
-// positioning (see useShellOTLHighlight.ts), anchored to an element's rect
-// here instead of the cursor.
+// Gap between the EqRef link and the panel, and the minimum distance it keeps
+// from the window edge — same shape as the shell/OTL hover tooltip's
+// positioning (see useShellOTLHighlight.ts), anchored to an element's rect here
+// instead of the cursor.
 const PREVIEW_ANCHOR_GAP = 8;
 const PREVIEW_EDGE_MARGIN = 12;
 
@@ -13,11 +13,11 @@ interface PreviewContent {
     bodyHTML: string;
 }
 
-// Reads a Formula's already-rendered KaTeX markup straight off the DOM by
-// id, rather than re-invoking KaTeX: Formula.tsx's `id={`eq-${id}`}` is
-// unique across the page, so this is a plain lookup, and the markup is
-// exactly what's on screen for that formula (including the same
-// document-order equation number, since neither side re-derives anything).
+// Reads a Formula's already-rendered KaTeX markup straight off the DOM by id,
+// rather than re-invoking KaTeX: Formula.tsx's `id={`eq-${id}`}` is unique
+// across the page, so this is a plain lookup, and the markup is exactly what's
+// on screen for that formula (including the same document-order equation
+// number, since neither side re-derives anything).
 function readFormulaPreview(id: string): PreviewContent | null {
     const formulaEl = document.getElementById(`eq-${id}`);
     if (!formulaEl) return null;
@@ -50,15 +50,15 @@ function positionPreview(panel: HTMLElement, anchorRect: DOMRect) {
 }
 
 // Single floating preview shared by every EqRef in the docs (see
-// EquationRegistry.tsx's EquationPreviewContext) — only one can be open at
-// a time, so one panel that repositions itself is simpler than each link
-// owning a popover.
+// DocsRegistry.tsx's EquationPreviewContext) — only one can be open at a time,
+// so one panel that repositions itself is simpler than each link owning a
+// popover.
 export function EquationPreview() {
     const { preview, hidePreview } = useEquationPreview();
     const panelRef = useRef<HTMLDivElement>(null);
-    // Keeps showing the last-hovered formula while the panel fades out
-    // instead of going blank the instant `preview` clears, same trick
-    // ShellOTLTooltip uses for the shell/OTL hover readout.
+    // Keeps showing the last-hovered formula while the panel fades out instead
+    // of going blank the instant `preview` clears, same trick ShellOTLTooltip
+    // uses for the shell/OTL hover readout.
     const [content, setContent] = useState<PreviewContent | null>(null);
 
     if (preview) {
@@ -81,11 +81,11 @@ export function EquationPreview() {
             if (e.key === "Escape") hidePreview();
         };
         // Scrolling or resizing can move the anchor out from under a
-        // fixed-position panel; dismissing rather than re-tracking keeps
-        // this simple, and pointer/focus already cover it 99% of the time.
+        // fixed-position panel; dismissing rather than re-tracking keeps this
+        // simple, and pointer/focus already cover it 99% of the time.
         const onScrollOrResize = () => hidePreview();
-        // Touch devices have no hover to leave, so a tap anywhere outside
-        // the anchor is the only way those readers get to dismiss it.
+        // Touch devices have no hover to leave, so a tap anywhere outside the
+        // anchor is the only way those readers get to dismiss it.
         const onPointerDownOutside = (e: PointerEvent) => {
             if (e.target instanceof Node && !preview.anchor.contains(e.target)) {
                 hidePreview();
