@@ -20,4 +20,6 @@ Everything above answers the *forward* question: given a shell ID, how many tube
 
 4. **Snapping.** Once a diameter is found whose tube count meets the target, the result is snapped to the tightest shell ID ($D_\text{shell, min}$) that still contains that field: the actual OTL (<EqRef id="otl-actual" />) of the generated field, plus the OTL clearance, rather than whatever diameter the search happened to stop on.
 
+The radial layout (see [07 Radial layout](#/docs/radial)) has no closed-form count either, but it skips the packing-factor seed and the heuristic step: its counts come from concentric rings, so the search simply grows the diameter by 1.1× until the count meets the target and then bisects. Snapping is unchanged.
+
 Because tube count only increases in discrete jumps, the resulting shell can hold more than the minimum you asked for. See the worked example below.

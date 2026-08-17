@@ -1,37 +1,48 @@
 import { RadialDiagram } from "../RadialDiagram";
 
-Radial is a different pattern entirely. Instead of rows and columns, it places tubes evenly around a single ring, sized so that neighbouring tubes on the ring sit exactly one pitch apart.
+Radial is a different pattern entirely. Instead of rows and columns, it places tubes on **concentric rings** centred in the tube sheet. On each ring, tubes sit evenly spaced so that neighbouring tubes on the same ring are exactly one pitch apart, and the rings themselves are spaced one pitch apart, measured from the centre outwards, so every tube keeps at least one pitch of clearance from the rings on either side.
 
 <div className="docs-diagram-svg-standalone">
   <RadialDiagram />
 </div>
 
-The number of tubes that fit, the **actual tube count** ($n_\text{act}$), comes from estimating how many pitch-length chords fit around a ring sized to the max OTL, then rounding down to a whole number of tubes:
+A ring of radius $r$ can hold at most the number of tubes $n$ whose within-ring chord length, $2 r \sin\!\left( \frac{\pi}{n} \right)$, is still at least one pitch. Rounding down gives the **ring capacity**:
 
-:::Formula{id="radial-tube-count" label="Tube count"}
+:::Formula{id="radial-ring-tube-count" label="Ring capacity"}
 $$
 \begin{align}
-n_\text{act} = \left\lfloor \pi \cdot {\left[\arcsin\!\left(\frac{P}{\text{OTL}_\text{max} - D_\text{tube}}\right)\right]^{-1}} \right\rfloor
+n_\text{ring} = \left\lfloor \pi \cdot {\left[\arcsin\!\left(\frac{P_t}{2r}\right)\right]^{-1}} \right\rfloor
 \end{align}
 $$
 :::
 
-With that whole number fixed, the **ring diameter** ($D_\text{ring}$) is recalculated so the chord between adjacent tubes is exactly one pitch, rather than the approximate value from the estimate above:
+Working the other way, the radius needed to place *exactly* $n$ tubes on a ring, so the chord between neighbouring tubes is exactly one pitch, is:
 
-:::Formula{id="radial-ring-diameter" label="Ring diameter"}
+:::Formula{id="radial-ring-radius" label="Ring radius for n tubes"}
 $$
 \begin{align}
-D_\text{ring} = P \cdot \left[{\sin\!\left( \frac{\pi}{n_\text{act}} \right)}\right]^{-1}
+r_n = \frac{P_t}{2 \sin\!\left( \dfrac{\pi}{n} \right)}
 \end{align}
 $$
 :::
 
-:::Formula{id="radial-angle" label="Angle between tubes"}
+and the **angle** between neighbouring tubes on that ring:
+
+:::Formula{id="radial-ring-angle" label="Angle between tubes"}
 $$
 \begin{align}
-\theta_\text{radial} = \frac{2\pi}{n_\text{act}}
+\theta_\text{radial} = \frac{2\pi}{n}
 \end{align}
 $$
 :::
 
-This produces a *single* ring of tubes, not concentric rings.
+Instead of walking rows and columns until they leave the circle (see [06 Filling](#/docs/filling)), the generator fills whole rings at once. It builds two candidate layouts from full rings, then keeps whichever candidate holds the most tubes — the same "keep the better result" rule the grid layouts use when choosing an offset (see [05 Offset](#/docs/offset)):
+
+1. **With a central tube**: a tube at the centre, plus rings on integer pitch multiples ($r = P_t,\ 2P_t,\ 3P_t, \dots$).
+2. **Without a central tube**: rings on odd pitch multiples ($r = P_t/2,\ 3P_t/2,\ 5P_t/2, \dots$). The innermost possible ring sits at $P_t/2$ — any closer to the centre and the chord between its tubes would be shorter than one pitch.
+
+Omitting the centre tube lets the rings move inward, so the second candidate sometimes packs more tubes overall than the first.
+
+The sub-pitch range between $P_t/2$ and $P_t$ is unreachable by the full-ring candidates, but it can still hold rings of exactly **3, 4, or 5 tubes**, at radii $P_t/\sqrt{3} \approx 0.58P_t$, $P_t/\sqrt{2} \approx 0.71P_t$, and $P_t/(2 \sin 36°) \approx 0.85P$. These small rings are standalone: a central tube would sit closer than one pitch to them, and they cannot be stacked, so a requested minimum of 3, 4, or 5 tubes produces exactly that many.
+
+The available tube counts are therefore **discrete**: 1, 2, 3, 4, 5, 7, 11, 19, and so on. When a minimum tube count falls in a gap, the shell resolves to the next achievable count — a minimum of 6, for example, gives the 7-tube layout, because the six-tube ring fits in exactly the same shell as the seven-tube one. As with the grid layouts, the smallest shell ID that meets the target is found numerically — see [08 Solving](#/docs/solving).

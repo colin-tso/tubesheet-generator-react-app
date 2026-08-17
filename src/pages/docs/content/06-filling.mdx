@@ -1,4 +1,4 @@
-For non-radial layouts, the generator never walks the whole circle. It builds the tube positions for one quarter of the field, then mirrors that quarter across both axes to complete the rest. This works because every layout being considered is symmetric about the tube sheet’s centre.
+For non-radial layouts, the generator never walks the whole circle. It builds the tube positions for one quarter of the field, then mirrors that quarter across both axes to complete the rest. This works because every layout being considered is symmetric about the tube sheet’s centre. The radial layout is the exception: it fills complete rings at once instead of walking rows (see [07 Radial layout](#/docs/radial)).
 
 1. Starting from the centre, step outward row by row using a **row index** ($j$), and within each row, column by column using a **column index** ($i$).
 
