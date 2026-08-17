@@ -424,10 +424,12 @@ generateTubeField.cache = new LRUCache(
  *
  * Rings are spaced exactly one pitch apart, measured from the centre outwards,
  * and each ring holds the greatest number of tubes whose within-ring chord
- * length is at least one pitch. Two candidate layouts are generated — one with
- * a central tube and rings on integer pitch multiples, and one without a
- * central tube and rings on odd pitch multiples — and the one holding the most
- * tubes is returned.
+ * length is at least one pitch. Two full-ring candidates are generated — one
+ * with a central tube and rings on integer pitch multiples, and one without a
+ * central tube and rings on odd pitch multiples. Three further standalone
+ * candidates fill the sub-pitch radius range: rings of exactly 3, 4 or 5
+ * tubes, sized so their within-ring chord is exactly one pitch. The candidate
+ * holding the most tubes is returned.
  *
  * @param {number} shellID      The shell ID.
  * @param {number} OTLClearance The OTL clearance.
@@ -505,9 +507,47 @@ const radialTubeField = (
         placeRing(((2 * k - 1) * pitch) / 2, ringTubeField);
     }
 
+    // Standalone ring of exactly `count` tubes, sized so the chord between
+    // adjacent tubes is exactly one pitch: radius = pitch / (2*sin(pi/count)).
+    // Such a ring is only well-formed on its own — stacking partial rings or
+    // adding a central tube would put some tubes closer than one pitch apart
+    // (the innermost partial ring sits inside pitch/2 of the centre), so it is
+    // not merged into the candidates above.
+    const partialRingField = (count: number): TubeField => {
+        const radius = pitch / (2 * Math.sin(Math.PI / count));
+        if (radius > maxCentreDist + BOUND_TOLERANCE) {
+            return [];
+        }
+        const tubeField: TubeField = [];
+        placeRing(radius, tubeField);
+        return tubeField;
+    };
+
+    // Rings of 3, 4 or 5 tubes fill the sub-pitch radius range between the
+    // innermost ring-only ring (pitch/2, which holds 2) and the first full ring
+    // (pitch, which holds 6). This makes minTubes 3-5 resolve to exactly that
+    // many tubes instead of jumping straight to the 7-tube layout.
+    const triangleField = partialRingField(3);
+    const squareField = partialRingField(4);
+    const pentagonField = partialRingField(5);
+
     // Keep the layout holding the most tubes, matching the `offset="AUTO"`
-    // "keep the better result" behaviour used elsewhere in the module.
-    return centreTubeField.length >= ringTubeField.length ? centreTubeField : ringTubeField;
+    // "keep the better result" behaviour used elsewhere in the module. On a
+    // tie the central-tube layout wins, preserving the pre-existing behaviour.
+    const candidates: TubeField[] = [
+        centreTubeField,
+        ringTubeField,
+        triangleField,
+        squareField,
+        pentagonField,
+    ];
+    let bestField = candidates[0];
+    for (const candidate of candidates) {
+        if (candidate.length > bestField.length) {
+            bestField = candidate;
+        }
+    }
+    return bestField;
 };
 
 /**
