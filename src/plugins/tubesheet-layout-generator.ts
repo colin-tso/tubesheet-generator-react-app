@@ -266,7 +266,7 @@ const generateTubeField = memoize(
             if (OTLClearance < 0) {
                 throw new Error("OTL clearance must be 0 or greater");
             }
-            if (tubeOD > shellID - OTLClearance) {
+            if (tubeOD > shellID - OTLClearance + 1e-9) {
                 throw new Error("Tube OD exceeds max allowable OTL");
             }
 
@@ -416,12 +416,20 @@ generateTubeField.cache = new LRUCache(
 ) as unknown as typeof generateTubeField.cache;
 
 /**
- * Generates a radial tube field.
+ * Generates a radial tube field comprised of concentric rings of tubes.
  *
- * @param {number} r1      The radius of the first point.
- * @param {number} r2      The radius of the second point.
- * @param {number} theta   The angle between the two points in radians.
- * @returns {number}       The distance between the two points.
+ * Rings are spaced exactly one pitch apart, measured from the centre outwards,
+ * and each ring holds the greatest number of tubes whose within-ring chord
+ * length is at least one pitch. Two candidate layouts are generated — one with
+ * a central tube and rings on integer pitch multiples, and one without a
+ * central tube and rings on odd pitch multiples — and the one holding the most
+ * tubes is returned.
+ *
+ * @param {number} shellID      The shell ID.
+ * @param {number} OTLClearance The OTL clearance.
+ * @param {number} tubeOD       The tube OD.
+ * @param {number} pitchRatio   The tube pitch ratio.
+ * @returns {TubeField}         The generated radial tube field.
  */
 const radialTubeField = (
     shellID: number,
@@ -430,26 +438,72 @@ const radialTubeField = (
     pitchRatio: number,
 ): TubeField => {
     const pitch = tubeOD * pitchRatio;
-    const MaxOTL = shellID - OTLClearance;
-    const numTubes = Math.floor(Math.PI / Math.asin(pitch / (MaxOTL - tubeOD)));
-    const angleIncrement = (2 * Math.PI) / numTubes;
-    const centreD = pitch / Math.sin(Math.PI / numTubes);
-    const tubeField: TubeField = [];
+    const maxOTL = shellID - OTLClearance;
+    const maxCentreDist = (maxOTL - tubeOD) / 2;
 
-    for (let i = 0; i < numTubes; i++) {
-        let x: number, y: number;
-        if (i === 0) {
-            x = 0;
-            y = centreD / 2;
-        } else {
-            const angle = angleIncrement * i * -1 + Math.PI / 2;
-            x = (centreD / 2) * Math.cos(angle);
-            y = (centreD / 2) * Math.sin(angle);
-        }
-        tubeField.push({ x: x, y: y });
+    const BOUND_TOLERANCE = 1e-9;
+
+    // A tube at the centre fits when maxCentreDist is non-negative, but
+    // floating-point error can leave it a hair below zero at exactly shellID =
+    // tubeOD + OTLClearance (e.g. `(25.4 - 6.35 - 19.05) / 2` is -1.4e-15).
+    // Tolerate that, but reject shells with no genuine room for even the centre
+    // tube.
+    if (maxCentreDist < -BOUND_TOLERANCE) {
+        return [];
     }
 
-    return tubeField;
+    // Ring radii are exact multiples of the pitch, so a ring that precisely
+    // reaches the OTL boundary can be excluded by floating-point error (e.g. `2
+    // * pitch` landing a hair above `maxCentreDist`). Treat rings within this
+    //   tolerance of the boundary as in-bounds.
+
+    // Floating-point guard: at radii that are exact multiples of the pitch, `PI
+    // / asin(pitch / (2 * radius))` can undershoot an exact integer (e.g.
+    // 5.999999999999999 instead of 6), dropping a tube from the ring. Floor
+    // with an epsilon of a few machine ulps to recover exact integers, then
+    // verify the chosen count against the chord length and drop a tube if it
+    // falls short of the pitch.
+    const ringTubeCount = (radius: number): number => {
+        const ratio = Math.PI / Math.asin(pitch / (2 * radius));
+        // ULP (unit in the last place): the gap between adjacent doubles around
+        // `x`, i.e. 2^(exponent(x) - 52). Floating-point error is a small
+        // multiple of it, so an epsilon of a few ulps recovers exact integers
+        // (the measured undershoot at k=1 is exactly 1 ulp) without ever
+        // crossing a genuinely sub-integer ratio.
+        const epsilon = 2 ** (Math.floor(Math.log2(ratio)) - 52) * 4;
+        let numTubes = Math.floor(ratio + epsilon);
+        while (2 * radius * Math.sin(Math.PI / numTubes) < pitch - BOUND_TOLERANCE) {
+            numTubes--;
+        }
+        return numTubes;
+    };
+
+    const placeRing = (radius: number, tubeField: TubeField): void => {
+        const numTubes = ringTubeCount(radius);
+        const angleIncrement = (2 * Math.PI) / numTubes;
+        for (let i = 0; i < numTubes; i++) {
+            const angle = angleIncrement * i * -1 + Math.PI / 2;
+            tubeField.push({ x: radius * Math.cos(angle), y: radius * Math.sin(angle) });
+        }
+    };
+
+    // Candidate layout with a central tube: rings on integer pitch multiples.
+    const centreTubeField: TubeField = [{ x: 0, y: 0 }];
+    for (let k = 1; k * pitch <= maxCentreDist + BOUND_TOLERANCE; k++) {
+        placeRing(k * pitch, centreTubeField);
+    }
+
+    // Candidate layout without a central tube: rings on odd pitch multiples,
+    // the innermost at pitch/2 — the smallest radius that admits a ring whose
+    // within-ring chord is at least one pitch.
+    const ringTubeField: TubeField = [];
+    for (let k = 1; ((2 * k - 1) * pitch) / 2 <= maxCentreDist + BOUND_TOLERANCE; k++) {
+        placeRing(((2 * k - 1) * pitch) / 2, ringTubeField);
+    }
+
+    // Keep the layout holding the most tubes, matching the `offset="AUTO"`
+    // "keep the better result" behaviour used elsewhere in the module.
+    return centreTubeField.length >= ringTubeField.length ? centreTubeField : ringTubeField;
 };
 
 /**
@@ -586,7 +640,7 @@ const tubeFieldOTL = (
     offsetOption: boolean | "AUTO" = "AUTO",
 ): number | null | undefined => {
     try {
-        if (tubeOD > shellID - OTLClearance) {
+        if (tubeOD > shellID - OTLClearance + 1e-9) {
             throw new Error("Tube OD cannot be greater than max allowable OTL.");
         }
         const tubeField = generateTubeField(
@@ -678,8 +732,47 @@ const findMinID = memoize(
         }
 
         if (layout === "radial") {
-            const pitch = pitchRatio * tubeOD;
-            return pitch / Math.sin(Math.PI / minTubes) + tubeOD + OTLClearance;
+            // The radial layout packs tubes into concentric rings, so there is
+            // no closed-form diameter. Search monotonically for the smallest
+            // shell ID whose generated radial tube field holds at least
+            // `minTubes` tubes.
+            const RADIAL_MAX_BOUND_ITERATIONS = 1000;
+            let lowerBound = tubeOD + OTLClearance;
+            // The first probe starts strictly above the one-tube lower bound:
+            // at `tubeOD + OTLClearance` exactly, the validation `tubeOD >
+            // shellID - OTLClearance` can spuriously hold due to floating-point
+            // error (e.g. `(19.05 + 6.35) - 6.35` is less than 19.05), which
+            // would log a spurious "Tube OD exceeds" error.
+            let upperBound = lowerBound * BETA;
+            let boundIterations = 0;
+            while (tubeCount(upperBound, OTLClearance, tubeOD, pitchRatio, layout) < minTubes) {
+                upperBound = upperBound * BETA;
+                if (!Number.isFinite(upperBound) || upperBound <= 0) {
+                    throw new Error(
+                        "findMinID: diameter guess became non-finite while searching for an upper bound.",
+                    );
+                }
+                if (++boundIterations > RADIAL_MAX_BOUND_ITERATIONS) {
+                    throw new Error(
+                        "findMinID: unable to bound a valid diameter within the iteration limit.",
+                    );
+                }
+            }
+
+            while (upperBound - lowerBound > Math.pow(10, -DECIMAL_PLACES)) {
+                const mid = (lowerBound + upperBound) / 2;
+                if (tubeCount(mid, OTLClearance, tubeOD, pitchRatio, layout) >= minTubes) {
+                    upperBound = mid;
+                } else {
+                    lowerBound = mid;
+                }
+            }
+
+            const OTL = tubeFieldOTL(upperBound, OTLClearance, tubeOD, pitchRatio, layout);
+            return roundUp(
+                OTL !== null && OTL !== undefined ? OTL + OTLClearance : upperBound,
+                DECIMAL_PLACES,
+            );
         }
 
         while (true) {
