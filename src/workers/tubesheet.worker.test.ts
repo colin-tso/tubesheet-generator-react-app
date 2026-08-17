@@ -84,3 +84,62 @@ describe("tubesheet.worker — known message types still work", () => {
         postMessageSpy.mockRestore();
     });
 });
+
+describe("tubesheet.worker — radial layout is stored as 0 by the UI", () => {
+    it("normalises layoutOption 0 to the radial layout instead of hanging", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_SINGLE",
+                requestId: "req-radial",
+                payload: {
+                    OTLtoShell: 150,
+                    tubeOD: 90.53,
+                    pitchRatio: 1.25,
+                    layoutOption: 0,
+                    minTubes: 100,
+                },
+            },
+        } as MessageEvent);
+
+        const sent = postMessageSpy.mock.calls[0][0] as {
+            type: string;
+            requestId: string;
+            payload: Record<string, unknown>;
+        };
+        expect(sent.type).toBe("SINGLE_RESULT");
+        expect(sent.payload).toMatchObject({ layout: "radial", numTubes: expect.any(Number) });
+
+        postMessageSpy.mockRestore();
+    });
+
+    it("replies with ERROR for an unknown layout instead of hanging", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_SINGLE",
+                requestId: "req-bad-layout",
+                payload: {
+                    OTLtoShell: 6.35,
+                    tubeOD: 19.05,
+                    pitchRatio: 1.25,
+                    layoutOption: 999,
+                    minTubes: 50,
+                },
+            },
+        } as MessageEvent);
+
+        expect(postMessageSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: "ERROR",
+                requestId: "req-bad-layout",
+                requestType: "CALCULATE_SINGLE",
+                payload: expect.stringContaining("Invalid layout option: 999"),
+            }),
+        );
+
+        postMessageSpy.mockRestore();
+    });
+});
