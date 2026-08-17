@@ -19,8 +19,8 @@ import Solving from "./content/08-solving.mdx";
 import Example from "./content/09-example.mdx";
 import Glossary from "./content/10-glossary.mdx";
 
-// Single source of truth for section order, ids, numbering, and the TOC.
-// Adding a new topic means adding one entry here and one .mdx file.
+// Single source of truth for section order, ids, numbering, and the TOC. Adding
+// a new topic means adding one entry here and one .mdx file.
 const SECTIONS = [
     { id: "overview", index: "01", title: "Overview", Content: Overview },
     { id: "pitch", index: "02", title: "Pitch & pitch ratio", Content: Pitch },
@@ -38,33 +38,27 @@ const SECTIONS = [
 // DocsPage.css) stays on the target before fading back out.
 const JUMP_HIGHLIGHT_MS = 2000;
 
-// Scrolls to the section named by the hash's second segment. For example,
-// "#/docs/patterns" scrolls to id="patterns". Runs on mount and whenever
-// the hash changes, so deep links and in-page TOC clicks both work without
-// pulling in a routing library.
+// Scrolls to the section named by the hash's second segment (e.g.
+// "#/docs/patterns" -> id="patterns"), on mount and on every hash change. Also
+// focuses the target, since scrollIntoView alone gives screen readers and
+// keyboard users no cue, and briefly highlights it. `:target` can't do any of
+// this: the hash is always "#/docs/<id>", never a bare "#<id>".
 //
-// Also moves keyboard focus to the target (screen readers and keyboard
-// users get no cue from scrollIntoView alone) and briefly toggles a
-// highlight class. Neither can be done with plain CSS: the hash is always
-// shaped "#/docs/<id>", never a bare "#<id>", so `:target` can never match
-// an element here.
+// Re-clicking a link to the section already named in the hash doesn't fire
+// `hashchange` (same-value assignment is a browser no-op), so a delegated click
+// listener below jumps directly whenever a link's href already matches the
+// current hash. Other clicks fall through to `hashchange`.
 function useHashScroll() {
     useEffect(() => {
         let highlightTimer: ReturnType<typeof setTimeout> | undefined;
 
-        const scrollToHash = () => {
-            const hash = window.location.hash; // "#/docs" or "#/docs/<id>"
-            const parts = hash.split("/");
-            const target = parts[2];
-            if (!target) return;
+        const jumpToId = (target: string) => {
             const el = document.getElementById(target);
             if (!el) return;
 
             el.scrollIntoView({ behavior: "smooth", block: "start" });
 
-            // Sections and formula blocks aren't natively focusable; make
-            // them a valid, non-tab-order focus target so screen readers
-            // announce the jump the same way the skip link does.
+            // Not natively focusable; make it a valid, non-tab-order target.
             if (!el.hasAttribute("tabindex")) {
                 el.setAttribute("tabindex", "-1");
             }
@@ -77,18 +71,41 @@ function useHashScroll() {
             }, JUMP_HIGHLIGHT_MS);
         };
 
-        scrollToHash();
-        window.addEventListener("hashchange", scrollToHash);
+        // hash is "#/docs" or "#/docs/<id>"
+        const jumpToHash = (hash: string) => {
+            const target = hash.split("/")[2];
+            if (target) jumpToId(target);
+        };
+
+        const onHashChange = () => jumpToHash(window.location.hash);
+
+        // Delegated to cover every in-page docs link without each needing its
+        // own handler.
+        const onClick = (e: MouseEvent) => {
+            const anchor = (e.target as HTMLElement)?.closest?.("a[href^='#/docs/']");
+            if (!(anchor instanceof HTMLAnchorElement)) return;
+
+            const href = anchor.getAttribute("href") ?? "";
+            if (href !== window.location.hash) return; // real navigation; hashchange will handle it
+
+            e.preventDefault();
+            jumpToHash(href);
+        };
+
+        jumpToHash(window.location.hash);
+        window.addEventListener("hashchange", onHashChange);
+        document.addEventListener("click", onClick);
         return () => {
-            window.removeEventListener("hashchange", scrollToHash);
+            window.removeEventListener("hashchange", onHashChange);
+            document.removeEventListener("click", onClick);
             clearTimeout(highlightTimer);
         };
     }, []);
 }
 
 // Tracks which section is nearest the top of the viewport while the reader
-// scrolls, so the table of contents can mark it with aria-current instead
-// of only reflecting the (much coarser) URL hash.
+// scrolls, so the table of contents can mark it with aria-current instead of
+// only reflecting the (much coarser) URL hash.
 function useActiveSection(sectionIds: string[]) {
     const [activeId, setActiveId] = useState(sectionIds[0]);
 
@@ -103,8 +120,8 @@ function useActiveSection(sectionIds: string[]) {
                 }
             },
             // Narrow band near the top of the viewport, below the sticky
-            // topbar, so the "active" section is whichever heading just
-            // crossed it.
+            // topbar, so the "active" section is whichever heading just crossed
+            // it.
             { rootMargin: "-84px 0px -70% 0px" },
         );
 
