@@ -327,8 +327,12 @@
    variables (`.katex .mathnormal`, KaTeX_Math italic) in KaTeX's serif.
    `:where()` keeps this rule's specificity below `.katex .mathnormal` so
    variables keep their math-italic font while `\text{}` words, digits, and
-   superscripts inherit KaTeX_Main from the `.katex` root again. */
-.docs-section :where(.katex) * {
+   superscripts inherit KaTeX_Main from the `.katex` root again.
+   .docs-eq-preview repeats this rather than being nested in .docs-section:
+   EquationPreview.tsx clones a Formula's rendered KaTeX markup into a panel
+   mounted alongside the sections, not inside any one of them. */
+.docs-section :where(.katex) *,
+.docs-eq-preview :where(.katex) * {
   font-family: inherit;
   font-style: inherit;
 }
@@ -337,7 +341,8 @@
    text size (14.5px in .docs-formula and .docs-section p). Radicals and
    floor/ceil brackets scale with their content through KaTeX's own Size
    fonts, so they track this automatically. */
-.docs-section .katex {
+.docs-section .katex,
+.docs-eq-preview .katex {
   font-size: 1em;
 }
 
@@ -351,6 +356,77 @@
 .docs-eq-ref:hover {
   color: var(--blue-bright);
   text-decoration: underline;
+}
+
+.docs-eq-ref:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-glow);
+}
+
+/* --- Equation preview (hover/focus on an EqRef) --- Shared floating panel (see
+   EquationPreview.tsx) that shows the referenced Formula's rendered markup
+   without navigating away. Visually echoes .docs-formula's box so the preview
+   reads as "the same formula, lifted out", but stays a separate ruleset since
+   it's positioned and dismissed completely differently (fixed + JS-driven vs.
+   inline layout). */
+.docs-eq-preview {
+  pointer-events: none;
+
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  transform: translateY(-4px);
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  max-width: min(360px, calc(100vw - 2 * 12px));
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+
+  font-size: 14.5px;
+  color: var(--ink);
+
+  opacity: 0;
+  background-color: var(--panel);
+  box-shadow: var(--elevation-mid);
+
+  transition:
+    opacity var(--transition),
+    transform var(--transition);
+}
+
+.docs-eq-preview.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.docs-eq-preview .docs-formula-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.docs-eq-preview .docs-formula-body .katex-display {
+  margin: 0;
+  text-align: left;
+}
+
+/* Hides the auto-generated "(N)" tag KaTeX's eqn-num counter renders (see the
+   comment atop EquationRegistry.tsx). Cloning that element into this second,
+   live DOM location wouldn't just be redundant with the number EqRef already
+   shows next to the link — .eqn-num's number comes from a CSS counter that
+   increments once per matching element in document order, so the clone would
+   increment it an extra time and display a number that's off by one from the
+   formula's real one. display: none removes it from the render tree entirely,
+   so it neither renders nor participates in the counter. */
+.docs-eq-preview .eqn-num {
+  display: none !important;
 }
 
 /* --- Tables (plain markdown tables from MDX, via remark-gfm) --- */
