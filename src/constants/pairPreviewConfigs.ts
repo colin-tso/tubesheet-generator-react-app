@@ -50,7 +50,15 @@ export const pairPreviewConfigs: Record<string, PairPreviewConfig> = {
             OTLtoShell: ctx.OTLtoShell as number,
             tubeOD: ctx.tubeOD as number,
             pitchRatio: ctx.pitchRatio as number,
-            layoutOption: utils.isNumber(ctx.layoutOption) ? (ctx.layoutOption as number) : 30,
+            // The radial radio option stores 0, but the plugin only knows the
+            // layout as the string "radial" -- normalise before hitting the
+            // worker so a stray 0 (an invalid layout) can never reach it.
+            layoutOption:
+                utils.isNumber(ctx.layoutOption) && ctx.layoutOption === 0
+                    ? "radial"
+                    : utils.isNumber(ctx.layoutOption)
+                      ? (ctx.layoutOption as number)
+                      : 30,
             minTubes: fieldId === "minTubes" ? parsedValue : undefined,
             shellID: fieldId === "shellID" ? parsedValue : undefined,
         }),

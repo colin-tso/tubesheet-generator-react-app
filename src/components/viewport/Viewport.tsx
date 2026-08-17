@@ -39,8 +39,12 @@ function ViewportFrame({ children }: { children: ReactNode }) {
             >
                 <span className="viewport-label noselect">Layout Preview</span>
                 {state.calcError ? (
-                    <span className="loading-overlay error visible noselect" aria-hidden="true">
-                        Calculation failed
+                    <span
+                        className="loading-overlay error visible noselect"
+                        title={state.calcError}
+                        aria-hidden="true"
+                    >
+                        Calculation failed: {state.calcError}
                     </span>
                 ) : (
                     <span

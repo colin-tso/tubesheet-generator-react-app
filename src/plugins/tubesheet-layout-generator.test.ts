@@ -17,7 +17,7 @@ describe("TubeSheet — construction by minTubes", () => {
         "45": { numTubes: 52, minID: 206.75059709, OTL: 200.40059708965 },
         "60": { numTubes: 55, minID: 197.1143795, OTL: 190.76437949512 },
         "90": { numTubes: 56, minID: 217.38251264, OTL: 211.03251263136 },
-        radial: { numTubes: 50, minID: 404.6371870546999, OTL: 398.2871870547 },
+        radial: { numTubes: 50, minID: 195.77130658, OTL: 189.42130657016 },
     };
 
     it.each(LAYOUTS)("meets or exceeds minTubes=50 for layout %s", (layout) => {
@@ -40,7 +40,7 @@ describe("TubeSheet — construction by shellID", () => {
         "45": { numTubes: 316, minID: 498.06462907, OTL: 491.71462906225 },
         "60": { numTubes: 361, minID: 494.45185281, OTL: 488.10185280923 },
         "90": { numTubes: 312, minID: 499.86070126, OTL: 493.51070125065 },
-        radial: { numTubes: 62, minID: 495.54591840250254, OTL: 489.19591840251 },
+        radial: { numTubes: 331, minID: 494.53724475, OTL: 488.18724474777 },
     };
 
     it.each(LAYOUTS)("fills shellID=500 with the maximum tubes for layout %s", (layout) => {
@@ -106,6 +106,19 @@ describe("TubeSheet — edge cases", () => {
         expect(ts.OTL).toBeNull();
         expect(ts.numTubes).toBe(0);
     });
+
+    it.each(LAYOUTS)("returns a single centre tube for minTubes=1 for layout %s", (layout) => {
+        // Regression: at exactly minTubes=1, `tubeOD + OTLClearance` is the
+        // shell ID, and the `tubeOD > shellID - OTLClearance` validation could
+        // spuriously hold due to floating-point error, yielding zero tubes.
+        const ts = new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, layout, 1);
+
+        expect(ts.numTubes).toBe(1);
+        expect(ts.tubeField).toHaveLength(1);
+        expect(ts.tubeField![0].x).toBeCloseTo(0, 6);
+        expect(ts.tubeField![0].y).toBeCloseTo(0, 6);
+        expect(ts.minID).toBeCloseTo(TUBE_OD + OTL_CLEARANCE, 6);
+    });
 });
 
 describe("TubeSheet — regression: findMinID hang on sparse tube fields", () => {
@@ -122,7 +135,9 @@ describe("TubeSheet — regression: findMinID hang on sparse tube fields", () =>
         "45": { numTubes: 1, minID: 240.53, OTL: 90.53 },
         "60": { numTubes: 2, minID: 353.6925, OTL: 203.6925 },
         "90": { numTubes: 2, minID: 353.6925, OTL: 203.6925 },
-        radial: { numTubes: 3, minID: 371.198799674342, OTL: 221.19879967435 },
+        // The radial field fits a 3-tube triangle ring (radius pitch/sqrt(3))
+        // inside this shell, so it resolves to 3 tubes, not 2.
+        radial: { numTubes: 3, minID: 371.19879968, OTL: 221.19879967435 },
     };
 
     it.each(LAYOUTS)("resolves without hanging for layout %s", (layout) => {
@@ -229,6 +244,9 @@ describe("TubeSheet — exact tube field regression (backported from legacy jest
     });
 
     it("matches the exact tube field for a radial layout", () => {
+        // Radial layouts pack tubes into concentric rings: an innermost seed
+        // ring of 5 tubes plus rings one pitch further out. These values are
+        // captured from the current implementation.
         const ts = new TubeSheet(
             OTL_CLEARANCE_LEGACY,
             TUBE_OD_LEGACY,
@@ -237,30 +255,215 @@ describe("TubeSheet — exact tube field regression (backported from legacy jest
             15,
         );
         const expected = [
-            { x: 0, y: 277.2811849744992 },
-            { x: 112.78041836460781, y: 253.30896702321152 },
-            { x: 206.06007781603927, y: 185.53732743388937 },
-            { x: 263.71007781603925, y: 85.68459837754357 },
-            { x: 275.7622096307997, y: -28.983776158418344 },
-            { x: 240.13255017936828, y: -138.64059248724953 },
-            { x: 162.98179126619192, y: -224.32519086479317 },
-            { x: 57.650000000000105, y: -271.2219258114329 },
-            { x: -57.64999999999995, y: -271.2219258114329 },
-            { x: -162.9817912661919, y: -224.32519086479317 },
-            { x: -240.13255017936822, y: -138.64059248724968 },
-            { x: -275.7622096307997, y: -28.98377615841856 },
-            { x: -263.7100778160393, y: 85.68459837754354 },
-            { x: -206.06007781603932, y: 185.5373274338893 },
-            { x: -112.78041836460801, y: 253.30896702321144 },
+            { x: 6.005670242277104e-15, y: 98.08003820299021 },
+            { x: 93.27965945143144, y: 30.30839861366805 },
+            { x: 57.650000000000006, y: -79.34841771516317 },
+            { x: -57.64999999999999, y: -79.34841771516317 },
+            { x: -93.27965945143146, y: 30.30839861366804 },
+            { x: 1.3065759039361597e-14, y: 213.38003820299022 },
+            { x: 115.3619582827713, y: 179.5067109739179 },
+            { x: 194.09730991940935, y: 88.6412713444382 },
+            { x: 211.2081370826923, y: -30.36714562760594 },
+            { x: 161.26187304760523, y: -139.73420842688316 },
+            { x: 60.11610374185037, y: -204.73664736536216 },
+            { x: -60.11610374185033, y: -204.73664736536216 },
+            { x: -161.2618730476052, y: -139.73420842688319 },
+            { x: -211.20813708269228, y: -30.367145627605964 },
+            { x: -194.09730991940938, y: 88.64127134443814 },
+            { x: -115.36195828277124, y: 179.50671097391796 },
         ];
 
-        expect(ts.numTubes).toBe(15);
+        expect(ts.numTubes).toBe(16);
         expect(ts.tubeField).toHaveLength(expected.length);
         ts.tubeField!.forEach((p, i) => {
             closeTo(p.x, expected[i].x);
             closeTo(p.y, expected[i].y);
         });
-        closeTo(ts.minID!, 689.8623699489983);
+        closeTo(ts.minID!, 562.06007641);
+    });
+});
+
+describe("TubeSheet — radial multi-ring behaviour", () => {
+    // Radial layouts fill the OTL with concentric rings spaced one pitch apart,
+    // built from one of five innermost seeds (central tube, or rings of 2-5
+    // tubes). Every pair of tubes must therefore be at least one pitch apart,
+    // and the generator must keep whichever seed layout holds the most tubes.
+    const minPairwiseDistance = (field: { x: number; y: number }[]): number => {
+        let min = Infinity;
+        for (let i = 0; i < field.length; i++) {
+            for (let j = i + 1; j < field.length; j++) {
+                const dx = field[i].x - field[j].x;
+                const dy = field[i].y - field[j].y;
+                min = Math.min(min, Math.sqrt(dx * dx + dy * dy));
+            }
+        }
+        return min;
+    };
+
+    it("respects the pitch constraint between every pair of tubes", () => {
+        const cases: Array<[number, number, number, number]> = [
+            [178, 6.35, 19.05, 1.25],
+            [500, 6.35, 19.05, 1.25],
+            [1000, 6.35, 19.05, 1.25],
+            [400, 150, 90.53, 1.25],
+        ];
+        for (const [shellID, clearance, tubeOD, pitchRatio] of cases) {
+            const ts = new TubeSheet(clearance, tubeOD, pitchRatio, "radial", undefined, shellID);
+            const pitch = tubeOD * pitchRatio;
+            expect(ts.numTubes).toBeGreaterThan(0);
+            expect(minPairwiseDistance(ts.tubeField!)).toBeGreaterThanOrEqual(pitch - 1e-6);
+        }
+    });
+
+    it("keeps the best of the five seed layouts", () => {
+        // At shellID=178 the central-tube seed (rings on integer pitch
+        // multiples plus a centre tube) holds the most tubes.
+        const withCentre = new TubeSheet(6.35, 19.05, 1.25, "radial", undefined, 178);
+        expect(withCentre.numTubes).toBe(37);
+        expect(
+            withCentre.tubeField!.some((t) => Math.abs(t.x) < 1e-9 && Math.abs(t.y) < 1e-9),
+        ).toBe(true);
+
+        // At shellID=500 the pentagon seed (an innermost ring of 5 tubes at
+        // radius pitch/(2*sin(pi/5)) with rings one pitch further out) holds
+        // the most tubes, so there is no centre tube.
+        const pentagonSeed = new TubeSheet(6.35, 19.05, 1.25, "radial", undefined, 500);
+        expect(pentagonSeed.numTubes).toBe(331);
+        expect(
+            pentagonSeed.tubeField!.some((t) => Math.abs(t.x) < 1e-9 && Math.abs(t.y) < 1e-9),
+        ).toBe(false);
+    });
+
+    it("findMinID grows monotonically with minTubes for radial layouts", () => {
+        const ts50 = new TubeSheet(6.35, 19.05, 1.25, "radial", 50);
+        const ts100 = new TubeSheet(6.35, 19.05, 1.25, "radial", 100);
+        const ts200 = new TubeSheet(6.35, 19.05, 1.25, "radial", 200);
+
+        expect(ts50.numTubes).toBeGreaterThanOrEqual(50);
+        expect(ts100.numTubes).toBeGreaterThanOrEqual(100);
+        expect(ts200.numTubes).toBeGreaterThanOrEqual(200);
+        expect(ts50.minID!).toBeLessThan(ts100.minID!);
+        expect(ts100.minID!).toBeLessThan(ts200.minID!);
+    });
+});
+
+describe("TubeSheet — radial small exact-count layouts", () => {
+    // The radial generator also supports rings that hold fewer tubes than a
+    // full ring at radius pitch. minTubes 3-5 resolve to exact triangle, square
+    // and pentagon layouts (rings at radius pitch/(2*sin(pi/n))) instead of
+    // jumping straight to the 7-tube layout.
+    const OC = 6.35;
+    const OD = 19.05;
+    const PR = 1.25;
+    const PITCH = OD * PR;
+
+    const minPairwiseDistance = (field: { x: number; y: number }[]): number => {
+        let min = Infinity;
+        for (let i = 0; i < field.length; i++) {
+            for (let j = i + 1; j < field.length; j++) {
+                const dx = field[i].x - field[j].x;
+                const dy = field[i].y - field[j].y;
+                min = Math.min(min, Math.sqrt(dx * dx + dy * dy));
+            }
+        }
+        return min;
+    };
+
+    const exactCases: Array<[minTubes: number, expectedTubes: number, expectedMinID: number]> = [
+        [3, 3, 52.89630658],
+        [4, 4, 59.07596046],
+        [5, 5, 65.91224475],
+    ];
+
+    it.each(exactCases)(
+        "minTubes=%i resolves to exactly %i tubes at the minimal shell",
+        (minTubes, expectedTubes, expectedMinID) => {
+            const ts = new TubeSheet(OC, OD, PR, "radial", minTubes);
+            expect(ts.numTubes).toBe(expectedTubes);
+            expect(ts.minID).toBeCloseTo(expectedMinID, 6);
+            // The ring sits inside pitch/2 of the centre, so there is no
+            // central tube.
+            expect(
+                ts.tubeField!.some((t) => Math.abs(t.x) < 1e-9 && Math.abs(t.y) < 1e-9),
+            ).toBe(false);
+            expect(minPairwiseDistance(ts.tubeField!)).toBeGreaterThanOrEqual(PITCH - 1e-6);
+        },
+    );
+
+    it("keeps the 7-tube layout for minTubes=6 (hexagon ring fits at the same shell)", () => {
+        const ts = new TubeSheet(OC, OD, PR, "radial", 6);
+        expect(ts.numTubes).toBe(7);
+        expect(ts.minID).toBeCloseTo(73.025, 6);
+    });
+
+    it("returns the small layouts when a shellID lands in their range", () => {
+        const cases: Array<[number, number]> = [
+            [55, 3],
+            [62, 4],
+            [69, 5],
+            [75, 7],
+        ];
+        for (const [shellID, expectedTubes] of cases) {
+            const ts = new TubeSheet(OC, OD, PR, "radial", undefined, shellID);
+            expect(ts.numTubes).toBe(expectedTubes);
+        }
+    });
+
+    it("keeps findMinID monotonic across the small-count range", () => {
+        const ids = [3, 4, 5, 6].map((mt) => new TubeSheet(OC, OD, PR, "radial", mt).minID!);
+        for (let i = 1; i < ids.length; i++) {
+            expect(ids[i]).toBeGreaterThan(ids[i - 1]);
+        }
+    });
+});
+
+describe("TubeSheet — radial seed-layout exact counts", () => {
+    // The five seeds (central tube plus rings of 2-5 tubes, each with rings one
+    // pitch further out) let many more counts resolve exactly instead of
+    // jumping to the next full-ring layout. A minTubes request on an achievable
+    // count must produce exactly that many tubes at the smallest shell that
+    // fits them.
+    const OC = 6.35;
+    const OD = 19.05;
+    const PR = 1.25;
+    const PITCH = OD * PR;
+
+    const minPairwiseDistance = (field: { x: number; y: number }[]): number => {
+        let min = Infinity;
+        for (let i = 0; i < field.length; i++) {
+            for (let j = i + 1; j < field.length; j++) {
+                const dx = field[i].x - field[j].x;
+                const dy = field[i].y - field[j].y;
+                min = Math.min(min, Math.sqrt(dx * dx + dy * dy));
+            }
+        }
+        return min;
+    };
+
+    const exactCases: Array<[minTubes: number, expectedTubes: number, expectedMinID: number]> = [
+        [12, 12, 100.52130658],
+        [14, 14, 106.70096046],
+        [16, 16, 113.53724475],
+        [20, 26, 144.46250001],
+        [50, 50, 195.77130658],
+        [200, 200, 386.27130658],
+    ];
+
+    it.each(exactCases)(
+        "minTubes=%i resolves to exactly %i tubes at the minimal shell",
+        (minTubes, expectedTubes, expectedMinID) => {
+            const ts = new TubeSheet(OC, OD, PR, "radial", minTubes);
+            expect(ts.numTubes).toBe(expectedTubes);
+            expect(ts.minID).toBeCloseTo(expectedMinID, 6);
+            expect(ts.tubeField!.length).toBe(ts.numTubes);
+            expect(minPairwiseDistance(ts.tubeField!)).toBeGreaterThanOrEqual(PITCH - 1e-6);
+        },
+    );
+
+    it("keeps the pitch constraint across the largest seed-built layout", () => {
+        const ts = new TubeSheet(OC, OD, PR, "radial", undefined, 1000);
+        expect(ts.numTubes).toBe(1310);
+        expect(minPairwiseDistance(ts.tubeField!)).toBeGreaterThanOrEqual(PITCH - 1e-6);
     });
 });
 
@@ -321,5 +524,23 @@ describe("getEffectiveShellID", () => {
                 minID: null,
             }),
         ).toBe(0);
+    });
+});
+
+describe("TubeSheet — regression: unknown layout must not hang", () => {
+    // The UI stores the radial layout as the number 0 (see layoutOptionRows).
+    // A stray 0 used to reach the plugin as an unknown layout, where the
+    // non-radial findMinID path's "grow the diameter until a valid tube field
+    // exists" loop could never terminate (tubeFieldOTL always returned null).
+    it.each([0, 999])("throws a clean error for invalid layout %s", (badLayout) => {
+        expect(() => new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, badLayout as never, 50)).toThrow(
+            /Invalid tube layout/,
+        );
+    });
+
+    it("still throws (not hangs) for an invalid layout pinned by shellID", () => {
+        expect(() =>
+            new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, 0 as never, undefined, 500),
+        ).toThrow(/Invalid tube layout/);
     });
 });

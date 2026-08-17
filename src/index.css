@@ -1245,6 +1245,10 @@ footer a {
 .loading-overlay.error {
   border-color: var(--redline);
   color: var(--redline);
+
+  max-width: min(70%, 420px);
+  text-align: center;
+  white-space: normal;
 }
 
 .loading-dots {

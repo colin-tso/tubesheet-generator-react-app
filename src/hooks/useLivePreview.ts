@@ -10,7 +10,7 @@ export interface LivePreviewRequest {
     OTLtoShell: number;
     tubeOD: number;
     pitchRatio: number;
-    layoutOption: number;
+    layoutOption: number | "radial";
     minTubes?: number;
     shellID?: number;
 }
@@ -92,6 +92,14 @@ export function useLivePreview(
                         if (timeoutRef.current) {
                             clearTimeout(timeoutRef.current);
                             timeoutRef.current = null;
+                        }
+                        // The worker reports a failed calculation as a null
+                        // payload (never the raw error string) — surface it as
+                        // an unavailable preview instead of a bogus result.
+                        if (!response) {
+                            setStatus("unavailable");
+                            setResult(null);
+                            return;
                         }
                         setResult({
                             shellID: response?.shellID ?? response?.minID ?? undefined,
