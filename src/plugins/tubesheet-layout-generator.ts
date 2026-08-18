@@ -315,11 +315,27 @@ const generateTubeField = memoize(
                 y = 0;
             const quarterTubeField: TubeField = [];
             const maxCentreDist = (maxOTL - tubeOD) / 2;
-            const maxCentreDistSq = maxCentreDist * maxCentreDist;
+            // Tubes that define the OTL sit exactly on this boundary by
+            // construction: findMinID snaps the shell ID to
+            // round(OTLFromTubeField(...) + OTLClearance), and
+            // OTLFromTubeField in turn works from coordinates that
+            // applySymmetry has rounded to COORD_DECIMALS (8dp). That
+            // rounding can shave a few billionths of a mm off a boundary
+            // tube's true lattice distance, so the "exact" snapped shell ID
+            // can end up a hair too tight to re-admit that same tube when
+            // the field is regenerated from raw (unrounded) lattice math.
+            // BOUND_TOLERANCE absorbs that mismatch - it's far larger than
+            // the ~1e-8 rounding error it needs to cover, but many orders of
+            // magnitude smaller than any real pitch/clearance, so it can't
+            // admit a tube that doesn't actually belong.
+            const BOUND_TOLERANCE = 1e-6;
+            const maxCentreDistSq =
+                (maxCentreDist + BOUND_TOLERANCE) * (maxCentreDist + BOUND_TOLERANCE);
 
             while (Math.abs(y) <= maxOTL && j < MAX_ITERATIONS) {
                 y = j * dy;
                 const cMult = j & 1 ? 0 : 1;
+                x = 0;
                 while (Math.abs(x) <= maxOTL && i < MAX_ITERATIONS) {
                     x = C * cMult + i * dx - offset;
                     i++;
