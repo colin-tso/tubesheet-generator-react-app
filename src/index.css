@@ -237,9 +237,13 @@ a,
   flex-wrap: wrap;
 }
 
-/* Loading cursor while a worker-backed operation (calculation, clipboard
-   copy) is running. !important so it wins over the pointer cursor the
-   shell/OTL hover highlight sets inline on the viewport. */
+/* Hides the inactive route (calculator or docs) while keeping it mounted, so
+   its state (form inputs, scroll position, etc.) survives switching away and
+   back – see Root.tsx.*/
+.route-hidden {
+  display: none;
+}
+
 .app-busy,
 .app-busy * {
   cursor: wait !important;
@@ -1245,10 +1249,6 @@ footer a {
 .loading-overlay.error {
   border-color: var(--redline);
   color: var(--redline);
-
-  max-width: min(70%, 420px);
-  text-align: center;
-  white-space: normal;
 }
 
 .loading-dots {
