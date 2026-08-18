@@ -383,9 +383,9 @@ describe("TubeSheet — radial small exact-count layouts", () => {
             expect(ts.minID).toBeCloseTo(expectedMinID, 6);
             // The ring sits inside pitch/2 of the centre, so there is no
             // central tube.
-            expect(
-                ts.tubeField!.some((t) => Math.abs(t.x) < 1e-9 && Math.abs(t.y) < 1e-9),
-            ).toBe(false);
+            expect(ts.tubeField!.some((t) => Math.abs(t.x) < 1e-9 && Math.abs(t.y) < 1e-9)).toBe(
+                false,
+            );
             expect(minPairwiseDistance(ts.tubeField!)).toBeGreaterThanOrEqual(PITCH - 1e-6);
         },
     );
@@ -533,14 +533,100 @@ describe("TubeSheet — regression: unknown layout must not hang", () => {
     // non-radial findMinID path's "grow the diameter until a valid tube field
     // exists" loop could never terminate (tubeFieldOTL always returned null).
     it.each([0, 999])("throws a clean error for invalid layout %s", (badLayout) => {
-        expect(() => new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, badLayout as never, 50)).toThrow(
-            /Invalid tube layout/,
-        );
+        expect(
+            () => new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, badLayout as never, 50),
+        ).toThrow(/Invalid tube layout/);
     });
 
     it("still throws (not hangs) for an invalid layout pinned by shellID", () => {
-        expect(() =>
-            new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, 0 as never, undefined, 500),
+        expect(
+            () => new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, 0 as never, undefined, 500),
         ).toThrow(/Invalid tube layout/);
     });
+});
+
+describe("TubeSheet — regression: findMinID snap can undershoot the OTL-defining tubes", () => {
+    // findMinID snaps its diameter guess to
+    // round(OTLFromTubeField(...) + OTLClearance). OTLFromTubeField works from
+    // coordinates that applySymmetry has already rounded to 8dp, so the snapped
+    // shell ID can end up a few billionths of a mm too tight to re-admit the
+    // very tubes that defined the OTL when the field is regenerated from raw
+    // (unrounded) lattice math. This bites hardest when an entire symmetric
+    // ring of tubes sits exactly on the boundary, since all of them can be
+    // dropped in one shot (5 tubes here instead of the correct 9).
+    it("still returns at least minTubes for a boundary-tangent 45-degree layout", () => {
+        const ts = new TubeSheet(150, 90.53, 1.25, 45, 7);
+
+        expect(ts.numTubes).toBe(9);
+        expect(ts.numTubes).toBeGreaterThanOrEqual(7);
+        expect(ts.minID).toBeCloseTo(560.6018845, 6);
+        expect(ts.OTL).toBeCloseTo(410.6018845, 6);
+        expect(ts.tubeField).not.toBeNull();
+        expect(ts.tubeField!.length).toBe(ts.numTubes);
+    });
+
+    it.each([
+        { pitchRatio: 1.25, expectedNumTubes: 9, expectedMinID: 560.6018845 },
+        { pitchRatio: 1.3, expectedNumTubes: 9, expectedMinID: 573.40475988 },
+        { pitchRatio: 1.5, expectedNumTubes: 9, expectedMinID: 624.6162614 },
+    ])(
+        "meets or exceeds minTubes=7 for a 45-degree layout at pitchRatio=$pitchRatio",
+        ({ pitchRatio, expectedNumTubes, expectedMinID }) => {
+            const ts = new TubeSheet(150, 90.53, pitchRatio, 45, 7);
+
+            expect(ts.numTubes).toBeGreaterThanOrEqual(7);
+            expect(ts.numTubes).toBe(expectedNumTubes);
+            expect(ts.minID).toBeCloseTo(expectedMinID, 6);
+        },
+    );
+});
+
+describe("TubeSheet — regression: stale x skips a whole row of the tube grid", () => {
+    // The quarter-tube-field loop reset `i` between rows but not `x`. The inner
+    // while loop's entry guard (Math.abs(x) <= maxOTL) then ran on the leftover
+    // overshoot x from the previous row's break, not a fresh value for the new
+    // row. When that leftover value exceeded maxOTL, the entire next row was
+    // skipped before it computed anything - even though its own first point
+    // belonged in the field. This showed up as tube counts
+    // that jumped straight past small targets like minTubes=3 or 4 without
+    // ever finding the layout (2 tubes) that should have grown to meet them.
+    it("finds the 4-tube layout for minTubes=3 on a 45-degree layout instead of getting stuck at 2", () => {
+        const ts = new TubeSheet(150, 90.53, 1.5, 45, 3);
+
+        expect(ts.numTubes).toBe(4);
+        expect(ts.numTubes).toBeGreaterThanOrEqual(3);
+        expect(ts.minID).toBeCloseTo(432.5731307, 6);
+        expect(ts.OTL).toBeCloseTo(282.5731307, 6);
+        expect(ts.tubeField).not.toBeNull();
+        expect(ts.tubeField!.length).toBe(ts.numTubes);
+    });
+
+    it("finds the same 4-tube layout for minTubes=4 (no valid 3-tube arrangement exists)", () => {
+        const ts = new TubeSheet(150, 90.53, 1.5, 45, 4);
+
+        expect(ts.numTubes).toBe(4);
+        expect(ts.numTubes).toBeGreaterThanOrEqual(4);
+        expect(ts.minID).toBeCloseTo(432.5731307, 6);
+    });
+
+    it("finds the 4-tube layout for minTubes=3 on a 60-degree layout", () => {
+        const ts = new TubeSheet(0, 90.53, 1.2, 60, 3);
+
+        expect(ts.numTubes).toBe(4);
+        expect(ts.numTubes).toBeGreaterThanOrEqual(3);
+        expect(ts.minID).toBeCloseTo(278.69307154, 6);
+    });
+
+    it.each(LAYOUTS.filter((l): l is Exclude<TubeSheetLayout, "radial"> => l !== "radial"))(
+        "never returns fewer tubes than requested across small minTubes targets for layout %s",
+        (layout) => {
+            for (let minTubes = 1; minTubes <= 12; minTubes++) {
+                const ts = new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, layout, minTubes);
+                expect(ts.numTubes).not.toBeNull();
+                expect(ts.numTubes!).toBeGreaterThanOrEqual(minTubes);
+                expect(ts.tubeField).not.toBeNull();
+                expect(ts.tubeField!.length).toBe(ts.numTubes);
+            }
+        },
+    );
 });
