@@ -1,5 +1,5 @@
 import memoize from "lodash.memoize";
-import { LRUCache } from "../utils/LRUCache";
+import { LRUCache } from "@/utils/LRUCache";
 
 export interface Tube {
     x: number;

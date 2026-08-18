@@ -1,5 +1,5 @@
-import type { LayoutResults } from "../hooks/useTubeSheetWorker";
-import { TUBE_SHEET_LAYOUTS, type TubeSheetLayout } from "../plugins/tubesheet-layout-generator";
+import type { LayoutResults } from "@/hooks/useTubeSheetWorker";
+import { TUBE_SHEET_LAYOUTS, type TubeSheetLayout } from "@/plugins/tubesheet-layout-generator";
 
 // Layout options for displaying min ID and tube counts.
 export interface LayoutOptionRow {

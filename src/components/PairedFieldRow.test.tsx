@@ -4,9 +4,9 @@ import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { PairedFieldRow } from "./PairedFieldRow";
 import { NumericField } from "./NumericField";
-import { useLayoutForm } from "../hooks/useLayoutForm";
-import { numericFieldConfigs } from "../constants/numericFieldConfigs";
-import type { SingleResultPayload } from "../hooks/useTubeSheetWorker";
+import { useLayoutForm } from "@/hooks/useLayoutForm";
+import { numericFieldConfigs } from "@/constants/numericFieldConfigs";
+import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
 
 // Exercises the tubeClearance/pitchRatio pair (synchronous preview) end to end
 // through the real useLayoutForm reducer, since it needs no worker mock.

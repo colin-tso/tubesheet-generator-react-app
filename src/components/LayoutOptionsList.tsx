@@ -1,8 +1,8 @@
 import type { ChangeEvent } from "react";
-import { utils } from "../utils";
-import type { LayoutResults } from "../hooks/useTubeSheetWorker";
-import type { LayoutOptionRow } from "../constants/layoutOptionRows";
-import StarIcon from "../assets/star.svg?react";
+import { utils } from "@/utils";
+import type { LayoutResults } from "@/hooks/useTubeSheetWorker";
+import type { LayoutOptionRow } from "@/constants/layoutOptionRows";
+import StarIcon from "@/assets/star.svg?react";
 
 interface LayoutOptionsListProps {
     rows: LayoutOptionRow[];

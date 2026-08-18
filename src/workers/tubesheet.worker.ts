@@ -2,7 +2,7 @@ import {
     TubeSheet,
     TUBE_SHEET_LAYOUTS,
     type TubeSheetLayout,
-} from "../plugins/tubesheet-layout-generator";
+} from "@/plugins/tubesheet-layout-generator";
 
 self.onmessage = (event: MessageEvent) => {
     const { type, requestId, payload } = event.data;

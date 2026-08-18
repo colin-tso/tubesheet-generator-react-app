@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { NumericField } from "./NumericField";
-import { useLayoutForm } from "../hooks/useLayoutForm";
-import { numericFieldConfigs } from "../constants/numericFieldConfigs";
+import { useLayoutForm } from "@/hooks/useLayoutForm";
+import { numericFieldConfigs } from "@/constants/numericFieldConfigs";
 
 // tubeOD is a plain, non-paired field -- no live-preview/pin machinery, just
 // the generic NumericField + useLayoutForm wiring used throughout App.tsx.

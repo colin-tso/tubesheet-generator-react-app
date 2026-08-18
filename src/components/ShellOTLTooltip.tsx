@@ -1,9 +1,9 @@
 import type { Ref } from "react";
 import { useState } from "react";
-import { getEffectiveShellID } from "../plugins/tubesheet-layout-generator";
-import type { HighlightRegion } from "../hooks/useShellOTLHighlight";
-import type { SingleResultPayload } from "../hooks/useTubeSheetWorker";
-import { utils } from "../utils/";
+import { getEffectiveShellID } from "@/plugins/tubesheet-layout-generator";
+import type { HighlightRegion } from "@/hooks/useShellOTLHighlight";
+import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
+import { utils } from "@/utils/";
 
 interface ShellOTLTooltipProps {
     hovered: HighlightRegion;

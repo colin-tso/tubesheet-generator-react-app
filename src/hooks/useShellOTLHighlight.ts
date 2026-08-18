@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { getEffectiveShellID } from "../plugins/tubesheet-layout-generator";
+import { getEffectiveShellID } from "@/plugins/tubesheet-layout-generator";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
-import { utils } from "../utils/";
+import { utils } from "@/utils/";
 
 export type HighlightRegion = "shell" | "OTL" | null;
 
