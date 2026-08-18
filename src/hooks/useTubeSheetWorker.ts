@@ -17,11 +17,107 @@ const emptyLayoutResults: LayoutResults = Object.fromEntries(
 const SHOW_DELAY_MS = 150;
 const MIN_VISIBLE_MS = 300;
 
-type SingleCallback = (payload: SingleResultPayload) => void;
-type AllCallback = (payload: LayoutResults) => void;
-type CallbackEntry =
+export type SingleCallback = (payload: SingleResultPayload) => void;
+export type AllCallback = (payload: LayoutResults) => void;
+export type CallbackEntry =
     | { type: "single"; callback: SingleCallback; isPreview: boolean }
     | { type: "all"; callback: AllCallback; isPreview: boolean };
+
+// Shape of a message posted back from tubesheet.worker.ts.
+export interface WorkerMessage {
+    type: string;
+    requestId: number;
+    payload: unknown;
+    requestType?: "CALCULATE_ALL" | "CALCULATE_SINGLE";
+}
+
+// Everything dispatchWorkerMessage needs to apply one worker response.
+// Extracted as a pure function so the completion/error accounting is
+// unit-testable without mounting the hook.
+export interface WorkerDispatchContext {
+    pendingCallbacks: Map<number, CallbackEntry>;
+    latestAllRequestId: number | null;
+    latestSingleRequestId: number | null;
+    completeCalculation: () => void;
+    recordAllResponse: () => void;
+    recordSingleResponse: () => void;
+    setLayoutResults: (payload: unknown) => void;
+    setDrawingSVG: (payload: unknown) => void;
+    setLastSingleResult: (payload: unknown) => void;
+    setCalcError: (message: string | null) => void;
+    setAnnouncement: (message: string) => void;
+}
+
+// Dispatches a worker message: preview/committed callbacks take precedence, and
+// worker ERRORs are handled uniformly so errors are announced, callbacks never
+// receive the raw error string (which would crash result consumers), and
+// completion accounting always runs so "isCalculating" can't get stuck.
+export function dispatchWorkerMessage(message: WorkerMessage, ctx: WorkerDispatchContext): void {
+    const { type, requestId, payload } = message;
+    const entry = ctx.pendingCallbacks.get(requestId);
+
+    if (type === "ERROR") {
+        if (entry) ctx.pendingCallbacks.delete(requestId);
+
+        const latestId =
+            message.requestType === "CALCULATE_ALL"
+                ? ctx.latestAllRequestId
+                : ctx.latestSingleRequestId;
+        const isLatest = requestId === latestId;
+
+        // Resolve live-preview callbacks with null so they mark themselves
+        // unavailable. Committed callbacks are skipped so the last good
+        // drawing/results stay on screen.
+        if (entry?.isPreview) {
+            (entry.callback as SingleCallback)(null);
+        }
+
+        if (entry) {
+            if (!entry.isPreview) ctx.completeCalculation();
+        } else {
+            ctx.completeCalculation();
+        }
+
+        if (isLatest) {
+            console.error("Worker Error:", payload);
+            const messageText = typeof payload === "string" ? payload : "Calculation failed.";
+            ctx.setCalcError(messageText);
+            ctx.setAnnouncement(`Calculation failed: ${messageText}`);
+        }
+        return;
+    }
+
+    // 1. One-off callback (live preview or committed request) takes precedence
+    if (entry) {
+        ctx.pendingCallbacks.delete(requestId);
+        if (entry.type === "single") {
+            (entry.callback as SingleCallback)(payload as SingleResultPayload);
+        } else {
+            (entry.callback as AllCallback)(payload as LayoutResults);
+        }
+        if (!entry.isPreview) ctx.completeCalculation();
+        return;
+    }
+
+    // 2. Normal state updates (requests made without a callback)
+    if (type === "ALL_RESULTS") {
+        if (requestId === ctx.latestAllRequestId) {
+            ctx.recordAllResponse();
+            ctx.setLayoutResults(payload);
+        } else {
+            ctx.completeCalculation(); // stale
+        }
+    } else if (type === "SINGLE_RESULT") {
+        if (requestId === ctx.latestSingleRequestId) {
+            ctx.recordSingleResponse();
+            ctx.setCalcError(null);
+            ctx.setDrawingSVG(payload);
+            ctx.setLastSingleResult(payload);
+        } else {
+            ctx.completeCalculation();
+        }
+    }
+}
 
 // Owns the tubesheet.worker.ts Web Worker.
 // Request/response handling, error/loading state, and announcements.
@@ -166,54 +262,30 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
             type: "module",
         });
 
-        w.onmessage = (event) => {
-            const { type, requestId, payload } = event.data;
-
-            // 1. One‑off callback (preview) takes precedence
-            const entry = pendingCallbacksRef.current.get(requestId);
-            if (entry) {
-                pendingCallbacksRef.current.delete(requestId);
-                if (entry.type === "single") {
-                    (entry.callback as SingleCallback)(payload as SingleResultPayload);
-                } else {
-                    (entry.callback as AllCallback)(payload as LayoutResults);
-                }
-                if (!entry.isPreview) completeCalculation();
-                return;
-            }
-
-            // 2. Normal state updates (committed results)
-            if (type === "ALL_RESULTS") {
-                if (requestId === latestAllRequestIdRef.current) {
+        w.onmessage = (event: MessageEvent) => {
+            dispatchWorkerMessage(event.data as WorkerMessage, {
+                pendingCallbacks: pendingCallbacksRef.current,
+                latestAllRequestId: latestAllRequestIdRef.current,
+                latestSingleRequestId: latestSingleRequestIdRef.current,
+                completeCalculation,
+                recordAllResponse: () => {
                     pendingAllResponsesRef.current += 1;
-                    setLayoutResults(payload);
-                } else {
-                    completeCalculation(); // stale
-                }
-            } else if (type === "SINGLE_RESULT") {
-                if (requestId === latestSingleRequestIdRef.current) {
+                },
+                recordSingleResponse: () => {
                     pendingSingleResponsesRef.current += 1;
-                    setCalcError(null);
-                    setDrawingSVG(generateTubeSheetSVG(payload));
-                    setLastSingleResult(payload);
-                } else {
-                    completeCalculation();
-                }
-            } else if (type === "ERROR") {
-                const latestId =
-                    event.data.requestType === "CALCULATE_ALL"
-                        ? latestAllRequestIdRef.current
-                        : latestSingleRequestIdRef.current;
-                // Discard error if superseded.
-                if (requestId !== latestId) {
-                    completeCalculation();
-                    return;
-                }
-                console.error("Worker Error:", payload);
-                setCalcError(typeof payload === "string" ? payload : "Calculation failed.");
-                setAnnouncement(`Calculation failed: ${payload}`);
-                completeCalculation();
-            }
+                },
+                setLayoutResults: (payload) => {
+                    setLayoutResults(payload as LayoutResults);
+                },
+                setDrawingSVG: (resultPayload) => {
+                    setDrawingSVG(generateTubeSheetSVG(resultPayload as ITubeSheetData));
+                },
+                setLastSingleResult: (payload) => {
+                    setLastSingleResult(payload as SingleResultPayload);
+                },
+                setCalcError,
+                setAnnouncement,
+            });
         };
 
         workerRef.current = w;

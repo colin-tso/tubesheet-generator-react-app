@@ -22,7 +22,7 @@ describe("TubeSheet — construction by minTubes", () => {
         "45": { numTubes: 52, minID: 206.75059709, OTL: 200.40059708965 },
         "60": { numTubes: 55, minID: 197.1143795, OTL: 190.76437949512 },
         "90": { numTubes: 56, minID: 217.38251264, OTL: 211.03251263136 },
-        radial: { numTubes: 50, minID: 404.6371870546999, OTL: 398.2871870547 },
+        radial: { numTubes: 50, minID: 195.77130658, OTL: 189.42130657016 },
     };
 
     it.each(LAYOUTS)("meets or exceeds minTubes=50 for layout %s", (layout) => {
@@ -45,7 +45,7 @@ describe("TubeSheet — construction by shellID", () => {
         "45": { numTubes: 316, minID: 498.06462907, OTL: 491.71462906225 },
         "60": { numTubes: 361, minID: 494.45185281, OTL: 488.10185280923 },
         "90": { numTubes: 312, minID: 499.86070126, OTL: 493.51070125065 },
-        radial: { numTubes: 62, minID: 495.54591840250254, OTL: 489.19591840251 },
+        radial: { numTubes: 331, minID: 494.53724475, OTL: 488.18724474777 },
     };
 
     it.each(LAYOUTS)("fills shellID=500 with the maximum tubes for layout %s", (layout) => {

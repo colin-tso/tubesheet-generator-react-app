@@ -1,0 +1,33 @@
+The **pitch** ($P_t$) is the centre-to-centre distance between neighbouring tubes.
+
+In most engineering scenarios a **pitch ratio** ($P_\text{ratio}$) is used instead, which is pitch expressed as a multiple of the tube OD ($D_\text{tube}$). This allows the spacing to change relative to tube size.
+
+:::Formula{id="pitch" label="Pitch"}
+$$
+\begin{align}
+P_t = D_\text{tube} \times P_\text{ratio}
+\end{align}
+$$
+:::
+
+The gap between adjacent tube walls, not centres, is the **tube clearance** or **pitch clearance** ($P_\text{clear}$). It is similar to pitch but measured wall-to-wall instead of centre-to-centre:
+
+:::Formula{id="pitch-clearance" label="Tube clearance from pitch ratio"}
+$$
+\begin{align}
+P_\text{clear} = P_t - D_\text{tube} = (P_\text{ratio} - 1) \times D_\text{tube}
+\end{align}
+$$
+:::
+
+:::Formula{id="pitch-ratio-from-clearance" label="Pitch ratio from tube clearance"}
+$$
+\begin{align}
+P_\text{ratio} = 1 + \cfrac{P_\text{clear}} {D_\text{tube}}
+\end{align}
+$$
+:::
+
+The above shows that pitch, pitch ratio and tube clearance can be derived from each other.
+
+A pitch ratio of 1 means tubes touching wall-to-wall with zero clearance. Values below 1 are not physically possible and are rejected.

@@ -8,7 +8,6 @@ import remarkDirective from "remark-directive";
 import remarkDirectiveMdx from "remark-directive-mdx";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-
 export default defineConfig({
     base: "/tubesheet-generator-react-app/",
     // mdx() must come before react() so the JSX it emits from .mdx files is

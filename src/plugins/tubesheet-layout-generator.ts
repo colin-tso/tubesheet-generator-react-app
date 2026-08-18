@@ -152,6 +152,10 @@ export class TubeSheet {
         tubeField: TubeField | null;
         OTL: number | null;
     } {
+        if (!TUBE_SHEET_LAYOUTS.includes(this._layout)) {
+            throw new Error(`Invalid tube layout: ${String(this._layout)}`);
+        }
+
         let minID: number | null = null;
         let effectiveShellID: number | null = null;
 
@@ -266,7 +270,7 @@ const generateTubeField = memoize(
             if (OTLClearance < 0) {
                 throw new Error("OTL clearance must be 0 or greater");
             }
-            if (tubeOD > shellID - OTLClearance) {
+            if (tubeOD > shellID - OTLClearance + 1e-9) {
                 throw new Error("Tube OD exceeds max allowable OTL");
             }
 
@@ -311,11 +315,27 @@ const generateTubeField = memoize(
                 y = 0;
             const quarterTubeField: TubeField = [];
             const maxCentreDist = (maxOTL - tubeOD) / 2;
-            const maxCentreDistSq = maxCentreDist * maxCentreDist;
+            // Tubes that define the OTL sit exactly on this boundary by
+            // construction: findMinID snaps the shell ID to
+            // round(OTLFromTubeField(...) + OTLClearance), and
+            // OTLFromTubeField in turn works from coordinates that
+            // applySymmetry has rounded to COORD_DECIMALS (8dp). That
+            // rounding can shave a few billionths of a mm off a boundary
+            // tube's true lattice distance, so the "exact" snapped shell ID
+            // can end up a hair too tight to re-admit that same tube when
+            // the field is regenerated from raw (unrounded) lattice math.
+            // BOUND_TOLERANCE absorbs that mismatch - it's far larger than
+            // the ~1e-8 rounding error it needs to cover, but many orders of
+            // magnitude smaller than any real pitch/clearance, so it can't
+            // admit a tube that doesn't actually belong.
+            const BOUND_TOLERANCE = 1e-6;
+            const maxCentreDistSq =
+                (maxCentreDist + BOUND_TOLERANCE) * (maxCentreDist + BOUND_TOLERANCE);
 
             while (Math.abs(y) <= maxOTL && j < MAX_ITERATIONS) {
                 y = j * dy;
                 const cMult = j & 1 ? 0 : 1;
+                x = 0;
                 while (Math.abs(x) <= maxOTL && i < MAX_ITERATIONS) {
                     x = C * cMult + i * dx - offset;
                     i++;
@@ -416,12 +436,33 @@ generateTubeField.cache = new LRUCache(
 ) as unknown as typeof generateTubeField.cache;
 
 /**
- * Generates a radial tube field.
+ * Innermost patterns ("seeds") for the radial layout. Each seed is either the
+ * central tube (count 1) or a ring of exactly 2-5 tubes at the smallest radius
+ * that keeps adjacent tubes on the ring one pitch apart (radius =
+ * pitch/(2*sin(pi/count))). Outward rings are then placed one pitch further
+ * out. No larger seed is worth trying: a six-tube ring at radius pitch never
+ * beats the central-tube layout that fits in the same shell, and any ring
+ * beyond pitch is dominated by combining an inner seed with that same ring.
+ */
+const RADIAL_SEED_COUNTS = [1, 2, 3, 4, 5] as const;
+
+/**
+ * Generates a radial tube field comprised of concentric rings of tubes.
  *
- * @param {number} r1      The radius of the first point.
- * @param {number} r2      The radius of the second point.
- * @param {number} theta   The angle between the two points in radians.
- * @returns {number}       The distance between the two points.
+ * One candidate is built for each seed in {@link RADIAL_SEED_COUNTS}: the seed
+ * pattern itself (the central tube, or a ring of 2-5 tubes), followed by full
+ * rings placed one pitch further out at every step, each holding the greatest
+ * number of tubes whose within-ring chord is at least one pitch. All rings
+ * share the same start angle, so the tube pair aligned radially across two
+ * adjacent rings is exactly one pitch apart and every other cross-ring pair is
+ * farther, keeping the whole field pitch-clearance. The candidate holding the
+ * most tubes is returned.
+ *
+ * @param {number} shellID      The shell ID.
+ * @param {number} OTLClearance The OTL clearance.
+ * @param {number} tubeOD       The tube OD.
+ * @param {number} pitchRatio   The tube pitch ratio.
+ * @returns {TubeField}         The generated radial tube field.
  */
 const radialTubeField = (
     shellID: number,
@@ -430,26 +471,84 @@ const radialTubeField = (
     pitchRatio: number,
 ): TubeField => {
     const pitch = tubeOD * pitchRatio;
-    const MaxOTL = shellID - OTLClearance;
-    const numTubes = Math.floor(Math.PI / Math.asin(pitch / (MaxOTL - tubeOD)));
-    const angleIncrement = (2 * Math.PI) / numTubes;
-    const centreD = pitch / Math.sin(Math.PI / numTubes);
-    const tubeField: TubeField = [];
+    const maxOTL = shellID - OTLClearance;
+    const maxCentreDist = (maxOTL - tubeOD) / 2;
 
-    for (let i = 0; i < numTubes; i++) {
-        let x: number, y: number;
-        if (i === 0) {
-            x = 0;
-            y = centreD / 2;
-        } else {
-            const angle = angleIncrement * i * -1 + Math.PI / 2;
-            x = (centreD / 2) * Math.cos(angle);
-            y = (centreD / 2) * Math.sin(angle);
-        }
-        tubeField.push({ x: x, y: y });
+    const BOUND_TOLERANCE = 1e-9;
+
+    // A tube at the centre fits when maxCentreDist is non-negative, but
+    // floating-point error can leave it a hair below zero at exactly shellID =
+    // tubeOD + OTLClearance (e.g. `(25.4 - 6.35 - 19.05) / 2` is -1.4e-15).
+    // Tolerate that, but reject shells with no genuine room for even the centre
+    // tube.
+    if (maxCentreDist < -BOUND_TOLERANCE) {
+        return [];
     }
 
-    return tubeField;
+    // Floating-point guard: at radii that are exact pitch multiples, `PI /
+    // asin(pitch / (2 * radius))` can undershoot an exact integer (e.g.
+    // 5.999999999999999 instead of 6), dropping a tube from the ring. Floor
+    // with an epsilon of a few machine ulps to recover exact integers, then
+    // verify the chosen count against the chord length and drop a tube if it
+    // falls short of the pitch.
+    const ringTubeCount = (radius: number): number => {
+        const ratio = Math.PI / Math.asin(pitch / (2 * radius));
+        // ULP (unit in the last place): the gap between adjacent doubles around
+        // `x`, i.e. 2^(exponent(x) - 52). Floating-point error is a small
+        // multiple of it, so an epsilon of a few ulps recovers exact integers
+        // (the measured undershoot at k=1 is exactly 1 ulp) without ever
+        // crossing a genuinely sub-integer ratio.
+        const epsilon = 2 ** (Math.floor(Math.log2(ratio)) - 52) * 4;
+        let numTubes = Math.floor(ratio + epsilon);
+        while (2 * radius * Math.sin(Math.PI / numTubes) < pitch - BOUND_TOLERANCE) {
+            numTubes--;
+        }
+        return numTubes;
+    };
+
+    const placeRing = (radius: number, tubeField: TubeField): void => {
+        const numTubes = ringTubeCount(radius);
+        const angleIncrement = (2 * Math.PI) / numTubes;
+        for (let i = 0; i < numTubes; i++) {
+            const angle = angleIncrement * i * -1 + Math.PI / 2;
+            tubeField.push({ x: radius * Math.cos(angle), y: radius * Math.sin(angle) });
+        }
+    };
+
+    // Build one candidate per seed: the seed pattern itself, then full rings at
+    // seedRadius + k*pitch for k = 1, 2, ... . The seed ring (count 2-5) sits at
+    // the smallest radius admitting exactly `count` tubes one pitch apart; the
+    // seed ring's own within-ring chord is exactly one pitch, so no ring is
+    // ever stacked on a closer sub-pitch neighbour.
+    const buildSeedField = (count: number): TubeField => {
+        const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
+        if (seedRadius > maxCentreDist + BOUND_TOLERANCE) {
+            return [];
+        }
+        const tubeField: TubeField = [];
+        if (count === 1) {
+            tubeField.push({ x: 0, y: 0 });
+        } else {
+            placeRing(seedRadius, tubeField);
+        }
+        for (let k = 1; seedRadius + k * pitch <= maxCentreDist + BOUND_TOLERANCE; k++) {
+            placeRing(seedRadius + k * pitch, tubeField);
+        }
+        return tubeField;
+    };
+
+    // Keep the layout holding the most tubes, matching the `offset="AUTO"`
+    // "keep the better result" behaviour used elsewhere in the module. On a
+    // tie the earliest seed (the central-tube layout) wins, preserving the
+    // pre-existing behaviour.
+    const candidates: TubeField[] = RADIAL_SEED_COUNTS.map(buildSeedField);
+    let bestField = candidates[0];
+    for (const candidate of candidates) {
+        if (candidate.length > bestField.length) {
+            bestField = candidate;
+        }
+    }
+    return bestField;
 };
 
 /**
@@ -586,7 +685,7 @@ const tubeFieldOTL = (
     offsetOption: boolean | "AUTO" = "AUTO",
 ): number | null | undefined => {
     try {
-        if (tubeOD > shellID - OTLClearance) {
+        if (tubeOD > shellID - OTLClearance + 1e-9) {
             throw new Error("Tube OD cannot be greater than max allowable OTL.");
         }
         const tubeField = generateTubeField(
@@ -662,6 +761,12 @@ const findMinID = memoize(
         const HEURISTIC_MAX_ITERATIONS: number = 20;
         const BISECT_MAX_ITERATIONS: number = 100;
         const DECIMAL_PLACES = 8;
+        // Shared cap for any "grow/shrink the diameter guess until it works"
+        // search below. Every such loop must terminate: an invalid layout (or
+        // pathological inputs) previously spun forever because tubeFieldOTL
+        // kept returning null. 1000 steps of the 1.1 multiplier spans an
+        // astronomically wide diameter range, matching the radial path's cap.
+        const BOUND_MAX_ITERATIONS: number = 1000;
 
         if (tubeOD <= 0) {
             throw new Error("Tube outer diameter must be greater than 0");
@@ -672,14 +777,56 @@ const findMinID = memoize(
         if (OTLClearance < 0) {
             throw new Error("OTL clearance must be 0 or greater");
         }
+        if (!TUBE_SHEET_LAYOUTS.includes(layout)) {
+            throw new Error(`Invalid tube layout: ${String(layout)}`);
+        }
         // shortcircuit when target number of tubes = 1
         if (minTubes === 1) {
             return roundUp(tubeOD + OTLClearance, DECIMAL_PLACES);
         }
 
         if (layout === "radial") {
-            const pitch = pitchRatio * tubeOD;
-            return pitch / Math.sin(Math.PI / minTubes) + tubeOD + OTLClearance;
+            // The radial layout packs tubes into concentric rings, so there is
+            // no closed-form diameter. Search monotonically for the smallest
+            // shell ID whose generated radial tube field holds at least
+            // `minTubes` tubes.
+            const RADIAL_MAX_BOUND_ITERATIONS = 1000;
+            let lowerBound = tubeOD + OTLClearance;
+            // The first probe starts strictly above the one-tube lower bound:
+            // at `tubeOD + OTLClearance` exactly, the validation `tubeOD >
+            // shellID - OTLClearance` can spuriously hold due to floating-point
+            // error (e.g. `(19.05 + 6.35) - 6.35` is less than 19.05), which
+            // would log a spurious "Tube OD exceeds" error.
+            let upperBound = lowerBound * BETA;
+            let boundIterations = 0;
+            while (tubeCount(upperBound, OTLClearance, tubeOD, pitchRatio, layout) < minTubes) {
+                upperBound = upperBound * BETA;
+                if (!Number.isFinite(upperBound) || upperBound <= 0) {
+                    throw new Error(
+                        "findMinID: diameter guess became non-finite while searching for an upper bound.",
+                    );
+                }
+                if (++boundIterations > RADIAL_MAX_BOUND_ITERATIONS) {
+                    throw new Error(
+                        "findMinID: unable to bound a valid diameter within the iteration limit.",
+                    );
+                }
+            }
+
+            while (upperBound - lowerBound > Math.pow(10, -DECIMAL_PLACES)) {
+                const mid = (lowerBound + upperBound) / 2;
+                if (tubeCount(mid, OTLClearance, tubeOD, pitchRatio, layout) >= minTubes) {
+                    upperBound = mid;
+                } else {
+                    lowerBound = mid;
+                }
+            }
+
+            const OTL = tubeFieldOTL(upperBound, OTLClearance, tubeOD, pitchRatio, layout);
+            return roundUp(
+                OTL !== null && OTL !== undefined ? OTL + OTLClearance : upperBound,
+                DECIMAL_PLACES,
+            );
         }
 
         while (true) {
@@ -785,7 +932,11 @@ const findMinID = memoize(
                         }
                     }
 
-                    // Increase diameter guess until valid tubefield is obtained
+                    // Increase diameter guess until valid tubefield is
+                    // obtained. Bounded: previously an invalid layout (or any
+                    // input that always yields an empty field) made this loop
+                    // forever.
+                    let growOldIterations = 0;
                     while (
                         tubeFieldOTL(
                             D_old,
@@ -794,9 +945,21 @@ const findMinID = memoize(
                             pitchRatio,
                             layout,
                             offsetOption,
-                        ) === null
+                        ) === null &&
+                        growOldIterations < BOUND_MAX_ITERATIONS
                     ) {
                         D_old = D_old * BETA;
+                        if (!Number.isFinite(D_old) || D_old <= 0) {
+                            throw new Error(
+                                "findMinID: diameter guess became non-finite while searching for a valid tubefield.",
+                            );
+                        }
+                        growOldIterations++;
+                    }
+                    if (growOldIterations >= BOUND_MAX_ITERATIONS) {
+                        throw new Error(
+                            "findMinID: unable to find a valid diameter within the iteration limit.",
+                        );
                     }
 
                     // Save first guess of tube count into memory
@@ -956,7 +1119,16 @@ const findMinID = memoize(
                     const minValidID = tubeOD + OTLClearance + Math.pow(10, -DECIMAL_PLACES);
                     if (!haveLowerBound) {
                         let D_shrink = haveUpperBound ? D_upperBound : D_old;
-                        while (true) {
+                        // Bounded, with a finiteness check: an unbounded loop
+                        // here can hang forever if D_shrink never drops below
+                        // the minimum valid diameter.
+                        let shrinkIterations = 0;
+                        while (shrinkIterations < BOUND_MAX_ITERATIONS) {
+                            if (!Number.isFinite(D_shrink) || D_shrink <= 0) {
+                                throw new Error(
+                                    "findMinID: diameter guess became non-finite while searching for a lower bound.",
+                                );
+                            }
                             D_shrink = D_shrink / BETA;
                             if (D_shrink <= minValidID) {
                                 D_lowerBound = minValidID;
@@ -976,6 +1148,12 @@ const findMinID = memoize(
                                 haveLowerBound = true;
                                 break;
                             }
+                            shrinkIterations++;
+                        }
+                        if (!haveLowerBound) {
+                            throw new Error(
+                                "findMinID: unable to find a valid lower bound within the iteration limit.",
+                            );
                         }
                     }
 
@@ -983,9 +1161,8 @@ const findMinID = memoize(
                         let D_grow = haveLowerBound ? D_lowerBound : D_old;
                         // Bounded, with a finiteness check: an unbounded loop
                         // here can hang forever if D_grow ever became NaN.
-                        const GROW_MAX_ITERATIONS = 1000;
                         let growIterations = 0;
-                        while (growIterations < GROW_MAX_ITERATIONS) {
+                        while (growIterations < BOUND_MAX_ITERATIONS) {
                             if (!Number.isFinite(D_grow) || D_grow <= 0) {
                                 throw new Error(
                                     "findMinID: diameter guess became non-finite while searching for an upper bound.",

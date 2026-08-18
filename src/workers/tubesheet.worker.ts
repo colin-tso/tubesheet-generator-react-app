@@ -55,11 +55,20 @@ self.onmessage = (event: MessageEvent) => {
 
         if (type === "CALCULATE_SINGLE") {
             const { OTLtoShell, tubeOD, pitchRatio, layoutOption, minTubes, shellID } = payload;
+            // The radial layout is stored as the number 0 by the UI radio
+            // inputs, but the plugin only knows the string "radial". Normalise
+            // here so a stray 0 (an invalid layout) can never reach the plugin,
+            // where it would be treated as an unknown layout and hang.
+            const normalizedLayout: TubeSheetLayout =
+                layoutOption === 0 ? "radial" : (layoutOption as TubeSheetLayout);
+            if (!TUBE_SHEET_LAYOUTS.includes(normalizedLayout)) {
+                throw new Error(`Invalid layout option: ${String(layoutOption)}`);
+            }
             const generated = new TubeSheet(
                 OTLtoShell,
                 tubeOD,
                 pitchRatio,
-                layoutOption,
+                normalizedLayout,
                 minTubes,
                 shellID,
             );

@@ -1,0 +1,25 @@
+Everything above answers the *forward* question: given a shell ID, how many tubes fit? When you instead specify a **minimum tube count**, the app has to solve the *inverse* problem: the smallest shell ID whose tube count meets the target. Tube count only ever increases in steps as the shell grows, so that step function cannot be inverted algebraically. It is solved numerically instead.
+
+1. **Starting guess.** A closed-form packing estimate, the same one used in classic tube-count rules of thumb, seeds the first diameter to try, the **initial estimate** ($D_\text{shell, est}$):
+
+   :::Formula{id="solving-initial-estimate" label="Initial estimate"}
+   $$
+   \begin{align}
+   D_\text{shell, est} \approx P \times \sqrt{\frac{n_\text{min}}{k}} + \text{OTL}_\text{clear}
+   \end{align}
+   $$
+   :::
+
+   using a **packing factor** ($k$) of 0.84 for the triangular patterns (30°/60°) and 0.61 for the square patterns (45°/90°).
+   
+   Triangular patterns pack more densely, hence the higher factor.
+
+2. **Heuristic search.** The diameter grows or shrinks by a fixed 1.1× step depending on whether the last two guesses overshot or undershot the target tube count, converging quickly for most inputs.
+
+3. **Bisection fallback.** If the heuristic does not land on the exact target within its iteration budget, the search falls back to bisecting between a known too-small and a known large-enough diameter until they converge.
+
+4. **Snapping.** Once a diameter is found whose tube count meets the target, the result is snapped to the tightest shell ID ($D_\text{shell, min}$) that still contains that field: the actual OTL (<EqRef id="otl-actual" />) of the generated field, plus the OTL clearance, rather than whatever diameter the search happened to stop on.
+
+The radial layout (see [07 Radial layout](#/docs/radial)) has no closed-form count either, but it skips the packing-factor seed and the heuristic step: its counts come from concentric rings, so the search simply grows the diameter by 1.1× until the count meets the target and then bisects. Snapping is unchanged.
+
+Because tube count only increases in discrete jumps, the resulting shell can hold more than the minimum you asked for. See the worked example below.
