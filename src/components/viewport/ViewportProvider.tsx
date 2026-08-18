@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { useContextMenu } from "../../hooks/useContextMenu";
-import { useSvgExportActions } from "../../hooks/useSvgExportActions";
-import { useViewportFooterReserve } from "../../hooks/useViewportFooterReserve";
-import { useShellOtlHighlight } from "../../hooks/useShellOTLHighlight";
-import type { SingleResultPayload } from "../../hooks/useTubeSheetWorker";
+import { useContextMenu } from "@/hooks/useContextMenu";
+import { useSvgExportActions } from "@/hooks/useSvgExportActions";
+import { useViewportFooterReserve } from "@/hooks/useViewportFooterReserve";
+import { useShellOtlHighlight } from "@/hooks/useShellOTLHighlight";
+import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
 import { ViewportContext, type ViewportContextValue } from "./ViewportContext";
 
 // Reads/writes a boolean preference to localStorage, initialized lazily so the

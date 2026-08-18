@@ -4,20 +4,20 @@ import {
     TubeSheet,
     generateTubeSheetSVG,
     ITubeSheetData,
-} from "./plugins/tubesheet-layout-generator";
-import { NumericField } from "./components/NumericField";
-import { PairedFieldRow } from "./components/PairedFieldRow";
-import { utils } from "./utils/";
-import ThemeToggle from "./components/DarkmodeToggle";
-import { useTubeSheetWorker } from "./hooks/useTubeSheetWorker";
-import { useLayoutForm } from "./hooks/useLayoutForm";
-import { LayoutOptionsList } from "./components/LayoutOptionsList";
-import { FormFooter } from "./components/FormFooter";
-import { Viewport } from "./components/viewport/Viewport";
-import { useViewportContext } from "./components/viewport/ViewportContext";
-import { numericFieldConfigs } from "./constants/numericFieldConfigs";
-import type { NumericFieldConfig } from "./constants/numericFieldConfigs";
-import { layoutOptionRows } from "./constants/layoutOptionRows";
+} from "@/plugins/tubesheet-layout-generator";
+import { NumericField } from "@/components/NumericField";
+import { PairedFieldRow } from "@/components/PairedFieldRow";
+import { utils } from "@/utils/";
+import ThemeToggle from "@/components/DarkmodeToggle";
+import { useTubeSheetWorker } from "@/hooks/useTubeSheetWorker";
+import { useLayoutForm } from "@/hooks/useLayoutForm";
+import { LayoutOptionsList } from "@/components/LayoutOptionsList";
+import { FormFooter } from "@/components/FormFooter";
+import { Viewport } from "@/components/viewport/Viewport";
+import { useViewportContext } from "@/components/viewport/ViewportContext";
+import { numericFieldConfigs } from "@/constants/numericFieldConfigs";
+import type { NumericFieldConfig } from "@/constants/numericFieldConfigs";
+import { layoutOptionRows } from "@/constants/layoutOptionRows";
 
 // --- Static config computation (moved outside component) ---
 const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);

@@ -4,16 +4,16 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import { TubeSheetSVG } from "../TubeSheetSVG";
-import { TubeSheetDataTable } from "../TubeSheetDataTable";
-import { ShellOTLTooltip } from "../ShellOTLTooltip";
-import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
-import TableIcon from "../../assets/table-icon.svg?react";
-import TableOffIcon from "../../assets/table-off-icon.svg?react";
-import GridIcon from "../../assets/grid-icon.svg?react";
-import GridOffIcon from "../../assets/grid-off-icon.svg?react";
-import SaveIcon from "../../assets/save-icon.svg?react";
-import CopyIcon from "../../assets/copy-icon.svg?react";
+import { TubeSheetSVG } from "@/components/TubeSheetSVG";
+import { TubeSheetDataTable } from "@/components/TubeSheetDataTable";
+import { ShellOTLTooltip } from "@/components/ShellOTLTooltip";
+import { ContextMenu, type ContextMenuItem } from "@/components/ContextMenu";
+import TableIcon from "@/assets/table-icon.svg?react";
+import TableOffIcon from "@/assets/table-off-icon.svg?react";
+import GridIcon from "@/assets/grid-icon.svg?react";
+import GridOffIcon from "@/assets/grid-off-icon.svg?react";
+import SaveIcon from "@/assets/save-icon.svg?react";
+import CopyIcon from "@/assets/copy-icon.svg?react";
 import { useViewportContext } from "./ViewportContext";
 import { ViewportProvider } from "./ViewportProvider";
 

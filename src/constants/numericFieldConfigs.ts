@@ -1,6 +1,6 @@
-import type { NumericFieldProps } from "../components/NumericField";
+import type { NumericFieldProps } from "@/components/NumericField";
 import type { PairPreviewContext } from "./pairPreviewConfigs";
-import { utils } from "../utils";
+import { utils } from "@/utils";
 
 export type NumericFieldConfig = Omit<NumericFieldProps, "value" | "pairedValue"> & {
     // Fields sharing the same "row" id are rendered side-by-side as a pair.

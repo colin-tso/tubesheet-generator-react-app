@@ -1,7 +1,7 @@
 import { type ComponentType, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import App from "./App";
-import { loadDocsPage } from "./pages/docs/loadDocsPage";
+import { loadDocsPage } from "@/docs/loadDocsPage";
 
 type DocsPageProps = { hash: string; savedScrollY: number | null };
 

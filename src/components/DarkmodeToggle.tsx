@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./darkmode-toggle.css";
 import "../index.css";
-import MoonIcon from "../assets/moon.svg?react";
-import SunIcon from "../assets/sun.svg?react";
+import MoonIcon from "@/assets/moon.svg?react";
+import SunIcon from "@/assets/sun.svg?react";
 
 const THEME_STORAGE_KEY = "theme-preference";
 

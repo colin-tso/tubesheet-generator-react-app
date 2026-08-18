@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
@@ -11,6 +12,11 @@ import rehypeKatex from "rehype-katex";
 
 export default defineConfig({
     base: "/tubesheet-generator-react-app/",
+    resolve: {
+        alias: {
+            "@": fileURLToPath(new URL("./src", import.meta.url)),
+        },
+    },
     // mdx() must come before react() so the JSX it emits from .mdx files is
     // then picked up and transformed by the React plugin.
     plugins: [

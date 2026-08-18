@@ -1,5 +1,5 @@
-import GithubIcon from "../assets/github-icon.svg?react";
-import { loadDocsPage } from "../pages/docs/loadDocsPage";
+import GithubIcon from "@/assets/github-icon.svg?react";
+import { loadDocsPage } from "@/docs/loadDocsPage";
 
 export function FormFooter() {
     return (

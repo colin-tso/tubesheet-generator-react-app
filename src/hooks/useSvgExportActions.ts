@@ -4,7 +4,7 @@ import {
     preloadPngEncodeWorker,
     sizedSvgString,
     svgToPngBlob,
-} from "../utils/svgExport";
+} from "@/utils/svgExport";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported" | "downloaded";
 

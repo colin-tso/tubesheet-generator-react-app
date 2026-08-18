@@ -1,4 +1,4 @@
-import type { TubeSheetLayout } from "../../plugins/tubesheet-layout-generator";
+import type { TubeSheetLayout } from "@/plugins/tubesheet-layout-generator";
 
 // Illustrative pitch, in local SVG units. Large relative to the tube radius
 // so the geometry, arrows, and labels all stay readable at the rendered

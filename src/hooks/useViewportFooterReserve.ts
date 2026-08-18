@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { DRAWING_SAFE_CONTENT_RADIUS_FRACTION } from "../plugins/tubesheet-layout-generator";
+import { DRAWING_SAFE_CONTENT_RADIUS_FRACTION } from "@/plugins/tubesheet-layout-generator";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
 
 // px the viewport must widen past the engage point before releasing the reserve
