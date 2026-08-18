@@ -76,8 +76,8 @@ export function Root() {
         return () => {
             cancelled = true;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally
-        // mount-only
+        // intentionally mount-only
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
