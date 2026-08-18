@@ -143,3 +143,36 @@ describe("tubesheet.worker — radial layout is stored as 0 by the UI", () => {
         postMessageSpy.mockRestore();
     });
 });
+
+describe("tubesheet.worker — preferred-layout ties at full precision", () => {
+    // 45° and radial realises the same 4-tube diamond for these inputs. Their
+    // minIDs must be bit-identical (full float precision on both paths) so the
+    // strict equality check flags BOTH as preferred, not just the first one.
+    it("flags both 45-degree and radial as preferred when they tie on minID", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_ALL",
+                requestId: "req-tie",
+                payload: {
+                    OTLtoShell: 40,
+                    tubeOD: 95.3,
+                    pitchRatio: (95.3 + 20) / 95.3,
+                    minTubes: 4,
+                },
+            },
+        } as MessageEvent);
+
+        const sent = postMessageSpy.mock.calls[0][0] as {
+            type: string;
+            payload: Record<string, { preferred: boolean }>;
+        };
+
+        expect(sent.type).toBe("ALL_RESULTS");
+        expect(sent.payload["45"].preferred).toBe(true);
+        expect(sent.payload["radial"].preferred).toBe(true);
+
+        postMessageSpy.mockRestore();
+    });
+});

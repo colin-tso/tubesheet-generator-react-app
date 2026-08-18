@@ -317,15 +317,13 @@ const generateTubeField = memoize(
             const maxCentreDist = (maxOTL - tubeOD) / 2;
             // Tubes that define the OTL sit exactly on this boundary by
             // construction: findMinID snaps the shell ID to
-            // round(OTLFromTubeField(...) + OTLClearance), and
-            // OTLFromTubeField in turn works from coordinates that
-            // applySymmetry has rounded to COORD_DECIMALS (8dp). That
-            // rounding can shave a few billionths of a mm off a boundary
-            // tube's true lattice distance, so the "exact" snapped shell ID
-            // can end up a hair too tight to re-admit that same tube when
-            // the field is regenerated from raw (unrounded) lattice math.
-            // BOUND_TOLERANCE absorbs that mismatch - it's far larger than
-            // the ~1e-8 rounding error it needs to cover, but many orders of
+            // roundUp(OTLFromTubeField(...) + OTLClearance), and
+            // OTLFromTubeField works from exact lattice coordinates (no
+            // rounding is applied to the tube field), so the snapped shell ID
+            // is always large enough to re-admit the boundary tube: OTL >=
+            // 2R + tubeOD implies (roundUp(OTL + OC) - OC - tubeOD)/2 >= R.
+            // BOUND_TOLERANCE remains as a safety net for residual sub-ulp
+            // floating-point noise at the boundary. It's many orders of
             // magnitude smaller than any real pitch/clearance, so it can't
             // admit a tube that doesn't actually belong.
             const BOUND_TOLERANCE = 1e-6;
@@ -372,11 +370,7 @@ const generateTubeField = memoize(
                     };
                 };
 
-                const COORD_DECIMALS = 8;
-                const normalize = (n: number): number => {
-                    const rounded = round(n, COORD_DECIMALS);
-                    return rounded === 0 ? 0 : rounded;
-                };
+                const normalize = (n: number): number => (n === 0 ? 0 : n);
 
                 const mergeUniqueCoordinates = (...arrays: TubeField[]): TubeField => {
                     const seen = new Map<string, Tube>();
