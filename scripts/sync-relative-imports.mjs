@@ -9,7 +9,15 @@
 // renames/relocates its public entry files. Everything each entry point imports
 // relatively (transitively) is discovered automatically and mirrored at the
 // same relative path under the target repo — so a new util file, or a new
-// import inside an existing one, needs no changes here.
+// import inside an existing one, needs no changes here. The repo's `@/*`
+// path alias (which maps to `src/*`) is treated the same way: an `@/...`
+// import is resolved against the source root, synced, and rewritten to a
+// relative path, since the standalone repo has no path alias configured.
+//
+// The FP tolerance-analysis scripts (scripts/fp-tolerance-analysis) are synced
+// alongside the module so the standalone repo can re-derive/verify the
+// tolerance values against the shipped module; their imports of the module are
+// rewritten to point at the target's src/modules.ts.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -24,13 +32,29 @@ if (!sourceRoot || !targetRoot) {
 const ENTRY_POINTS = {
     "src/plugins/tubesheet-layout-generator.ts": "src/modules.ts",
     "src/plugins/tubesheet-layout-generator.test.ts": "tests/modules.test.ts",
+    "scripts/fp-tolerance-analysis/01-measure-guard-noise.mjs":
+        "scripts/fp-tolerance-analysis/01-measure-guard-noise.mjs",
+    "scripts/fp-tolerance-analysis/02-validate-tolerance-fix.mjs":
+        "scripts/fp-tolerance-analysis/02-validate-tolerance-fix.mjs",
+    "scripts/fp-tolerance-analysis/03-validate-against-real-module.mjs":
+        "scripts/fp-tolerance-analysis/03-validate-against-real-module.mjs",
+    "scripts/fp-tolerance-analysis/README.md": "scripts/fp-tolerance-analysis/README.md",
 };
 
-const IMPORT_RE = /from\s+["'](\.[^"']+)["']/g;
+// Relative ("./...") and path-alias ("@/...") import specifiers.
+const IMPORT_RE = /from\s+["']((?:\.|@\/)[^"']+)["']/g;
 
-/** Resolve a relative import specifier against an actual .ts file on disk. */
+/**
+ * Resolve a local import specifier against an actual file on disk.
+ *
+ * `.`-prefixed specifiers resolve against the importing file's directory;
+ * `@/`-prefixed specifiers are the repo's path alias for `src/` and resolve
+ * against the source root.
+ */
 function resolveSpecifier(fromFileAbs, specifier) {
-    const base = path.resolve(path.dirname(fromFileAbs), specifier);
+    const base = specifier.startsWith("@/")
+        ? path.join(sourceRoot, "src", specifier.slice(2))
+        : path.resolve(path.dirname(fromFileAbs), specifier);
     for (const candidate of [base, `${base}.ts`, `${base}.tsx`]) {
         if (fs.existsSync(candidate)) return candidate;
     }

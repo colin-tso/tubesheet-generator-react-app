@@ -7,7 +7,9 @@ name: "Sync standalone tubesheet-generator module"
 #   (however deep) are discovered and synced automatically – see
 #   scripts/sync-relative-imports.mjs. Also mirrors this repo's package.json
 #   license field and any bare-import dependency versions into the target's
-#   package.json.
+#   package.json, and ships the FP tolerance-analysis scripts
+#   (scripts/fp-tolerance-analysis) alongside the module so the standalone repo
+#   can re-derive/verify the tolerance values against the shipped module.
 on:
     push:
         branches:
@@ -17,6 +19,8 @@ on:
             - "src/plugins/tubesheet-layout-generator.test.ts"
             - "src/utils/**"
             - "docs/tubesheet-generator-plugin-readme.md"
+            - "scripts/fp-tolerance-analysis/**"
+            - "scripts/sync-relative-imports.mjs"
             - "package.json"
 
 concurrency:
@@ -99,6 +103,34 @@ jobs:
                       fi
                   done
 
+            - name: Sync dev-tool dependency versions from source package.json
+              run: |
+                  # The FP tolerance-analysis scripts import the module's
+                  # TypeScript, so they need tsx to run; ensure the standalone
+                  # repo's devDependencies carry the same version as the source.
+                  TSX_VERSION=$(jq -r '.devDependencies["tsx"] // empty' source/package.json)
+                  if [ -z "$TSX_VERSION" ]; then
+                      echo "::warning::No tsx devDependency found in source package.json – skipping."
+                  else
+                      jq --arg v "$TSX_VERSION" '.devDependencies["tsx"] = $v' target/package.json > target/package.json.tmp
+                      mv target/package.json.tmp target/package.json
+                      echo "Synced tsx@${TSX_VERSION} into target devDependencies"
+                  fi
+
+            - name: Align target tsconfig target/lib with source
+              run: |
+                  # The source module targets ESNext and iterates DOM
+                  # NodeListOf (for...of over svg.childNodes), which requires
+                  # the DOM.Iterable lib. Rather than patching individual libs
+                  # onto the stale ES2020 config, keep the standalone repo's
+                  # tsconfig target/lib aligned with the source repo's esnext
+                  # setup. Idempotent.
+                  jq '.compilerOptions.target = "esnext" |
+                      .compilerOptions.lib = ["ESNext", "DOM", "DOM.Iterable"]' \
+                      target/tsconfig.json > target/tsconfig.json.tmp
+                  mv target/tsconfig.json.tmp target/tsconfig.json
+                  echo "Aligned target tsconfig to esnext (target + lib)."
+
             - name: Install target dependencies
               working-directory: target
               run: npm install
@@ -106,6 +138,16 @@ jobs:
             - name: Run tests (gate – do not push on failure)
               working-directory: target
               run: npx vitest run
+
+            - name: Run FP tolerance-analysis scripts (gate – do not push on failure)
+              working-directory: target
+              run: |
+                  # Ship the scripts AND prove they work against the shipped
+                  # module. Script 01 gets a reduced trial count to keep the
+                  # gate fast; it still spans all magnitudes and chains.
+                  npx tsx scripts/fp-tolerance-analysis/01-measure-guard-noise.mjs 10000
+                  npx tsx scripts/fp-tolerance-analysis/02-validate-tolerance-fix.mjs
+                  npx tsx scripts/fp-tolerance-analysis/03-validate-against-real-module.mjs
 
             - name: Compile module for distribution
               working-directory: target
