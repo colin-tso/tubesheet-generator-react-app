@@ -207,6 +207,16 @@ export class TubeSheet {
     }
 }
 
+/**
+ * Ceils `value` to the given number of decimal places. Exposed via
+ * {@link ULP_TEST_UTILS} so the FP tolerance-analysis scripts in
+ * scripts/fp-tolerance-analysis can measure noise against the real
+ * implementation instead of a duplicated mirror.
+ *
+ * @param {number} value           The value to round up.
+ * @param {number} decimalPlaces   The number of decimal places to ceil to.
+ * @returns {number}               `value` ceiled to `decimalPlaces` decimals.
+ */
 const roundUp = (value: number, decimalPlaces: number): number => {
     const multiplier = Math.pow(10, decimalPlaces);
     return Math.ceil(value * multiplier) / multiplier;
@@ -216,6 +226,25 @@ const round = (num: number, decimalPlaces = 0) => {
     const p = Math.pow(10, decimalPlaces);
     const n = num * p * (1 + Number.EPSILON);
     return Math.round(n) / p;
+};
+
+/**
+ * The gap between adjacent representable doubles around `magnitude` — one unit
+ * in the last place (ULP) per IEEE-754 double precision:
+ * 2^(exponent(magnitude) - 52). A magnitude of 0 is treated as 1, since a value
+ * that arrived at exactly 0 via prior arithmetic can still carry ULP-scale
+ * error relative to the operations that produced it.
+ *
+ * Exposed via {@link ULP_TEST_UTILS} so the FP tolerance-analysis scripts in
+ * scripts/fp-tolerance-analysis measure noise in the same units the runtime
+ * guard actually uses, rather than duplicating the formula.
+ *
+ * @param {number} magnitude  The magnitude whose ULP size to return.
+ * @returns {number}          The size of one ULP at `magnitude`.
+ */
+const ulpAt = (magnitude: number): number => {
+    const mag = Math.abs(magnitude) || 1;
+    return 2 ** (Math.floor(Math.log2(mag)) - 52);
 };
 
 /**
@@ -242,6 +271,10 @@ const round = (num: number, decimalPlaces = 0) => {
  * constants had over their own observed worst case, while remaining valid
  * regardless of input magnitude.
  *
+ * Exposed via {@link ULP_TEST_UTILS} so the FP tolerance-analysis scripts in
+ * scripts/fp-tolerance-analysis can exercise the real function rather than a
+ * duplicated mirror.
+ *
  * @param {number} magnitude   A representative magnitude of the operands
  *                             involved in the comparison (e.g. the largest
  *                             one). A magnitude of 0 is treated as 1, since a
@@ -253,9 +286,21 @@ const round = (num: number, decimalPlaces = 0) => {
  *                             `magnitude`.
  */
 const ulpTolerance = (magnitude: number, ulps = 64): number => {
-    const mag = Math.abs(magnitude) || 1;
-    return 2 ** (Math.floor(Math.log2(mag)) - 52) * ulps;
+    return ulpAt(magnitude) * ulps;
 };
+
+/**
+ * Exposes the floating-point tolerance helpers (`roundUp`, `ulpAt`,
+ * `ulpTolerance`) to the FP tolerance-analysis scripts in
+ * scripts/fp-tolerance-analysis so they exercise the real implementations
+ * instead of mirrored copies, without adding those helpers to the module's
+ * public API surface. Not part of the module's documented interface.
+ */
+export const ULP_TEST_UTILS = {
+    roundUp,
+    ulpAt,
+    ulpTolerance,
+} as const;
 
 /**
  * Creates a memo key for a given set of arguments based on a set of defaults.
@@ -542,7 +587,7 @@ const radialTubeField = (
         // multiple of it, so an epsilon of a few ulps recovers exact integers
         // (the measured undershoot at k=1 is exactly 1 ulp) without ever
         // crossing a genuinely sub-integer ratio.
-        const epsilon = 2 ** (Math.floor(Math.log2(ratio)) - 52) * 4;
+        const epsilon = ulpAt(ratio) * 4;
         let numTubes = Math.floor(ratio + epsilon);
         while (
             2 * radius * Math.sin(Math.PI / numTubes) <
