@@ -9,6 +9,12 @@ export type TubeField = Array<Tube>;
 export const TUBE_SHEET_LAYOUTS = [30, 45, 60, 90, "radial"] as const;
 export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 
+// Membership checks against the layout list happen on every call to
+// generateTubeField/findMinID, both of which run repeatedly inside bisection
+// and heuristic search loops. A Set gives O(1) lookups there instead of
+// O(TUBE_SHEET_LAYOUTS.length) with Array#includes.
+const TUBE_SHEET_LAYOUT_SET: ReadonlySet<TubeSheetLayout> = new Set(TUBE_SHEET_LAYOUTS);
+
 export interface ITubeSheetData {
     tubeField: TubeField | null;
     OTL: number | null;
@@ -74,7 +80,7 @@ export class TubeSheet {
         this._OTLClearance = x;
         this.updateGeneratedProps();
     }
-    get OTLClearance() {
+    get OTLClearance(): number {
         return this._OTLClearance;
     }
 
@@ -82,7 +88,7 @@ export class TubeSheet {
         this._tubeOD = x;
         this.updateGeneratedProps();
     }
-    get tubeOD() {
+    get tubeOD(): number {
         return this._tubeOD;
     }
 
@@ -90,7 +96,7 @@ export class TubeSheet {
         this._pitchRatio = x;
         this.updateGeneratedProps();
     }
-    get pitchRatio() {
+    get pitchRatio(): number {
         return this._pitchRatio;
     }
 
@@ -98,7 +104,7 @@ export class TubeSheet {
         this._layout = x;
         this.updateGeneratedProps();
     }
-    get layout() {
+    get layout(): TubeSheetLayout {
         return this._layout;
     }
 
@@ -118,23 +124,23 @@ export class TubeSheet {
         return this._shellID;
     }
 
-    get tubeField() {
+    get tubeField(): TubeField | null {
         return this._tubeField;
     }
 
-    get minID() {
+    get minID(): number | null {
         return this._minID;
     }
 
-    get numTubes() {
+    get numTubes(): number | null {
         return this._numTubes;
     }
 
-    get OTL() {
+    get OTL(): number | null {
         return this._OTL;
     }
 
-    get svg() {
+    get svg(): SVGSVGElement {
         return generateTubeSheetSVG(this);
     }
 
@@ -152,7 +158,7 @@ export class TubeSheet {
         tubeField: TubeField | null;
         OTL: number | null;
     } {
-        if (!TUBE_SHEET_LAYOUTS.includes(this._layout)) {
+        if (!TUBE_SHEET_LAYOUT_SET.has(this._layout)) {
             throw new Error(`Invalid tube layout: ${String(this._layout)}`);
         }
 
@@ -510,9 +516,9 @@ const radialTubeField = (
     };
 
     // Build one candidate per seed: the seed pattern itself, then full rings at
-    // seedRadius + k*pitch for k = 1, 2, ... . The seed ring (count 2-5) sits at
-    // the smallest radius admitting exactly `count` tubes one pitch apart; the
-    // seed ring's own within-ring chord is exactly one pitch, so no ring is
+    // seedRadius + k*pitch for k = 1, 2, ... . The seed ring (count 2-5) sits
+    // at the smallest radius admitting exactly `count` tubes one pitch apart;
+    // the seed ring's own within-ring chord is exactly one pitch, so no ring is
     // ever stacked on a closer sub-pitch neighbour.
     const buildSeedField = (count: number): TubeField => {
         const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
@@ -552,32 +558,46 @@ const radialTubeField = (
  * @param {TubeSheetLayout} layout   The layout value.
  * @returns {{ dx: number; dy: number; C: number }}  The layout constants.
  */
-const getLayoutConstants = (pitch: number, layout: TubeSheetLayout) => {
-    const sin60 = Math.sqrt(3) / 2;
-    const cos45 = 1 / Math.sqrt(2);
-
-    const layoutConstants: {
-        [key in TubeSheetLayout]: { dx: number; dy: number; C: number };
-    } = {
-        30: {
-            dx: pitch,
-            dy: pitch * sin60,
-            C: pitch / 2,
-        },
-        60: {
-            dx: pitch * sin60 * 2,
-            dy: pitch / 2,
-            C: (pitch * sin60 * 2) / 2,
-        },
-        90: { dx: pitch, dy: pitch, C: 0 },
-        45: {
-            dx: pitch / cos45,
-            dy: pitch / cos45 / 2,
-            C: pitch / cos45 / 2,
-        },
-        radial: { dx: NaN, dy: NaN, C: NaN },
-    };
-    return layoutConstants[layout as keyof typeof layoutConstants];
+const getLayoutConstants = (
+    pitch: number,
+    layout: TubeSheetLayout,
+): { dx: number; dy: number; C: number } => {
+    // Only compute the trig/division for the requested layout instead of
+    // building an object with all five layouts' constants (four of which are
+    // discarded) on every call. This function sits on the bisection/heuristic
+    // hot path in findMinID, so avoiding the extra allocations and Math calls
+    // adds up across the hundreds of calls a single search can make. The
+    // formulas themselves are unchanged from the lookup-table version. Preserve
+    // the exact original operation order for each formula (rather than
+    // algebraically simplifying it) so results are bit-for-bit identical to the
+    // previous lookup-table implementation.
+    switch (layout) {
+        case 30: {
+            const sin60 = Math.sqrt(3) / 2;
+            const dx = pitch;
+            const dy = pitch * sin60;
+            const C = pitch / 2;
+            return { dx, dy, C };
+        }
+        case 60: {
+            const sin60 = Math.sqrt(3) / 2;
+            const dx = pitch * sin60 * 2;
+            const dy = pitch / 2;
+            const C = dx / 2;
+            return { dx, dy, C };
+        }
+        case 90:
+            return { dx: pitch, dy: pitch, C: 0 };
+        case 45: {
+            const cos45 = 1 / Math.sqrt(2);
+            const dx = pitch / cos45;
+            const dy = pitch / cos45 / 2;
+            const C = pitch / cos45 / 2;
+            return { dx, dy, C };
+        }
+        case "radial":
+            return { dx: NaN, dy: NaN, C: NaN };
+    }
 };
 
 /**
@@ -771,7 +791,7 @@ const findMinID = memoize(
         if (OTLClearance < 0) {
             throw new Error("OTL clearance must be 0 or greater");
         }
-        if (!TUBE_SHEET_LAYOUTS.includes(layout)) {
+        if (!TUBE_SHEET_LAYOUT_SET.has(layout)) {
             throw new Error(`Invalid tube layout: ${String(layout)}`);
         }
         // shortcircuit when target number of tubes = 1
@@ -1289,6 +1309,26 @@ export const getEffectiveShellID = (
  * @param {ITubeSheetData} ts  The TubeSheetData object.
  * @returns {SVGSVGElement}    The generated SVG element.
  */
+/**
+ * Parses a `key:value; key:value` inline-style string into a lookup object.
+ * Hoisted out of {@link generateTubeSheetSVG} so it isn't redefined on every
+ * SVG render, and shared between the circle and crosshair generators so the
+ * parsing logic isn't duplicated.
+ *
+ * @param {string} svgStyles                The style string to parse.
+ * @returns {{ [key: string]: string }}      The parsed style lookup.
+ */
+const parseSVGStyleString = (svgStyles: string): { [key: string]: string } => {
+    return svgStyles.split(";").reduce(
+        (acc, style) => {
+            const [key, value] = style.split(":");
+            if (key && value) acc[key.trim()] = value.trim();
+            return acc;
+        },
+        {} as { [key: string]: string },
+    );
+};
+
 export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
     /**
      * Generates an SVG element containing circles based on the provided data.
@@ -1319,15 +1359,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         const svg = document.createElementNS(svgNamespace, "svg");
 
         // Predefine tube style
-        const styles = svgStyles.split(";").reduce(
-            (acc, style) => {
-                const [key, value] = style.split(":");
-                if (key && value) acc[key.trim()] = value.trim();
-                return acc;
-            },
-            {} as { [key: string]: string },
-        );
-        const styleEntries = Object.entries(styles);
+        const styleEntries = Object.entries(parseSVGStyleString(svgStyles));
         const radius = diameter / 2;
         const radiusStr = radius.toString();
 
@@ -1335,11 +1367,20 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         // the final svg.
         const fragment = document.createDocumentFragment();
 
-        // Loop through each tube to create circles
-        circles.forEach((c, i) => {
+        // Loop through each tube to create circles. A tube field can hold
+        // thousands of tubes, so this is the hottest loop in SVG generation: an
+        // indexed for-loop over a cached length avoids the per-element
+        // callback-invocation overhead of Array#forEach, and direct comparisons
+        // avoid a Math.min/Math.max call per coordinate.
+        const { length } = circles;
+        for (let i = 0; i < length; i++) {
+            const c = circles[i];
+            const cx = c.x;
+            const cy = c.y;
+
             const circle = document.createElementNS(svgNamespace, "circle");
-            circle.setAttribute("cx", c.x.toString());
-            circle.setAttribute("cy", c.y.toString());
+            circle.setAttribute("cx", cx.toString());
+            circle.setAttribute("cy", cy.toString());
             circle.setAttribute("r", radiusStr);
             if (id) {
                 circle.setAttribute("id", (i + 1).toString());
@@ -1350,15 +1391,22 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
                 circle.setAttribute(key, value);
             }
 
-            // Calculate bounding box based on coordinates and diameter
-            minX = Math.min(minX, c.x - radius);
-            minY = Math.min(minY, c.y - radius);
-            maxX = Math.max(maxX, c.x + radius);
-            maxY = Math.max(maxY, c.y + radius);
+            // Calculate bounding box based on coordinates and diameter.
+            // Deliberately kept as Math.min/Math.max rather than a direct `<` /
+            // `>` comparison: this data can come from a hand-built
+            // ITubeSheetData passed straight to this exported function
+            // (bypassing TubeSheet's validated setters), and Math.min/max
+            // propagate a NaN coordinate into a visibly broken viewBox rather
+            // than silently dropping it from the bounding box, matching this
+            // file's fail-loud-on-invalid-input approach used elsewhere.
+            minX = Math.min(minX, cx - radius);
+            minY = Math.min(minY, cy - radius);
+            maxX = Math.max(maxX, cx + radius);
+            maxY = Math.max(maxY, cy + radius);
 
             // Append each circle to the SVG fragment
             fragment.appendChild(circle);
-        });
+        }
 
         svg.appendChild(fragment);
 
@@ -1381,21 +1429,15 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         // Create an SVG element
         const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
-        // Create variables to define bounding box based on coordinates and diameter
+        // Create variables to define bounding box based on coordinates and
+        // diameter
         const minX = (-diameter / 2) * 1.1,
             minY = (-diameter / 2) * 1.1,
             maxX = (diameter / 2) * 1.1,
             maxY = (diameter / 2) * 1.1;
 
         // Interpret SVG styles
-        const styles = svgStyles.split(";").reduce(
-            (acc, style) => {
-                const [key, value] = style.split(":");
-                if (key && value) acc[key.trim()] = value.trim();
-                return acc;
-            },
-            {} as { [key: string]: string },
-        );
+        const styleEntries = Object.entries(parseSVGStyleString(svgStyles));
 
         const svg = document.createElementNS(SVG_NAMESPACE, "svg");
 
@@ -1406,9 +1448,9 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         horzLine.setAttribute("x2", maxX.toString());
         horzLine.setAttribute("y2", "0");
 
-        Object.entries(styles).forEach(([key, value]) => {
+        for (const [key, value] of styleEntries) {
             horzLine.setAttribute(key, value);
-        });
+        }
         svg.appendChild(horzLine);
 
         // Vertical line
@@ -1418,9 +1460,9 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         vertLine.setAttribute("x2", "0");
         vertLine.setAttribute("y2", maxY.toString());
 
-        Object.entries(styles).forEach(([key, value]) => {
+        for (const [key, value] of styleEntries) {
             vertLine.setAttribute(key, value);
-        });
+        }
         svg.appendChild(vertLine);
 
         const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
@@ -1456,26 +1498,34 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
             maxX = -Infinity,
             maxY = -Infinity;
 
-        svgs.forEach((svg) => {
+        for (const svg of svgs) {
             // Get the child circles from each SVG and append them to the merged
-            // SVG
-            Array.from(svg.childNodes).forEach((child) => {
+            // SVG. The tube-field SVG's fragment can hold thousands of circle
+            // nodes, so iterate the live NodeList directly with for-of rather
+            // than materialising it into an array first with Array.from — we
+            // only read and clone nodes here, never remove them from `svg`, so
+            // iterating the live list is safe.
+            for (const child of svg.childNodes) {
                 if (child instanceof SVGElement) {
                     mergedSVG.appendChild(child.cloneNode(true));
                 }
-            });
+            }
 
             // Calculate the bounding box for the current SVG to adjust the
             // viewBox
             const viewBox = svg.getAttribute("viewBox");
             if (viewBox) {
                 const [x, y, width, height] = viewBox.split(" ").map(Number);
+                // Kept as Math.min/Math.max for the same fail-loud reason as
+                // generateSVGCircles above: an unparseable/NaN viewBox on any
+                // merged SVG should stay visible in the result, not be quietly
+                // excluded from the bounding box.
                 minX = Math.min(minX, x);
                 minY = Math.min(minY, y);
                 maxX = Math.max(maxX, x + width);
                 maxY = Math.max(maxY, y + height);
             }
-        });
+        }
 
         // Set the viewBox of the merged SVG to encompass all contained SVGs
         mergedSVG.setAttribute(
@@ -1493,7 +1543,9 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         return document.createElementNS(SVG_NAMESPACE, "svg");
     }
 
-    const shellIDForSVG = () => getEffectiveShellID(ts);
+    // getEffectiveShellID is a pure function of `ts`, so compute it once
+    // instead of calling it three times below.
+    const effectiveShellID = getEffectiveShellID(ts);
 
     const TUBE_STYLE = "stroke:black; fill:none; stroke-width:1; vector-effect:non-scaling-stroke;";
     const SHELL_STYLE =
@@ -1504,9 +1556,9 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         "stroke:black; fill:none; stroke-dasharray:8 4; stroke-width:0.5; vector-effect:non-scaling-stroke;";
 
     const tubeFieldSVG = generateSVGCircles(ts.tubeField, ts.tubeOD, TUBE_STYLE, true);
-    const shellSVG = generateSVGCircles([{ x: 0, y: 0 }], shellIDForSVG(), SHELL_STYLE);
+    const shellSVG = generateSVGCircles([{ x: 0, y: 0 }], effectiveShellID, SHELL_STYLE);
     const OTLSVG = generateSVGCircles([{ x: 0, y: 0 }], ts.OTL, OTL_STYLE);
-    const crossHairs = generateSVGCenteredCross(shellIDForSVG(), CROSSHAIRS_STYLE);
+    const crossHairs = generateSVGCenteredCross(effectiveShellID, CROSSHAIRS_STYLE);
     const mergedSVG = mergeSVGs(
         [shellSVG, OTLSVG, tubeFieldSVG, crossHairs],
         VIEWBOX_PADDING_AS_FRACTION,
@@ -1516,7 +1568,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
     mergedSVG.setAttribute("aria-label", "Tubesheet Layout Drawing");
     mergedSVG.setAttribute(
         "desc",
-        `Shell ID: ${round(shellIDForSVG(), 2)} mm; OTL: ${round(ts.OTL, 2)} mm; Tube OD: ${
+        `Shell ID: ${round(effectiveShellID, 2)} mm; OTL: ${round(ts.OTL, 2)} mm; Tube OD: ${
             ts.tubeOD
         } mm; Pitch: ${round((ts.pitchRatio - 1) * ts.tubeOD, 2)}; Pitch Ratio: ${round(
             ts.pitchRatio,
