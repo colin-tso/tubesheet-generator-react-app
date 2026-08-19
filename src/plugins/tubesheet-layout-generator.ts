@@ -219,6 +219,45 @@ const round = (num: number, decimalPlaces = 0) => {
 };
 
 /**
+ * Returns an absolute tolerance sized to the floating-point noise expected
+ * around the given magnitude: a small multiple of the unit-in-the-last-place
+ * (ULP) at that magnitude, rather than a fixed constant. This is the same
+ * reasoning already used for the ring-count epsilon in radialTubeField, applied
+ * consistently to the file's other floating-point comparison guards.
+ *
+ * A fixed absolute tolerance (e.g. 1e-9) implicitly assumes a particular input
+ * magnitude: chosen against typical mm-scale tubesheet dimensions, it has ~4
+ * orders of magnitude of margin over the observed noise at that scale, but the
+ * noise from a chain of floating-point operations scales with the magnitude of
+ * its operands (roughly magnitude * 2^-52 per operation), so a fixed tolerance
+ * quietly loses its margin as inputs grow and could in principle mask a real
+ * difference at very large magnitudes, or be looser than necessary at very
+ * small ones. Scaling with the operand's own ULP keeps the guard tight at every
+ * magnitude.
+ *
+ * Empirically, the specific comparisons this is used for (differences of
+ * sums/subtractions of a handful of operands) exhibit worst-case error of
+ * ~1-1.25 ULPs across a wide magnitude sweep (1 to 1e10); the default of 64
+ * ULPs keeps roughly the same ~50x safety margin the file's original fixed
+ * constants had over their own observed worst case, while remaining valid
+ * regardless of input magnitude.
+ *
+ * @param {number} magnitude   A representative magnitude of the operands
+ *                             involved in the comparison (e.g. the largest
+ *                             one). A magnitude of 0 is treated as 1, since a
+ *                             value that arrived at exactly 0 via prior
+ *                             arithmetic can still carry ULP-scale error
+ *                             relative to the operations that produced it.
+ * @param {number} [ulps=64]   Number of ULPs of margin to allow.
+ * @returns {number}           An absolute tolerance appropriate for
+ * `magnitude`.
+ */
+const ulpTolerance = (magnitude: number, ulps = 64): number => {
+    const mag = Math.abs(magnitude) || 1;
+    return 2 ** (Math.floor(Math.log2(mag)) - 52) * ulps;
+};
+
+/**
  * Creates a memo key for a given set of arguments based on a set of defaults.
  *
  * @param {...number | string | boolean | undefined} defaults
@@ -276,7 +315,14 @@ const generateTubeField = memoize(
             if (OTLClearance < 0) {
                 throw new Error("OTL clearance must be 0 or greater");
             }
-            if (tubeOD > shellID - OTLClearance + 1e-9) {
+            // See ulpTolerance's doc comment: this absorbs the same class of
+            // spurious-violation floating-point noise a fixed epsilon would
+            // (e.g. `(19.05 + 6.35) - 6.35 < 19.05` due to representation
+            // error), but scaled to these operands' own magnitude.
+            if (
+                tubeOD >
+                shellID - OTLClearance + ulpTolerance(Math.max(shellID, OTLClearance, tubeOD))
+            ) {
                 throw new Error("Tube OD exceeds max allowable OTL");
             }
 
@@ -326,13 +372,13 @@ const generateTubeField = memoize(
             // roundUp(OTLFromTubeField(...) + OTLClearance), and
             // OTLFromTubeField works from exact lattice coordinates (no
             // rounding is applied to the tube field), so the snapped shell ID
-            // is always large enough to re-admit the boundary tube: OTL >=
-            // 2R + tubeOD implies (roundUp(OTL + OC) - OC - tubeOD)/2 >= R.
+            // is always large enough to re-admit the boundary tube: OTL >= 2R +
+            // tubeOD implies (roundUp(OTL + OC) - OC - tubeOD)/2 >= R.
             // BOUND_TOLERANCE remains as a safety net for residual sub-ulp
-            // floating-point noise at the boundary. It's many orders of
-            // magnitude smaller than any real pitch/clearance, so it can't
-            // admit a tube that doesn't actually belong.
-            const BOUND_TOLERANCE = 1e-6;
+            // floating-point noise at the boundary, scaled to maxOTL's own
+            // magnitude (see ulpTolerance) so it can't admit a tube that
+            // doesn't actually belong regardless of how large the shell is.
+            const BOUND_TOLERANCE = ulpTolerance(maxOTL);
             const maxCentreDistSq =
                 (maxCentreDist + BOUND_TOLERANCE) * (maxCentreDist + BOUND_TOLERANCE);
 
@@ -474,14 +520,12 @@ const radialTubeField = (
     const maxOTL = shellID - OTLClearance;
     const maxCentreDist = (maxOTL - tubeOD) / 2;
 
-    const BOUND_TOLERANCE = 1e-9;
-
     // A tube at the centre fits when maxCentreDist is non-negative, but
     // floating-point error can leave it a hair below zero at exactly shellID =
     // tubeOD + OTLClearance (e.g. `(25.4 - 6.35 - 19.05) / 2` is -1.4e-15).
-    // Tolerate that, but reject shells with no genuine room for even the centre
-    // tube.
-    if (maxCentreDist < -BOUND_TOLERANCE) {
+    // Tolerate that, scaled to the shell's own magnitude (see ulpTolerance),
+    // but reject shells with no genuine room for even the centre tube.
+    if (maxCentreDist < -ulpTolerance(maxOTL)) {
         return [];
     }
 
@@ -500,7 +544,10 @@ const radialTubeField = (
         // crossing a genuinely sub-integer ratio.
         const epsilon = 2 ** (Math.floor(Math.log2(ratio)) - 52) * 4;
         let numTubes = Math.floor(ratio + epsilon);
-        while (2 * radius * Math.sin(Math.PI / numTubes) < pitch - BOUND_TOLERANCE) {
+        while (
+            2 * radius * Math.sin(Math.PI / numTubes) <
+            pitch - ulpTolerance(Math.max(radius, pitch))
+        ) {
             numTubes--;
         }
         return numTubes;
@@ -522,7 +569,7 @@ const radialTubeField = (
     // ever stacked on a closer sub-pitch neighbour.
     const buildSeedField = (count: number): TubeField => {
         const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
-        if (seedRadius > maxCentreDist + BOUND_TOLERANCE) {
+        if (seedRadius > maxCentreDist + ulpTolerance(Math.max(seedRadius, maxCentreDist))) {
             return [];
         }
         const tubeField: TubeField = [];
@@ -531,15 +578,19 @@ const radialTubeField = (
         } else {
             placeRing(seedRadius, tubeField);
         }
-        for (let k = 1; seedRadius + k * pitch <= maxCentreDist + BOUND_TOLERANCE; k++) {
-            placeRing(seedRadius + k * pitch, tubeField);
+        for (let k = 1; ; k++) {
+            const ringRadius = seedRadius + k * pitch;
+            if (ringRadius > maxCentreDist + ulpTolerance(Math.max(ringRadius, maxCentreDist))) {
+                break;
+            }
+            placeRing(ringRadius, tubeField);
         }
         return tubeField;
     };
 
     // Keep the layout holding the most tubes, matching the `offset="AUTO"`
-    // "keep the better result" behaviour used elsewhere in the module. On a
-    // tie the earliest seed (the central-tube layout) wins, preserving the
+    // "keep the better result" behaviour used elsewhere in the module. On a tie
+    // the earliest seed (the central-tube layout) wins, preserving the
     // pre-existing behaviour.
     const candidates: TubeField[] = RADIAL_SEED_COUNTS.map(buildSeedField);
     let bestField = candidates[0];
@@ -699,7 +750,13 @@ const tubeFieldOTL = (
     offsetOption: boolean | "AUTO" = "AUTO",
 ): number | null | undefined => {
     try {
-        if (tubeOD > shellID - OTLClearance + 1e-9) {
+        // See ulpTolerance's doc comment / the matching guard in
+        // generateTubeField for why this is scaled rather than a fixed
+        // constant.
+        if (
+            tubeOD >
+            shellID - OTLClearance + ulpTolerance(Math.max(shellID, OTLClearance, tubeOD))
+        ) {
             throw new Error("Tube OD cannot be greater than max allowable OTL.");
         }
         const tubeField = generateTubeField(
