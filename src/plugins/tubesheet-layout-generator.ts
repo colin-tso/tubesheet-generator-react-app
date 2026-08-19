@@ -9,6 +9,18 @@ export type TubeField = Array<Tube>;
 export const TUBE_SHEET_LAYOUTS = [30, 45, 60, 90, "radial"] as const;
 export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 
+/**
+ * The offset option accepted by the layout functions: a boolean forces the
+ * offset on/off, while "AUTO" picks whichever offset yields more tubes.
+ * (`boolean | "AUTO"` collapses to `boolean` at the type level, but the alias
+ * documents that "AUTO" is a first-class choice.)
+ */
+export type OffsetOption = boolean | "AUTO";
+
+// The union of value kinds a memo key can hold. Shared by createMemoKey and
+// the layout functions' memo defaults so the two can't drift apart.
+type MemoKeyValue = number | string | boolean | undefined;
+
 // Membership checks against the layout list happen on every call to
 // generateTubeField/findMinID, both of which run repeatedly inside bisection
 // and heuristic search loops. A Set gives O(1) lookups there instead of
@@ -16,7 +28,7 @@ export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 const TUBE_SHEET_LAYOUT_SET: ReadonlySet<TubeSheetLayout> = new Set(TUBE_SHEET_LAYOUTS);
 
 export interface ITubeSheetData {
-    tubeField: TubeField | null;
+    tubeField: ReadonlyArray<Tube> | null;
     OTL: number | null;
     shellID?: number;
     minID: number | null;
@@ -124,7 +136,7 @@ export class TubeSheet {
         return this._shellID;
     }
 
-    get tubeField(): TubeField | null {
+    get tubeField(): ReadonlyArray<Tube> | null {
         return this._tubeField;
     }
 
@@ -222,7 +234,7 @@ const roundUp = (value: number, decimalPlaces: number): number => {
     return Math.ceil(value * multiplier) / multiplier;
 };
 
-const round = (num: number, decimalPlaces = 0) => {
+const round = (num: number, decimalPlaces = 0): number => {
     const p = Math.pow(10, decimalPlaces);
     const n = num * p * (1 + Number.EPSILON);
     return Math.round(n) / p;
@@ -305,19 +317,21 @@ export const ULP_TEST_UTILS = {
 /**
  * Creates a memo key for a given set of arguments based on a set of defaults.
  *
- * @param {...number | string | boolean | undefined} defaults
+ * @param {...MemoKeyValue} defaults
  * The default values for the memo key.
- * @returns {(...args: Array<number | string | boolean | undefined>) => string}
+ * @returns {(...args: Array<MemoKeyValue>) => string}
  * A memo key generator function.
  */
-const createMemoKey = (...defaults: Array<number | string | boolean | undefined>) => {
-    return (...args: Array<number | string | boolean | undefined>): string => {
+const createMemoKey = (
+    ...defaults: Array<MemoKeyValue>
+): ((...args: Array<MemoKeyValue>) => string) => {
+    return (...args: Array<MemoKeyValue>): string => {
         const normalised = defaults.map((def, i) => (args[i] === undefined ? def : args[i]));
         return normalised.map((v) => `${typeof v}:${String(v)}`).join("|");
     };
 };
 const MEMO_CACHE_SIZE = 1000;
-const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
+const LAYOUT_FN_MEMO_DEFAULTS: Array<MemoKeyValue> = [
     undefined,
     undefined,
     undefined,
@@ -327,6 +341,110 @@ const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
 ];
 
 /**
+ * Shape of the per-layout lattice constants returned by getLayoutConstants.
+ */
+interface LayoutConstants {
+    dx: number;
+    dy: number;
+    C: number;
+}
+
+/**
+ * Type predicate for the defensive checks on tube fields that can arrive from
+ * hand-built ITubeSheetData (bypassing TubeSheet's validated setters).
+ */
+const isTube = (value: unknown): value is Tube =>
+    typeof value === "object" && value !== null && "x" in value && "y" in value;
+
+/**
+ * Bounded-memoization wrapper around lodash.memoize: applies the resolver and
+ * installs a fixed-capacity LRU cache, returning a typed function whose `.cache`
+ * is the LRUCache. This keeps the `as unknown as` casts the raw lodash typing
+ * would otherwise force at every call site in one place.
+ */
+const memoizeBounded = <Args extends unknown[], R>(
+    fn: (...args: Args) => R,
+    resolver: (...args: Args) => string,
+    cacheSize: number,
+): ((...args: Args) => R) & { cache: LRUCache<string, R> } => {
+    const memoized = memoize(fn, resolver) as ((...args: Args) => R) & {
+        cache: LRUCache<string, R>;
+    };
+    memoized.cache = new LRUCache<string, R>(cacheSize);
+    return memoized;
+};
+
+// Symmetry helpers used by generateTubeField's quarter-field expansion. Hoisted
+// to module scope so they aren't re-created (along with their closure arrays)
+// on every call: generateTubeField runs dozens of times inside findMinID's
+// bisection/heuristic loops.
+const FLIP_HORZ: number[][] = [
+    [-1, 0],
+    [0, 1],
+];
+
+const FLIP_VERT: number[][] = [
+    [1, 0],
+    [0, -1],
+];
+
+const applyMatrix = (point: Tube, matrix: number[][]): Tube => {
+    const x = point.x;
+    const y = point.y;
+
+    return {
+        x: x * matrix[0][0] + y * matrix[0][1],
+        y: x * matrix[1][0] + y * matrix[1][1],
+    };
+};
+
+const normalize = (n: number): number => (n === 0 ? 0 : n);
+
+const mergeUniqueCoordinates = (...arrays: TubeField[]): TubeField => {
+    const seen = new Map<string, Tube>();
+    for (const arr of arrays) {
+        for (const point of arr) {
+            const x = normalize(point.x);
+            const y = normalize(point.y);
+            const key = `${x}|${y}`;
+            if (!seen.has(key)) {
+                seen.set(key, { x, y });
+            }
+        }
+    }
+    return Array.from(seen.values());
+};
+
+const sortTubePositions = (tubeField: TubeField): TubeField => {
+    return tubeField.sort((a, b) => {
+        if (a.y === b.y) {
+            return a.x - b.x; // Sort by x if y is the same
+        }
+        return a.y - b.y; // Otherwise, sort by y
+    });
+};
+
+const applySymmetry = (quarterTubeField: TubeField): TubeField => {
+    const flippedHorz: TubeField = quarterTubeField.map((point) =>
+        applyMatrix(point, FLIP_HORZ),
+    );
+    const flippedVert: TubeField = mergeUniqueCoordinates(
+        quarterTubeField,
+        flippedHorz,
+    ).map((point) => applyMatrix(point, FLIP_VERT));
+
+    // Merge and deduplicate tube positions
+    const mergedFields = mergeUniqueCoordinates(
+        quarterTubeField,
+        flippedHorz,
+        flippedVert,
+    );
+
+    // Sort the final tube positions
+    return sortTubePositions(mergedFields);
+};
+
+/**
  * Generates a tube field based on the provided parameters.
  *
  * @param {number} shellID                          The shell ID.
@@ -334,18 +452,18 @@ const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
  * @param {number} tubeOD                           The tube OD.
  * @param {number} pitchRatio                       The pitch ratio.
  * @param {TubeSheetLayout} layout                  The tube sheet layout.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
+ * @param {OffsetOption} [offsetOption="AUTO"]       The offset option.
  * @returns {TubeField | null}                      The generated tube field, or
  *                                                  null if an error occurred.
  */
-const generateTubeField = memoize(
+const generateTubeField = memoizeBounded(
     (
         shellID: number,
         OTLClearance: number,
         tubeOD: number,
         pitchRatio: number,
         layout: TubeSheetLayout,
-        offsetOption: boolean | "AUTO" = "AUTO",
+        offsetOption: OffsetOption = "AUTO",
     ): TubeField | null => {
         try {
             if (shellID <= 0) {
@@ -446,72 +564,6 @@ const generateTubeField = memoize(
                 j++;
             }
 
-            const applySymmetry = (quarterTubeField: TubeField): TubeField => {
-                const flipHorz: number[][] = [
-                    [-1, 0],
-                    [0, 1],
-                ];
-
-                const flipVert: number[][] = [
-                    [1, 0],
-                    [0, -1],
-                ];
-
-                const applyMatrix = (point: Tube, matrix: number[][]): Tube => {
-                    const x = point.x;
-                    const y = point.y;
-
-                    return {
-                        x: x * matrix[0][0] + y * matrix[0][1],
-                        y: x * matrix[1][0] + y * matrix[1][1],
-                    };
-                };
-
-                const normalize = (n: number): number => (n === 0 ? 0 : n);
-
-                const mergeUniqueCoordinates = (...arrays: TubeField[]): TubeField => {
-                    const seen = new Map<string, Tube>();
-                    for (const arr of arrays) {
-                        for (const point of arr) {
-                            const x = normalize(point.x);
-                            const y = normalize(point.y);
-                            const key = `${x}|${y}`;
-                            if (!seen.has(key)) {
-                                seen.set(key, { x, y });
-                            }
-                        }
-                    }
-                    return Array.from(seen.values());
-                };
-
-                const flippedHorz: TubeField = quarterTubeField.map((point) =>
-                    applyMatrix(point, flipHorz),
-                );
-                const flippedVert: TubeField = mergeUniqueCoordinates(
-                    quarterTubeField,
-                    flippedHorz,
-                ).map((point) => applyMatrix(point, flipVert));
-
-                const sortTubePositions = (tubeField: TubeField): TubeField => {
-                    return tubeField.sort((a, b) => {
-                        if (a.y === b.y) {
-                            return a.x - b.x; // Sort by x if y is the same
-                        }
-                        return a.y - b.y; // Otherwise, sort by y
-                    });
-                };
-
-                // Merge and deduplicate tube positions
-                const mergedFields = mergeUniqueCoordinates(
-                    quarterTubeField,
-                    flippedHorz,
-                    flippedVert,
-                );
-
-                // Sort the final tube positions
-                return sortTubePositions(mergedFields);
-            };
-
             const tubeField = applySymmetry(quarterTubeField);
 
             return tubeField;
@@ -521,10 +573,8 @@ const generateTubeField = memoize(
         }
     },
     createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
-);
-generateTubeField.cache = new LRUCache(
     MEMO_CACHE_SIZE,
-) as unknown as typeof generateTubeField.cache;
+);
 
 /**
  * Innermost patterns ("seeds") for the radial layout. Each seed is either the
@@ -536,6 +586,63 @@ generateTubeField.cache = new LRUCache(
  * beyond pitch is dominated by combining an inner seed with that same ring.
  */
 const RADIAL_SEED_COUNTS = [1, 2, 3, 4, 5] as const;
+
+// Ring-placement helpers used by radialTubeField. Hoisted to module scope so
+// they aren't re-created on every call: radialTubeField runs once per
+// generateTubeField call, which itself executes repeatedly inside findMinID's
+// monotone/bisection search over the shell ID.
+const ringTubeCount = (radius: number, pitch: number): number => {
+    const ratio = Math.PI / Math.asin(pitch / (2 * radius));
+    // ULP (unit in the last place): the gap between adjacent doubles around
+    // `x`, i.e. 2^(exponent(x) - 52). Floating-point error is a small
+    // multiple of it, so an epsilon of a few ulps recovers exact integers
+    // (the measured undershoot at k=1 is exactly 1 ulp) without ever
+    // crossing a genuinely sub-integer ratio.
+    const epsilon = ulpAt(ratio) * 4;
+    let numTubes = Math.floor(ratio + epsilon);
+    while (
+        2 * radius * Math.sin(Math.PI / numTubes) <
+        pitch - ulpTolerance(Math.max(radius, pitch))
+    ) {
+        numTubes--;
+    }
+    return numTubes;
+};
+
+const placeRing = (radius: number, tubeField: TubeField, pitch: number): void => {
+    const numTubes = ringTubeCount(radius, pitch);
+    const angleIncrement = (2 * Math.PI) / numTubes;
+    for (let i = 0; i < numTubes; i++) {
+        const angle = angleIncrement * i * -1 + Math.PI / 2;
+        tubeField.push({ x: radius * Math.cos(angle), y: radius * Math.sin(angle) });
+    }
+};
+
+// Build one candidate per seed: the seed pattern itself, then full rings at
+// seedRadius + k*pitch for k = 1, 2, ... . The seed ring (count 2-5) sits at
+// the smallest radius admitting exactly `count` tubes one pitch apart; the
+// seed ring's own within-ring chord is exactly one pitch, so no ring is ever
+// stacked on a closer sub-pitch neighbour.
+const buildSeedField = (count: number, pitch: number, maxCentreDist: number): TubeField => {
+    const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
+    if (seedRadius > maxCentreDist + ulpTolerance(Math.max(seedRadius, maxCentreDist))) {
+        return [];
+    }
+    const tubeField: TubeField = [];
+    if (count === 1) {
+        tubeField.push({ x: 0, y: 0 });
+    } else {
+        placeRing(seedRadius, tubeField, pitch);
+    }
+    for (let k = 1; ; k++) {
+        const ringRadius = seedRadius + k * pitch;
+        if (ringRadius > maxCentreDist + ulpTolerance(Math.max(ringRadius, maxCentreDist))) {
+            break;
+        }
+        placeRing(ringRadius, tubeField, pitch);
+    }
+    return tubeField;
+};
 
 /**
  * Generates a radial tube field comprised of concentric rings of tubes.
@@ -574,72 +681,14 @@ const radialTubeField = (
         return [];
     }
 
-    // Floating-point guard: at radii that are exact pitch multiples, `PI /
-    // asin(pitch / (2 * radius))` can undershoot an exact integer (e.g.
-    // 5.999999999999999 instead of 6), dropping a tube from the ring. Floor
-    // with an epsilon of a few machine ulps to recover exact integers, then
-    // verify the chosen count against the chord length and drop a tube if it
-    // falls short of the pitch.
-    const ringTubeCount = (radius: number): number => {
-        const ratio = Math.PI / Math.asin(pitch / (2 * radius));
-        // ULP (unit in the last place): the gap between adjacent doubles around
-        // `x`, i.e. 2^(exponent(x) - 52). Floating-point error is a small
-        // multiple of it, so an epsilon of a few ulps recovers exact integers
-        // (the measured undershoot at k=1 is exactly 1 ulp) without ever
-        // crossing a genuinely sub-integer ratio.
-        const epsilon = ulpAt(ratio) * 4;
-        let numTubes = Math.floor(ratio + epsilon);
-        while (
-            2 * radius * Math.sin(Math.PI / numTubes) <
-            pitch - ulpTolerance(Math.max(radius, pitch))
-        ) {
-            numTubes--;
-        }
-        return numTubes;
-    };
-
-    const placeRing = (radius: number, tubeField: TubeField): void => {
-        const numTubes = ringTubeCount(radius);
-        const angleIncrement = (2 * Math.PI) / numTubes;
-        for (let i = 0; i < numTubes; i++) {
-            const angle = angleIncrement * i * -1 + Math.PI / 2;
-            tubeField.push({ x: radius * Math.cos(angle), y: radius * Math.sin(angle) });
-        }
-    };
-
-    // Build one candidate per seed: the seed pattern itself, then full rings at
-    // seedRadius + k*pitch for k = 1, 2, ... . The seed ring (count 2-5) sits
-    // at the smallest radius admitting exactly `count` tubes one pitch apart;
-    // the seed ring's own within-ring chord is exactly one pitch, so no ring is
-    // ever stacked on a closer sub-pitch neighbour.
-    const buildSeedField = (count: number): TubeField => {
-        const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
-        if (seedRadius > maxCentreDist + ulpTolerance(Math.max(seedRadius, maxCentreDist))) {
-            return [];
-        }
-        const tubeField: TubeField = [];
-        if (count === 1) {
-            tubeField.push({ x: 0, y: 0 });
-        } else {
-            placeRing(seedRadius, tubeField);
-        }
-        for (let k = 1; ; k++) {
-            const ringRadius = seedRadius + k * pitch;
-            if (ringRadius > maxCentreDist + ulpTolerance(Math.max(ringRadius, maxCentreDist))) {
-                break;
-            }
-            placeRing(ringRadius, tubeField);
-        }
-        return tubeField;
-    };
-
     // Keep the layout holding the most tubes, matching the `offset="AUTO"`
-    // "keep the better result" behaviour used elsewhere in the module. On a tie
-    // the earliest seed (the central-tube layout) wins, preserving the
-    // pre-existing behaviour.
-    const candidates: TubeField[] = RADIAL_SEED_COUNTS.map(buildSeedField);
-    let bestField = candidates[0];
-    for (const candidate of candidates) {
+    // "keep the better result" behaviour used elsewhere in the module. Build
+    // each seed candidate in turn and track the best in place (no intermediate
+    // candidate array). On a tie the earliest seed (the central-tube layout)
+    // wins, preserving the pre-existing behaviour.
+    let bestField: TubeField = [];
+    for (const count of RADIAL_SEED_COUNTS) {
+        const candidate = buildSeedField(count, pitch, maxCentreDist);
         if (candidate.length > bestField.length) {
             bestField = candidate;
         }
@@ -652,12 +701,14 @@ const radialTubeField = (
  *
  * @param {number} pitch             The pitch value.
  * @param {TubeSheetLayout} layout   The layout value.
- * @returns {{ dx: number; dy: number; C: number }}  The layout constants.
+ * @returns {LayoutConstants}        The layout constants.
  */
+const SIN_60 = Math.sqrt(3) / 2;
+
 const getLayoutConstants = (
     pitch: number,
     layout: TubeSheetLayout,
-): { dx: number; dy: number; C: number } => {
+): LayoutConstants => {
     // Only compute the trig/division for the requested layout instead of
     // building an object with all five layouts' constants (four of which are
     // discarded) on every call. This function sits on the bisection/heuristic
@@ -669,15 +720,13 @@ const getLayoutConstants = (
     // previous lookup-table implementation.
     switch (layout) {
         case 30: {
-            const sin60 = Math.sqrt(3) / 2;
             const dx = pitch;
-            const dy = pitch * sin60;
+            const dy = pitch * SIN_60;
             const C = pitch / 2;
             return { dx, dy, C };
         }
         case 60: {
-            const sin60 = Math.sqrt(3) / 2;
-            const dx = pitch * sin60 * 2;
+            const dx = pitch * SIN_60 * 2;
             const dy = pitch / 2;
             const C = dx / 2;
             return { dx, dy, C };
@@ -693,6 +742,13 @@ const getLayoutConstants = (
         }
         case "radial":
             return { dx: NaN, dy: NaN, C: NaN };
+        default: {
+            // Exhaustiveness guard: TubeSheetLayout's members are all handled
+            // above, so layout is `never` here unless the union grows. Throw
+            // rather than silently returning undefined for a future layout.
+            const exhaustiveCheck: never = layout;
+            throw new Error(`Unknown layout: ${String(exhaustiveCheck)}`);
+        }
     }
 };
 
@@ -710,7 +766,7 @@ const getLayoutConstants = (
  * @param {number} pitchRatio                       The tube pitch ratio.
  * @param {TubeSheetLayout} layout                  The layout of the tube
  * sheet.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option for the
+ * @param {OffsetOption} [offsetOption="AUTO"]   The offset option for the
  *                                                  tube field generation.
  *                                                  Defaults to "AUTO".
  * @returns {number}                                The number of tubes in the
@@ -722,7 +778,7 @@ const tubeCount = (
     tubeOD: number,
     pitchRatio: number,
     layout: TubeSheetLayout,
-    offsetOption: boolean | "AUTO" = "AUTO",
+    offsetOption: OffsetOption = "AUTO",
 ): number => {
     const tubeField = generateTubeField(
         shellID,
@@ -739,7 +795,7 @@ const tubeCount = (
  * Calculates the OTL (Outer Tube Limit) for a given tube field.
  *
  * @param {TubeField} tubeField            The tube field object.
- * @param {TubeSheetLayout} layout         The tube sheet layout.
+ * @param {number} tubeOD                  The tube OD.
  * @param {number} [offsetOption=0]        The offset option.
  * @returns {number | null | undefined}    The calculated OTL value, or null if
  *                                         an error occurred.
@@ -747,7 +803,7 @@ const tubeCount = (
  *                                         max allowable OTL.
  * @throws {Error}                         If the tube field array is invalid.
  */
-const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null => {
+const OTLFromTubeField = (tubeField: ReadonlyArray<Tube>, tubeOD: number): number | null => {
     if (!tubeField || tubeField.length === 0) {
         return null;
     }
@@ -755,7 +811,7 @@ const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null =
     let maxDistSq = 0;
     let found = false;
     tubeField.forEach((tube) => {
-        if ("x" in tube && "y" in tube) {
+        if (isTube(tube)) {
             found = true;
             const distSq = tube.x * tube.x + tube.y * tube.y;
             if (distSq > maxDistSq) {
@@ -778,7 +834,7 @@ const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null =
  * @param {number} tubeOD                           The tube OD.
  * @param {number} pitchRatio                       The pitch ratio.
  * @param {TubeSheetLayout} layout                  The tube sheet layout.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
+ * @param {OffsetOption} [offsetOption="AUTO"]  The offset option.
  * @returns {number | null | undefined}             The calculated OTL value, or
  *                                                  null if an error occurred.
  * @throws {Error}                                  If the tube OD is greater
@@ -792,7 +848,7 @@ const tubeFieldOTL = (
     tubeOD: number,
     pitchRatio: number,
     layout: TubeSheetLayout,
-    offsetOption: boolean | "AUTO" = "AUTO",
+    offsetOption: OffsetOption = "AUTO",
 ): number | null | undefined => {
     try {
         // See ulpTolerance's doc comment / the matching guard in
@@ -837,11 +893,9 @@ const tubeFieldOTL = (
  * @param {string | TubeSheetLayout} layout         The layout type. Can be a
  *                                                  string or a TubeSheetLayout
  *                                                  object.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option. Can be a
+ * @param {OffsetOption} [offsetOption="AUTO"]  The offset option. Can be a
  *                                                  boolean or "AUTO".
- * @returns {Promise<number | null>}                The minimum shell ID, or
- *                                                  null if the maximum number
- *                                                  of retries is reached.
+ * @returns {number}                                The minimum shell ID.
  * @throws {Error}                                  If the tube outer diameter
  *                                                  is less than or equal to 0,
  *                                                  the pitch ratio is less than
@@ -852,14 +906,14 @@ const tubeFieldOTL = (
  *                                                  minimum shell ID could not
  *                                                  be found.
  */
-const findMinID = memoize(
+const findMinID = memoizeBounded(
     (
         minTubes: number,
         OTLClearance: number,
         tubeOD: number,
         pitchRatio: number,
         layout: TubeSheetLayout,
-        offsetOption: boolean | "AUTO" = "AUTO",
+        offsetOption: OffsetOption = "AUTO",
     ): number => {
         const MAX_RETRIES: number = 10;
         let retries: number = 0;
@@ -967,10 +1021,10 @@ const findMinID = memoize(
                         false,
                     );
 
-                    if (isNaN(minID_offsetTrue)) {
+                    if (Number.isNaN(minID_offsetTrue)) {
                         return minID_offsetFalse;
                     }
-                    if (isNaN(minID_offsetFalse)) {
+                    if (Number.isNaN(minID_offsetFalse)) {
                         return minID_offsetTrue;
                     }
                     return Math.min(minID_offsetTrue, minID_offsetFalse);
@@ -1361,8 +1415,8 @@ const findMinID = memoize(
         }
     },
     createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
+    MEMO_CACHE_SIZE,
 );
-findMinID.cache = new LRUCache(MEMO_CACHE_SIZE) as unknown as typeof findMinID.cache;
 
 /**
  * Extra margin around the final SVG viewBox.
@@ -1393,12 +1447,12 @@ export const getEffectiveShellID = (
         return 0;
     }
 
-    if (ts.shellID || ts.minID === null || ts.minID === 0 || isNaN(ts.minID)) {
+    if (ts.shellID || ts.minID === null || ts.minID === 0 || Number.isNaN(ts.minID)) {
         // ts.shellID may be undefined here if minID is also unusable.
         return ts.shellID ?? 0;
     }
 
-    if (ts.shellID === undefined || ts.shellID === 0 || isNaN(ts.shellID)) {
+    if (ts.shellID === undefined || ts.shellID === 0 || Number.isNaN(ts.shellID)) {
         return ts.minID;
     }
 
@@ -1443,7 +1497,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
      * @returns {SVGSVGElement}    The generated SVG element.
      */
     const generateSVGCircles = <T extends { x: number; y: number }>(
-        circles: T[],
+        circles: ReadonlyArray<T>,
         diameter: number,
         svgStyles: string,
         id: boolean = false,
