@@ -1,10 +1,7 @@
 import type { ReactNode, SubmitEvent } from "react";
 import packageJson from "../package.json";
-import {
-    TubeSheet,
-    generateTubeSheetSVG,
-    ITubeSheetData,
-} from "@/plugins/tubesheet-layout-generator";
+import { TubeSheet, generateTubeSheetSVG } from "@/plugins/tubesheet-layout-generator";
+import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 import { NumericField } from "@/components/NumericField";
 import { PairedFieldRow } from "@/components/PairedFieldRow";
 import { utils } from "@/utils/";
