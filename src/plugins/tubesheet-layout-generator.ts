@@ -9,6 +9,18 @@ export type TubeField = Array<Tube>;
 export const TUBE_SHEET_LAYOUTS = [30, 45, 60, 90, "radial"] as const;
 export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 
+/**
+ * The offset option accepted by the layout functions: a boolean forces the
+ * offset on/off, while "AUTO" picks whichever offset yields more tubes.
+ * (`boolean | "AUTO"` collapses to `boolean` at the type level, but the alias
+ * documents that "AUTO" is a first-class choice.)
+ */
+export type OffsetOption = boolean | "AUTO";
+
+// The union of value kinds a memo key can hold. Shared by createMemoKey and
+// the layout functions' memo defaults so the two can't drift apart.
+type MemoKeyValue = number | string | boolean | undefined;
+
 // Membership checks against the layout list happen on every call to
 // generateTubeField/findMinID, both of which run repeatedly inside bisection
 // and heuristic search loops. A Set gives O(1) lookups there instead of
@@ -16,7 +28,7 @@ export type TubeSheetLayout = (typeof TUBE_SHEET_LAYOUTS)[number];
 const TUBE_SHEET_LAYOUT_SET: ReadonlySet<TubeSheetLayout> = new Set(TUBE_SHEET_LAYOUTS);
 
 export interface ITubeSheetData {
-    tubeField: TubeField | null;
+    tubeField: ReadonlyArray<Tube> | null;
     OTL: number | null;
     shellID?: number;
     minID: number | null;
@@ -124,7 +136,7 @@ export class TubeSheet {
         return this._shellID;
     }
 
-    get tubeField(): TubeField | null {
+    get tubeField(): ReadonlyArray<Tube> | null {
         return this._tubeField;
     }
 
@@ -305,21 +317,21 @@ export const ULP_TEST_UTILS = {
 /**
  * Creates a memo key for a given set of arguments based on a set of defaults.
  *
- * @param {...number | string | boolean | undefined} defaults
+ * @param {...MemoKeyValue} defaults
  * The default values for the memo key.
- * @returns {(...args: Array<number | string | boolean | undefined>) => string}
+ * @returns {(...args: Array<MemoKeyValue>) => string}
  * A memo key generator function.
  */
 const createMemoKey = (
-    ...defaults: Array<number | string | boolean | undefined>
-): ((...args: Array<number | string | boolean | undefined>) => string) => {
-    return (...args: Array<number | string | boolean | undefined>): string => {
+    ...defaults: Array<MemoKeyValue>
+): ((...args: Array<MemoKeyValue>) => string) => {
+    return (...args: Array<MemoKeyValue>): string => {
         const normalised = defaults.map((def, i) => (args[i] === undefined ? def : args[i]));
         return normalised.map((v) => `${typeof v}:${String(v)}`).join("|");
     };
 };
 const MEMO_CACHE_SIZE = 1000;
-const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
+const LAYOUT_FN_MEMO_DEFAULTS: Array<MemoKeyValue> = [
     undefined,
     undefined,
     undefined,
@@ -327,6 +339,40 @@ const LAYOUT_FN_MEMO_DEFAULTS: Array<number | string | boolean | undefined> = [
     undefined,
     "AUTO",
 ];
+
+/**
+ * Shape of the per-layout lattice constants returned by getLayoutConstants.
+ */
+interface LayoutConstants {
+    dx: number;
+    dy: number;
+    C: number;
+}
+
+/**
+ * Type predicate for the defensive checks on tube fields that can arrive from
+ * hand-built ITubeSheetData (bypassing TubeSheet's validated setters).
+ */
+const isTube = (value: unknown): value is Tube =>
+    typeof value === "object" && value !== null && "x" in value && "y" in value;
+
+/**
+ * Bounded-memoization wrapper around lodash.memoize: applies the resolver and
+ * installs a fixed-capacity LRU cache, returning a typed function whose `.cache`
+ * is the LRUCache. This keeps the `as unknown as` casts the raw lodash typing
+ * would otherwise force at every call site in one place.
+ */
+const memoizeBounded = <Args extends unknown[], R>(
+    fn: (...args: Args) => R,
+    resolver: (...args: Args) => string,
+    cacheSize: number,
+): ((...args: Args) => R) & { cache: LRUCache<string, R> } => {
+    const memoized = memoize(fn, resolver) as ((...args: Args) => R) & {
+        cache: LRUCache<string, R>;
+    };
+    memoized.cache = new LRUCache<string, R>(cacheSize);
+    return memoized;
+};
 
 // Symmetry helpers used by generateTubeField's quarter-field expansion. Hoisted
 // to module scope so they aren't re-created (along with their closure arrays)
@@ -406,18 +452,18 @@ const applySymmetry = (quarterTubeField: TubeField): TubeField => {
  * @param {number} tubeOD                           The tube OD.
  * @param {number} pitchRatio                       The pitch ratio.
  * @param {TubeSheetLayout} layout                  The tube sheet layout.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
+ * @param {OffsetOption} [offsetOption="AUTO"]       The offset option.
  * @returns {TubeField | null}                      The generated tube field, or
  *                                                  null if an error occurred.
  */
-const generateTubeField = memoize(
+const generateTubeField = memoizeBounded(
     (
         shellID: number,
         OTLClearance: number,
         tubeOD: number,
         pitchRatio: number,
         layout: TubeSheetLayout,
-        offsetOption: boolean | "AUTO" = "AUTO",
+        offsetOption: OffsetOption = "AUTO",
     ): TubeField | null => {
         try {
             if (shellID <= 0) {
@@ -527,10 +573,8 @@ const generateTubeField = memoize(
         }
     },
     createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
-);
-generateTubeField.cache = new LRUCache(
     MEMO_CACHE_SIZE,
-) as unknown as typeof generateTubeField.cache;
+);
 
 /**
  * Innermost patterns ("seeds") for the radial layout. Each seed is either the
@@ -657,14 +701,14 @@ const radialTubeField = (
  *
  * @param {number} pitch             The pitch value.
  * @param {TubeSheetLayout} layout   The layout value.
- * @returns {{ dx: number; dy: number; C: number }}  The layout constants.
+ * @returns {LayoutConstants}        The layout constants.
  */
 const SIN_60 = Math.sqrt(3) / 2;
 
 const getLayoutConstants = (
     pitch: number,
     layout: TubeSheetLayout,
-): { dx: number; dy: number; C: number } => {
+): LayoutConstants => {
     // Only compute the trig/division for the requested layout instead of
     // building an object with all five layouts' constants (four of which are
     // discarded) on every call. This function sits on the bisection/heuristic
@@ -698,6 +742,13 @@ const getLayoutConstants = (
         }
         case "radial":
             return { dx: NaN, dy: NaN, C: NaN };
+        default: {
+            // Exhaustiveness guard: TubeSheetLayout's members are all handled
+            // above, so layout is `never` here unless the union grows. Throw
+            // rather than silently returning undefined for a future layout.
+            const exhaustiveCheck: never = layout;
+            throw new Error(`Unknown layout: ${String(exhaustiveCheck)}`);
+        }
     }
 };
 
@@ -715,7 +766,7 @@ const getLayoutConstants = (
  * @param {number} pitchRatio                       The tube pitch ratio.
  * @param {TubeSheetLayout} layout                  The layout of the tube
  * sheet.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option for the
+ * @param {OffsetOption} [offsetOption="AUTO"]   The offset option for the
  *                                                  tube field generation.
  *                                                  Defaults to "AUTO".
  * @returns {number}                                The number of tubes in the
@@ -727,7 +778,7 @@ const tubeCount = (
     tubeOD: number,
     pitchRatio: number,
     layout: TubeSheetLayout,
-    offsetOption: boolean | "AUTO" = "AUTO",
+    offsetOption: OffsetOption = "AUTO",
 ): number => {
     const tubeField = generateTubeField(
         shellID,
@@ -744,7 +795,7 @@ const tubeCount = (
  * Calculates the OTL (Outer Tube Limit) for a given tube field.
  *
  * @param {TubeField} tubeField            The tube field object.
- * @param {TubeSheetLayout} layout         The tube sheet layout.
+ * @param {number} tubeOD                  The tube OD.
  * @param {number} [offsetOption=0]        The offset option.
  * @returns {number | null | undefined}    The calculated OTL value, or null if
  *                                         an error occurred.
@@ -752,7 +803,7 @@ const tubeCount = (
  *                                         max allowable OTL.
  * @throws {Error}                         If the tube field array is invalid.
  */
-const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null => {
+const OTLFromTubeField = (tubeField: ReadonlyArray<Tube>, tubeOD: number): number | null => {
     if (!tubeField || tubeField.length === 0) {
         return null;
     }
@@ -760,7 +811,7 @@ const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null =
     let maxDistSq = 0;
     let found = false;
     tubeField.forEach((tube) => {
-        if ("x" in tube && "y" in tube) {
+        if (isTube(tube)) {
             found = true;
             const distSq = tube.x * tube.x + tube.y * tube.y;
             if (distSq > maxDistSq) {
@@ -783,7 +834,7 @@ const OTLFromTubeField = (tubeField: TubeField, tubeOD: number): number | null =
  * @param {number} tubeOD                           The tube OD.
  * @param {number} pitchRatio                       The pitch ratio.
  * @param {TubeSheetLayout} layout                  The tube sheet layout.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option.
+ * @param {OffsetOption} [offsetOption="AUTO"]  The offset option.
  * @returns {number | null | undefined}             The calculated OTL value, or
  *                                                  null if an error occurred.
  * @throws {Error}                                  If the tube OD is greater
@@ -797,7 +848,7 @@ const tubeFieldOTL = (
     tubeOD: number,
     pitchRatio: number,
     layout: TubeSheetLayout,
-    offsetOption: boolean | "AUTO" = "AUTO",
+    offsetOption: OffsetOption = "AUTO",
 ): number | null | undefined => {
     try {
         // See ulpTolerance's doc comment / the matching guard in
@@ -842,7 +893,7 @@ const tubeFieldOTL = (
  * @param {string | TubeSheetLayout} layout         The layout type. Can be a
  *                                                  string or a TubeSheetLayout
  *                                                  object.
- * @param {boolean | "AUTO"} [offsetOption="AUTO"]  The offset option. Can be a
+ * @param {OffsetOption} [offsetOption="AUTO"]  The offset option. Can be a
  *                                                  boolean or "AUTO".
  * @returns {number}                                The minimum shell ID.
  * @throws {Error}                                  If the tube outer diameter
@@ -855,14 +906,14 @@ const tubeFieldOTL = (
  *                                                  minimum shell ID could not
  *                                                  be found.
  */
-const findMinID = memoize(
+const findMinID = memoizeBounded(
     (
         minTubes: number,
         OTLClearance: number,
         tubeOD: number,
         pitchRatio: number,
         layout: TubeSheetLayout,
-        offsetOption: boolean | "AUTO" = "AUTO",
+        offsetOption: OffsetOption = "AUTO",
     ): number => {
         const MAX_RETRIES: number = 10;
         let retries: number = 0;
@@ -970,10 +1021,10 @@ const findMinID = memoize(
                         false,
                     );
 
-                    if (isNaN(minID_offsetTrue)) {
+                    if (Number.isNaN(minID_offsetTrue)) {
                         return minID_offsetFalse;
                     }
-                    if (isNaN(minID_offsetFalse)) {
+                    if (Number.isNaN(minID_offsetFalse)) {
                         return minID_offsetTrue;
                     }
                     return Math.min(minID_offsetTrue, minID_offsetFalse);
@@ -1364,8 +1415,8 @@ const findMinID = memoize(
         }
     },
     createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
+    MEMO_CACHE_SIZE,
 );
-findMinID.cache = new LRUCache(MEMO_CACHE_SIZE) as unknown as typeof findMinID.cache;
 
 /**
  * Extra margin around the final SVG viewBox.
@@ -1446,7 +1497,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
      * @returns {SVGSVGElement}    The generated SVG element.
      */
     const generateSVGCircles = <T extends { x: number; y: number }>(
-        circles: T[],
+        circles: ReadonlyArray<T>,
         diameter: number,
         svgStyles: string,
         id: boolean = false,
