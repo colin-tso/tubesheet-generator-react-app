@@ -250,7 +250,7 @@ const round = (num: number, decimalPlaces = 0) => {
  *                             relative to the operations that produced it.
  * @param {number} [ulps=64]   Number of ULPs of margin to allow.
  * @returns {number}           An absolute tolerance appropriate for
- * `magnitude`.
+ *                             `magnitude`.
  */
 const ulpTolerance = (magnitude: number, ulps = 64): number => {
     const mag = Math.abs(magnitude) || 1;
@@ -669,7 +669,7 @@ const getLayoutConstants = (
  *                                                  tube field generation.
  *                                                  Defaults to "AUTO".
  * @returns {number}                                The number of tubes in the
- * tube sheet.
+ *                                                  tube sheet.
  */
 const tubeCount = (
     shellID: number,
