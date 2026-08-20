@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId } from "react";
 import "./darkmode-toggle.css";
 import "../index.css";
 import MoonIcon from "@/assets/moon.svg?react";
@@ -21,6 +21,11 @@ const updateTheme = (isDarkEnabled: boolean) => {
 };
 
 export default function ThemeToggle() {
+    // App and DocsPage each mount this component at the same time, so the
+    // label/input pair needs a per-instance id — a shared literal id would make
+    // the label activate whichever checkbox comes first in the DOM.
+    const id = useId();
+
     // Initialize from localStorage if present, otherwise fall back to system preference
     const [isEnabled, setIsEnabled] = useState<boolean>(() => {
         const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -54,7 +59,7 @@ export default function ThemeToggle() {
     };
 
     return (
-        <label className="toggle-wrapper" htmlFor="toggle">
+        <label className="toggle-wrapper" htmlFor={id}>
             <div className={`toggle ${isEnabled ? "enabled" : "disabled"}`}>
                 <span className="hidden">
                     {isEnabled ? "Enable Light Mode" : "Enable Dark Mode"}
@@ -64,7 +69,7 @@ export default function ThemeToggle() {
                     <MoonIcon />
                 </div>
                 <input
-                    id="toggle"
+                    id={id}
                     name="toggle"
                     type="checkbox"
                     checked={isEnabled}
