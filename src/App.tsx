@@ -255,6 +255,7 @@ const App = () => {
                 <Viewport.Frame>
                     <Viewport.ContextMenu />
                     <Viewport.Toolbar />
+                    <Viewport.DocsButton />
                     <Viewport.Drawing />
                     <Viewport.Footer>
                         <Viewport.Table />

@@ -1,5 +1,4 @@
 import GithubIcon from "@/assets/github-icon.svg?react";
-import { loadDocsPage } from "@/docs/loadDocsPage";
 
 export function FormFooter() {
     return (
@@ -13,17 +12,6 @@ export function FormFooter() {
                 >
                     <GithubIcon className="github-button-icon" aria-hidden="true" />
                     View this repo on GitHub
-                </a>
-                <br />
-                {/* Warms the docs chunk (katex/mdx/diagrams) before the click,
-                    so Root.tsx's pre-transition await resolves instantly. */}
-                <a
-                    className="github-button"
-                    href="#/docs"
-                    onMouseEnter={loadDocsPage}
-                    onFocus={loadDocsPage}
-                >
-                    How the layout math works
                 </a>
                 <br />
                 Released under a GPL 3.0 license.{" "}
