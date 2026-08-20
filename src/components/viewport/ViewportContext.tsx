@@ -1,9 +1,9 @@
 import { createContext, useContext } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
-import type { AnimationLifecycle } from "../../hooks/useContextMenu";
-import type { CopyState } from "../../hooks/useSvgExportActions";
-import type { SingleResultPayload } from "../../hooks/useTubeSheetWorker";
-import type { HighlightRegion } from "../../hooks/useShellOTLHighlight";
+import type { AnimationLifecycle } from "@/hooks/useContextMenu";
+import type { CopyState } from "@/hooks/useSvgExportActions";
+import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
+import type { HighlightRegion } from "@/hooks/useShellOTLHighlight";
 
 // Generic state/actions/meta interface. Any provider that implements this shape
 // can drive the Viewport.* components below -- they only depend on the

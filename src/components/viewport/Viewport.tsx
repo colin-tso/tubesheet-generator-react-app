@@ -4,16 +4,18 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import { TubeSheetSVG } from "../TubeSheetSVG";
-import { TubeSheetDataTable } from "../TubeSheetDataTable";
-import { ShellOTLTooltip } from "../ShellOTLTooltip";
-import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
-import TableIcon from "../../assets/table-icon.svg?react";
-import TableOffIcon from "../../assets/table-off-icon.svg?react";
-import GridIcon from "../../assets/grid-icon.svg?react";
-import GridOffIcon from "../../assets/grid-off-icon.svg?react";
-import SaveIcon from "../../assets/save-icon.svg?react";
-import CopyIcon from "../../assets/copy-icon.svg?react";
+import { TubeSheetSVG } from "@/components/TubeSheetSVG";
+import { TubeSheetDataTable } from "@/components/TubeSheetDataTable";
+import { ShellOTLTooltip } from "@/components/ShellOTLTooltip";
+import { ContextMenu, type ContextMenuItem } from "@/components/ContextMenu";
+import TableIcon from "@/assets/table-icon.svg?react";
+import TableOffIcon from "@/assets/table-off-icon.svg?react";
+import GridIcon from "@/assets/grid-icon.svg?react";
+import GridOffIcon from "@/assets/grid-off-icon.svg?react";
+import SaveIcon from "@/assets/save-icon.svg?react";
+import CopyIcon from "@/assets/copy-icon.svg?react";
+import HelpIcon from "@/assets/help-icon.svg?react";
+import { loadDocsPage } from "@/docs/loadDocsPage";
 import { useViewportContext } from "./ViewportContext";
 import { ViewportProvider } from "./ViewportProvider";
 
@@ -219,6 +221,30 @@ function ViewportTable() {
     );
 }
 
+// Docs-link "?" button, top-left of the viewport. Icon-only, with the label
+// shown as a hover/focus tooltip (mirror of the grid/table toggles).
+function ViewportDocsButton() {
+    return (
+        <div className="viewport-help">
+            <div className="viewport-options-group">
+                <a
+                    className="help-toggle"
+                    href="#/docs"
+                    aria-label="How the layout math works"
+                    data-title="How the layout math works"
+                    // Warms the docs chunk (katex/mdx/diagrams) before the click,
+                    // so Root.tsx's pre-transition await resolves instantly.
+                    onMouseEnter={loadDocsPage}
+                    onFocus={loadDocsPage}
+                >
+                    <HelpIcon className="btn-icon" width="15" height="15" aria-hidden="true" />
+                    <span className="btn-label">How the layout math works</span>
+                </a>
+            </div>
+        </div>
+    );
+}
+
 // Copy-to-clipboard / download-as-file buttons. Hidden until a real drawing
 // (not the placeholder) exists.
 function ViewportExportActions() {
@@ -286,6 +312,7 @@ export const Viewport = {
     Frame: ViewportFrame,
     ContextMenu: ViewportContextMenu,
     Toolbar: ViewportToolbar,
+    DocsButton: ViewportDocsButton,
     Drawing: ViewportDrawing,
     Footer: ViewportFooter,
     Table: ViewportTable,

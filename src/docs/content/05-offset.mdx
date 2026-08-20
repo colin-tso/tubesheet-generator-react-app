@@ -1,0 +1,13 @@
+Two different offsets are used when building a tubesheet for all layouts except the radial pattern (see [07 Radial layout](#/docs/radial-layout)):
+1. A **row stagger** ($C$), which is built into the pattern itself and staggers alternating rows, and
+2. A **field offset** ($S$), which is a single shift applied to the *entire tube field* and determines whether a tube sits on the sheet’s vertical centreline or straddles it.
+
+    :::Formula{id="offset" label="Offset"}
+    $$
+    \begin{align}
+    S = \left\{ \begin{array}{cl} \dfrac{d_x}{2} & \quad \text{if enabled} \\[1em] 0 & \quad \text{otherwise} \end{array} \right.
+    \end{align}
+    $$
+    :::
+
+Because the boundary is a circle, applying the field offset can change the number of tubes that fit. Shifting the whole grid changes which tube centres fall within the boundary. The calculator tries both, counts the tubes each one produces, and keeps whichever yields the higher count.

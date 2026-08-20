@@ -1,5 +1,5 @@
-import { utils } from "../utils";
-import type { LivePreviewRequest, LivePreviewResult } from "../hooks/useLivePreview";
+import { utils } from "@/utils";
+import type { LivePreviewRequest, LivePreviewResult } from "@/hooks/useLivePreview";
 
 // Bag of current field values (plus layoutOption) previews are computed from.
 export type PairPreviewContext = Record<string, number | undefined>;

@@ -1,0 +1,17 @@
+For non-radial layouts, the generator does not step across the whole circle. It computes tube positions for one quarter of the field, then mirrors that quarter across both axes to complete the rest. This works because every layout being considered is symmetric about the centre of the tube sheet. The radial layout is the exception: it fills complete rings at once instead of stepping through rows (see [07 Radial layout](#/docs/radial-layout)).
+
+1. Starting from the centre, step outward row by row using a **row index** ($j$), and within each row, column by column using a **column index** ($i$). The row-parity term applies the stagger $C$ on alternating rows, and $S$ is the field offset of [05 Offsets](#/docs/offset) (zero when disabled).
+
+    :::Formula{id="row-column-indices" label="Row and column indices"}
+    $$
+    \begin{align}
+    y &= j \cdot d_y \\
+    x &= C \cdot (\text{row parity}) + i \cdot d_x - S
+    \end{align}
+    $$
+    :::
+
+2. Keep a candidate tube only if its centre is within a distance of $( \text{OTL}_\text{max} - D_\text{tube} ) \div 2$ from the centre, meaning the whole tube, including its radius, stays inside the maximum OTL. Stop stepping a row as soon as a tube falls outside this radius, since every following tube in the row would be still further out.
+3. Mirror the resulting quarter horizontally, then vertically, and merge everything into one set, removing duplicate coordinates since points on an axis appear in more than one mirrored copy.
+
+The result is sorted by row, then by column, and becomes the final tube field. This list of tube positions then provides the drawing, the tube count, and the actual OTL.

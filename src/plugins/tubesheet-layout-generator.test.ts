@@ -1,5 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
-import { TubeSheet, getEffectiveShellID, type TubeSheetLayout } from "./tubesheet-layout-generator";
+import { describe, it, expect, expectTypeOf, vi } from "vitest";
+import {
+    TubeSheet,
+    TUBE_SHEET_LAYOUTS,
+    ULP_TEST_UTILS,
+    generateTubeSheetSVG,
+    getEffectiveShellID,
+} from "./tubesheet-layout-generator";
+import type {
+    ITubeSheetData,
+    OffsetOption,
+    Tube,
+    TubeField,
+    TubeSheetLayout,
+} from "./tubesheet-layout-generator";
 
 // Fixed set of realistic inputs reused across cases.
 const OTL_CLEARANCE = 6.35;
@@ -7,6 +20,18 @@ const TUBE_OD = 19.05;
 const PITCH_RATIO = 1.25;
 
 const LAYOUTS: TubeSheetLayout[] = [30, 45, 60, 90, "radial"];
+
+// --- Type-level assertions. `expectTypeOf` is a compile-time check that runs
+// as a no-op at runtime; `tsc` fails the build if any assertion doesn't hold.
+expectTypeOf<TubeSheetLayout>().toEqualTypeOf<30 | 45 | 60 | 90 | "radial">();
+expectTypeOf(TUBE_SHEET_LAYOUTS).toEqualTypeOf<readonly [30, 45, 60, 90, "radial"]>();
+expectTypeOf<Tube>().toEqualTypeOf<{ x: number; y: number }>();
+expectTypeOf<TubeField>().toEqualTypeOf<Array<Tube>>();
+expectTypeOf<OffsetOption>().toEqualTypeOf<boolean | "AUTO">();
+expectTypeOf<ITubeSheetData["tubeField"]>().toEqualTypeOf<ReadonlyArray<Tube> | null>();
+expectTypeOf(getEffectiveShellID).returns.toEqualTypeOf<number>();
+expectTypeOf(generateTubeSheetSVG).returns.toEqualTypeOf<SVGSVGElement>();
+expectTypeOf<keyof typeof ULP_TEST_UTILS>().toEqualTypeOf<"roundUp" | "ulpAt" | "ulpTolerance">();
 
 describe("TubeSheet — construction by minTubes", () => {
     // Reference values captured from the current implementation for a fixed set
@@ -288,7 +313,7 @@ describe("TubeSheet — radial multi-ring behaviour", () => {
     // built from one of five innermost seeds (central tube, or rings of 2-5
     // tubes). Every pair of tubes must therefore be at least one pitch apart,
     // and the generator must keep whichever seed layout holds the most tubes.
-    const minPairwiseDistance = (field: { x: number; y: number }[]): number => {
+    const minPairwiseDistance = (field: ReadonlyArray<{ x: number; y: number }>): number => {
         let min = Infinity;
         for (let i = 0; i < field.length; i++) {
             for (let j = i + 1; j < field.length; j++) {
@@ -357,7 +382,7 @@ describe("TubeSheet — radial small exact-count layouts", () => {
     const PR = 1.25;
     const PITCH = OD * PR;
 
-    const minPairwiseDistance = (field: { x: number; y: number }[]): number => {
+    const minPairwiseDistance = (field: ReadonlyArray<{ x: number; y: number }>): number => {
         let min = Infinity;
         for (let i = 0; i < field.length; i++) {
             for (let j = i + 1; j < field.length; j++) {
@@ -428,7 +453,7 @@ describe("TubeSheet — radial seed-layout exact counts", () => {
     const PR = 1.25;
     const PITCH = OD * PR;
 
-    const minPairwiseDistance = (field: { x: number; y: number }[]): number => {
+    const minPairwiseDistance = (field: ReadonlyArray<{ x: number; y: number }>): number => {
         let min = Infinity;
         for (let i = 0; i < field.length; i++) {
             for (let j = i + 1; j < field.length; j++) {
@@ -629,4 +654,36 @@ describe("TubeSheet — regression: stale x skips a whole row of the tube grid",
             }
         },
     );
+});
+
+describe("TubeSheet — full float precision for non-radial layouts", () => {
+    // 45° and 90° are the same (square) lattice rotated, and radial realises
+    // the same packing in some cases. All layouts must compute the tube field
+    // at full float precision so that identical physical packings yield
+    // bit-identical shell sizes. Previously non-radial layouts rounded every
+    // coordinate to 8dp in applySymmetry, which broke the tie in minID by 1e-8
+    // and made the worker's preferred-layout flag mark only one of two tied
+    // layouts.
+    const OC = 40;
+    const OD = 95.3;
+    const PR = (95.3 + 20) / 95.3;
+
+    it("produces a bit-identical minID for the same 4-tube diamond in 45-degree and radial layouts", () => {
+        const ts45 = new TubeSheet(OC, OD, PR, 45, 4);
+        const tsRadial = new TubeSheet(OC, OD, PR, "radial", 4);
+
+        expect(ts45.numTubes).toBe(4);
+        expect(tsRadial.numTubes).toBe(4);
+        expect(ts45.minID).toBe(tsRadial.minID);
+        expect(ts45.minID).toBe(298.35882375);
+    });
+
+    it("keeps tube coordinates at full float precision instead of 8dp-rounded values", () => {
+        const ts = new TubeSheet(OC, OD, PR, 45, 4);
+        // Diamond radius = pitch/cos45/2 at full precision.
+        const C = (OD * PR) / (1 / Math.sqrt(2)) / 2;
+        expect(ts.tubeField!.some((t) => t.x === C || t.y === C || t.x === -C || t.y === -C)).toBe(
+            true,
+        );
+    });
 });

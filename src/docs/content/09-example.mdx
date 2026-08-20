@@ -1,0 +1,52 @@
+As an example, consider a tube OD of 19.05 mm, a pitch ratio of 1.25, an OTL clearance of 12.7 mm, and a 30° layout.
+
+Using <EqRef id="pitch" /> and <TableRef id="pattern-constants" />:
+
+:::Formula{id="example-pitch" label="Pitch"}
+$$
+\begin{align*}
+P = 19.05 \times 1.25 = 23.8125\ \text{mm}
+\end{align*}
+$$
+:::
+
+:::Formula{id="example-dxdyc" label="dx, dy, C (30°)"}
+$$
+\begin{align*}
+d_x &= 23.8125\ \text{mm} \\
+d_y &= 20.6230\ \text{mm} \\
+C &= 11.9063\ \text{mm}
+\end{align*}
+$$
+:::
+
+### Number of tubes for a 500 mm shell
+
+Using the maximum OTL (<EqRef id="otl-max" />) and the [06 Filling the circle](#/docs/filling) procedure described above, the generator produces:
+
+:::Formula{id="example-forward-result" label="Result"}
+$$
+\begin{align*}
+\text{OTL}_\text{max} &= 500 - 12.7 = 487.3\ \text{mm}\\
+n_\text{act} &= 349 \\
+\text{OTL}_\text{act} &= 478.33\ \text{mm}
+\end{align*}
+$$
+:::
+
+The actual OTL of 478.33 mm is below the 487.3 mm ceiling, because the discrete triangular pattern cannot fill every remaining fraction of the circle.
+
+### Minimum shell ID for a target of 350 tubes
+
+Solving for the smallest shell ID ($D_\text{shell, min}$, <EqRef id="solving-initial-estimate" />) that holds at least 350 tubes gives:
+
+:::Formula{id="example-inverse-result" label="Result"}
+$$
+\begin{align*}
+D_\text{shell, min} &= 500.20\ \text{mm} \\
+n_\text{act} &= 352
+\end{align*}
+$$
+:::
+
+The result overshoots the 350-tube target slightly, yielding 352, since the next smaller diameter would have dropped below 350. So 500.20 mm is the tightest shell ID that still meets the target.

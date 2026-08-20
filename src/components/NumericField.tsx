@@ -1,7 +1,7 @@
 import { memo, useRef, useState } from "react";
 import type { KeyboardEvent, SyntheticEvent, SubmitEvent, InputHTMLAttributes } from "react";
 import { NumericFormat } from "react-number-format";
-import { utils } from "../utils";
+import { utils } from "@/utils";
 
 export interface NumericFieldProps {
     id: string;

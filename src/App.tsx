@@ -1,23 +1,20 @@
 import type { ReactNode, SubmitEvent } from "react";
 import packageJson from "../package.json";
-import {
-    TubeSheet,
-    generateTubeSheetSVG,
-    ITubeSheetData,
-} from "./plugins/tubesheet-layout-generator";
-import { NumericField } from "./components/NumericField";
-import { PairedFieldRow } from "./components/PairedFieldRow";
-import { utils } from "./utils/";
-import ThemeToggle from "./components/DarkmodeToggle";
-import { useTubeSheetWorker } from "./hooks/useTubeSheetWorker";
-import { useLayoutForm } from "./hooks/useLayoutForm";
-import { LayoutOptionsList } from "./components/LayoutOptionsList";
-import { FormFooter } from "./components/FormFooter";
-import { Viewport } from "./components/viewport/Viewport";
-import { useViewportContext } from "./components/viewport/ViewportContext";
-import { numericFieldConfigs } from "./constants/numericFieldConfigs";
-import type { NumericFieldConfig } from "./constants/numericFieldConfigs";
-import { layoutOptionRows } from "./constants/layoutOptionRows";
+import { TubeSheet, generateTubeSheetSVG } from "@/plugins/tubesheet-layout-generator";
+import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
+import { NumericField } from "@/components/NumericField";
+import { PairedFieldRow } from "@/components/PairedFieldRow";
+import { utils } from "@/utils/";
+import ThemeToggle from "@/components/DarkmodeToggle";
+import { useTubeSheetWorker } from "@/hooks/useTubeSheetWorker";
+import { useLayoutForm } from "@/hooks/useLayoutForm";
+import { LayoutOptionsList } from "@/components/LayoutOptionsList";
+import { FormFooter } from "@/components/FormFooter";
+import { Viewport } from "@/components/viewport/Viewport";
+import { useViewportContext } from "@/components/viewport/ViewportContext";
+import { numericFieldConfigs } from "@/constants/numericFieldConfigs";
+import type { NumericFieldConfig } from "@/constants/numericFieldConfigs";
+import { layoutOptionRows } from "@/constants/layoutOptionRows";
 
 // --- Static config computation (moved outside component) ---
 const emptyTubeSheet = new TubeSheet(0, 100, 1, 30, undefined, 100);
@@ -258,6 +255,7 @@ const App = () => {
                 <Viewport.Frame>
                     <Viewport.ContextMenu />
                     <Viewport.Toolbar />
+                    <Viewport.DocsButton />
                     <Viewport.Drawing />
                     <Viewport.Footer>
                         <Viewport.Table />

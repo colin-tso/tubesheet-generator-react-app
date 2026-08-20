@@ -861,7 +861,8 @@ button:disabled {
 .save-button:focus-visible,
 .copy-button:focus-visible,
 .grid-toggle:focus-visible,
-.table-toggle:focus-visible {
+.table-toggle:focus-visible,
+.help-toggle:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
@@ -1199,6 +1200,121 @@ footer a {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.3;
+}
+
+/* Docs-link "?" button, top-left of the viewport. Mirrors .viewport-options
+   (top-right) in size and feel, with the tooltip flipped to the right. */
+.viewport-help {
+  position: absolute;
+  z-index: 3;
+  top: 28px;
+  left: 28px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.help-toggle {
+  cursor: pointer;
+
+  position: relative;
+
+  display: flex;
+  gap: 0;
+  align-items: center;
+
+  padding: 5px 5px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+
+  font-family: var(--font-mono);
+  font-size: var(--options-btn-font-size);
+  font-weight: 400;
+  color: var(--panel);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+
+  background-color: var(--ink);
+
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background-color var(--transition);
+}
+
+/* Label renders as a floating tooltip to the RIGHT of the button (the toggle
+   tooltips point left; this one mirrors them). Same chip styling. */
+.help-toggle .btn-label {
+  pointer-events: none;
+
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: calc(100% + 10px);
+  transform-origin: left center;
+  transform: translateY(-50%) scale(0.94);
+
+  padding: 5px 9px;
+  border-radius: 4px;
+
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 400;
+  color: hsl(210, 40%, 96%);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+
+  opacity: 0;
+  background-color: hsl(214, 30%, 15%);
+  box-shadow: var(--elevation-low);
+
+  transition:
+    opacity 0.15s var(--tooltip-transition),
+    transform 0.15s var(--tooltip-transition);
+}
+
+/* Small pointer arrow tying the tooltip to its button (on the left edge,
+   pointing left, since the tooltip sits to the right of the button). */
+.help-toggle .btn-label::after {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  transform: translateY(-50%) rotate(45deg);
+
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+
+  background-color: inherit;
+}
+
+.help-toggle .btn-icon {
+  width: calc(var(--options-btn-font-size) * 15 / 10.5);
+  height: calc(var(--options-btn-font-size) * 15 / 10.5);
+}
+
+/* Hover shows the tooltip only after a short delay, so it doesn't flash
+   in while the cursor is just passing by. */
+.help-toggle:hover .btn-label {
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+  transition-delay: 0.5s;
+}
+
+/* Keyboard focus shows the tooltip immediately, since there's no
+   "passing by" case to guard against. */
+.help-toggle:focus-visible .btn-label {
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+}
+
+.help-toggle:hover,
+.help-toggle:focus-visible {
+  border-color: var(--blue);
+  background-color: var(--blue);
 }
 
 .viewport-label {
@@ -1812,6 +1928,11 @@ footer a {
   .viewport-options {
     top: 16px;
     right: 16px;
+  }
+
+  .viewport-help {
+    top: 16px;
+    left: 16px;
   }
 
   .viewport-label {

@@ -1,6 +1,7 @@
 import type { Ref } from "react";
-import { ITubeSheetData, getEffectiveShellID } from "../plugins/tubesheet-layout-generator";
-import { utils } from "../utils/";
+import { getEffectiveShellID } from "@/plugins/tubesheet-layout-generator";
+import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
+import { utils } from "@/utils/";
 
 export interface TubeSheetDataTableProps {
     data: (ITubeSheetData & { numTubes?: number }) | null;

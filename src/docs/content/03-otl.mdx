@@ -1,0 +1,29 @@
+import { ShellOTLDiagram } from "../diagrams/ShellOTLDiagram";
+
+**OTL** (Outer Tube Limit) is the diameter of the smallest circle that encloses every tube in the field, wall-to-wall. It bounds how far the pattern can spread:
+
+- A maximum allowable OTL **constraint** ($\text{OTL}_\text{max}$), set by the shell ID and the OTL clearance entered in the calculator: the maximum diameter the pattern may reach. The clearance is diametrical, so each side of the shell leaves $\text{OTL}_\text{clear} / 2$ between the outermost tube wall and the shell ID.
+- An actual OTL **result** ($\text{OTL}_\text{act}$), measured from the tube field the generator actually produced. The actual OTL is below the constraint whenever the discrete pattern cannot fill the circle exactly.
+
+:::Formula{id="otl-max" label="Max allowable OTL"}
+$$
+\begin{align}
+\text{OTL}_\text{max} = D_\text{shell} - \text{OTL}_\text{clear}
+\end{align}
+$$
+:::
+
+:::Formula{id="otl-actual" label="Actual OTL (from the generated field)"}
+$$
+\begin{align}
+\text{OTL}_\text{act} = 2 \cdot \max\!\left( \sqrt{x^2 + y^2} \right) + D_\text{tube}
+\end{align}
+$$
+:::
+where $x$ and $y$ are the positions of all tube centres relative to the centre of the tube sheet.
+
+<div className="docs-diagram-svg-standalone">
+  <ShellOTLDiagram />
+</div>
+
+This formula finds the tube centre farthest from the centre of the tube sheet and adds one tube radius on each side of that centre-to-centre distance, resulting in the actual OTL. The generator accepts a tube centre only if its distance from the centre is at most $( \text{OTL}_\text{max} - D_\text{tube} ) \div 2$, so the whole tube, including its radius, stays within the maximum allowable OTL.

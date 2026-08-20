@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { LayoutOptionsList } from "./LayoutOptionsList";
-import { layoutOptionRows } from "../constants/layoutOptionRows";
-import type { LayoutResults } from "../hooks/useTubeSheetWorker";
+import { layoutOptionRows } from "@/constants/layoutOptionRows";
+import type { LayoutResults } from "@/hooks/useTubeSheetWorker";
 
 // Radial can produce a NaN minID (no tubes fit at the target shell/tube count,
 // so Math.sin(Math.PI / 0) is NaN). This must render as a dash, not the literal

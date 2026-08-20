@@ -69,7 +69,7 @@ export function ShellOTLDiagram() {
                 className="docs-diagram-label"
                 dominantBaseline="central"
             >
-                OTL clearance
+                OTL clearance / 2
             </text>
 
             <polyline

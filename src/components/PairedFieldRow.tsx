@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, SubmitEvent, SyntheticEvent } from "react";
 import { NumericField } from "./NumericField";
-import type { NumericFieldConfig } from "../constants/numericFieldConfigs";
-import { pairPreviewConfigs, type CommittedSizeResult } from "../constants/pairPreviewConfigs";
-import { useLivePreview } from "../hooks/useLivePreview";
-import type { SingleResultPayload } from "../hooks/useTubeSheetWorker";
-import { utils } from "../utils";
+import type { NumericFieldConfig } from "@/constants/numericFieldConfigs";
+import { pairPreviewConfigs, type CommittedSizeResult } from "@/constants/pairPreviewConfigs";
+import { useLivePreview } from "@/hooks/useLivePreview";
+import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
+import { utils } from "@/utils";
 
 interface PairedFieldRowProps {
     row: NumericFieldConfig[];

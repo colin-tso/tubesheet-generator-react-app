@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateTubeSheetSVG, ITubeSheetData } from "../plugins/tubesheet-layout-generator";
-import { TUBE_SHEET_LAYOUTS, type TubeSheetLayout } from "../plugins/tubesheet-layout-generator";
+import { generateTubeSheetSVG, TUBE_SHEET_LAYOUTS } from "@/plugins/tubesheet-layout-generator";
+import type { ITubeSheetData, TubeSheetLayout } from "@/plugins/tubesheet-layout-generator";
 
 export type LayoutResults = Record<
     TubeSheetLayout,

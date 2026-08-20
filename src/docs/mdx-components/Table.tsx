@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useTableNumber } from "./DocsRegistryContext";
+import { useTableNumber } from "../context/DocsRegistryContext";
 import { renderInlineMath } from "./inlineMath";
 
 interface TableProps {

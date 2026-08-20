@@ -3,7 +3,7 @@ import {
     TubeSheet,
     getEffectiveShellID,
     type TubeSheetLayout,
-} from "../plugins/tubesheet-layout-generator";
+} from "@/plugins/tubesheet-layout-generator";
 import { utils } from "./index";
 
 // Fixed set of realistic inputs reused across cases.

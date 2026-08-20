@@ -1,7 +1,8 @@
 import { type ComponentType, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import App from "./App";
-import { loadDocsPage } from "./pages/docs/loadDocsPage";
+import { loadDocsPage } from "@/docs/loadDocsPage";
+import { ThemeProvider } from "@/theme/ThemeProvider";
 
 type DocsPageProps = { hash: string; savedScrollY: number | null };
 
@@ -99,8 +100,8 @@ export function Root() {
             // as setHash rather than firing its own extra render first.
             const scrollYOnLeavingDocs = wasDocs && !isDocs ? window.scrollY : null;
 
-            // Resolve the (likely already-cached, see FormFooter's hover/focus
-            // preload) docs chunk before the transition starts, and hold on to
+            // Resolve the (likely already-cached, see Viewport.DocsButton's
+            // hover/focus preload) docs chunk before the transition starts, and hold on to
             // the resolved component so commit() can hand it to React
             // synchronously — see the module-level comment for why this isn't
             // just a lazy()/Suspense render.
@@ -152,7 +153,7 @@ export function Root() {
     }, []);
 
     return (
-        <>
+        <ThemeProvider>
             <div className={isDocsRoute ? "route-hidden" : undefined}>
                 <App />
             </div>
@@ -161,6 +162,6 @@ export function Root() {
                     <DocsPageComponent hash={hash} savedScrollY={docsScrollY} />
                 </div>
             )}
-        </>
+        </ThemeProvider>
     );
 }
