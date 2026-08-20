@@ -108,8 +108,8 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
                 <div className="docs-topbar-left">
                     <a
                         className="docs-logo-link"
-                        href="#/docs"
-                        aria-label="Tubesheet layout generator docs"
+                        href="#/"
+                        aria-label="Tubesheet layout generator — back to calculator"
                     >
                         {/* Inlined (not <img src="icon.svg">) so its colors track the
                             app's own --ink/--paper theme tokens via CSS, staying in

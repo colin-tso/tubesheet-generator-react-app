@@ -1,8 +1,11 @@
 import { RadialDiagram } from "../diagrams/RadialDiagram";
 import { DiagramGrid, DiagramCard } from "../mdx-components/DiagramCard";
+import { Note } from "../mdx-components/Note";
 import { RadialSeedDiagram } from "../diagrams/RadialSeedDiagram";
 
 The radial layout is a different pattern entirely. Instead of rows and columns, it places tubes on **concentric rings** centred on the tube sheet. On each ring, tubes sit evenly spaced so that neighbouring tubes on the same ring are at least one pitch apart; the seed rings described below are the only rings spaced at exactly one pitch. The rings themselves are spaced one pitch apart, so every tube keeps at least one pitch of clearance from the tubes on the rings on either side.
+
+<Note>The radial layout is not a TEMA standard pattern: it was created specifically for this utility as an alternative to the standard grid layouts (see [04 Layout patterns](#/docs/patterns)). Its concentric-ring arrangement can sometimes pack tubes more tightly than a grid layout, allowing a smaller shell ID for the same tube count and so reducing the cost of fabricating the tube sheet.</Note>
 
 <div className="docs-diagram-svg-standalone">
   <RadialDiagram />
