@@ -4,7 +4,7 @@
 | Angle between radial tubes | $\theta_\text{radial}$ | Angle subtended by neighbouring tubes on a radial ring. |
 | Column index | $i$ | Which column a tube belongs to, counting outward from the centre. |
 | Field offset | $S$ | Whole-field shift (0 or $\dfrac{dx}{2}$) chosen automatically to maximise tube count. |
-| Layout angle | $\theta$ | Named angle (30°/45°/60°/90°) between the pitch line and the row direction: $\arctan(C / dy).$ |
+| Layout angle | $\theta$ | Named angle (30°/45°/60°/90°) between the pitch line and the vertical, row-to-row direction: $\arctan(C / dy).$ |
 | OTL | $\text{OTL}$ | Outer Tube Limit: diameter of the smallest circle enclosing every tube, wall-to-wall. |
 | <span class="docs-glossary-subterm">Actual OTL</span> | $\text{OTL}_\text{act}$ | The actual OTL measured from the generated tube field. |
 | <span class="docs-glossary-subterm">Maximum allowable OTL</span> | $\text{OTL}_\text{max}$ | The maximum OTL the pattern is allowed to reach, set by the shell ID and OTL clearance. |
@@ -19,7 +19,7 @@
 | <span class="docs-glossary-subterm">Row spacing</span> | $d_x$ | Spacing between neighbouring tubes within a row. |
 | <span class="docs-glossary-subterm">Row stagger</span> | $C$ | Horizontal stagger applied to alternating rows. |
 | <span class="docs-glossary-subterm">Row-to-row spacing</span> | $d_y$ | Vertical spacing between rows. |
-| Shell ID | $D_\text{shell}$ | Inside diameter of the shell the tubesheet sits in. |
+| Shell ID | $D_\text{shell}$ | Inside diameter of the shell in which the tubesheet is installed. |
 | <span class="docs-glossary-subterm">Initial diameter estimate</span> | $D_\text{shell, est}$ | Closed-form starting guess for the inverse (minimum-tube-count) solve. |
 | <span class="docs-glossary-subterm">Minimum shell ID</span> | $D_\text{shell, min}$ | Smallest shell ID that can hold a requested minimum tube count. |
 | Tube count | $n$ | Number of tubes in the generated pattern. |
@@ -27,5 +27,5 @@
 | <span class="docs-glossary-subterm">Minimum tube count</span> | $n_\text{min}$ | Target minimum number of tubes, used to solve for the smallest shell ID. |
 | <span class="docs-glossary-subterm">Ring tube capacity</span> | $n_\text{ring}$ | Number of tubes that can fit within a ring in a radial layout. |
 | Tube OD | $D_\text{tube}$ | Outer diameter of one tube. |
-| Tube position | $x,\ y$ | The horizontal and vertical positions of a tube relative to the middle of the tube sheet. |
+| Tube position | $x,\ y$ | The horizontal and vertical positions of a tube relative to the centre of the tube sheet. |
 :::

@@ -8,7 +8,7 @@ Radial is a different pattern entirely. Instead of rows and columns, it places t
   <RadialDiagram />
 </div>
 
-A ring of radius $r$ can hold at most the number of tubes $n$ whose within-ring chord length, $2 r \sin\!\left( \frac{\pi}{n} \right)$, is still at least one pitch. Rounding down gives the **ring tube capacity**:
+A ring of radius $r$ can hold at most $n$ tubes, where the chord between neighbouring tubes, $2 r \sin\!\left( \frac{\pi}{n} \right)$, is at least one pitch. Rounding down gives the **ring tube capacity**:
 
 :::Formula{id="radial-ring-tube-count" label="Ring tube capacity"}
 $$
@@ -18,7 +18,7 @@ n_\text{ring} = \left\lfloor \pi \cdot {\left[\arcsin\!\left(\frac{P_t}{2r}\righ
 $$
 :::
 
-Working the other way, the radius needed to place *exactly* $n$ tubes on a ring, so the chord between neighbouring tubes is exactly one pitch, is:
+Conversely, the radius needed to place *exactly* $n$ tubes on a ring, so the chord between neighbouring tubes is exactly one pitch, is:
 
 :::Formula{id="radial-ring-radius" label="Ring radius for n tubes"}
 $$
@@ -38,9 +38,9 @@ $$
 $$
 :::
 
-Instead of walking rows and columns until they leave the circle (see [06 Filling the circle](#/docs/filling)), the generator fills whole rings at once. It builds one candidate layout per **seed**, then keeps whichever candidate holds the most tubes — the same "keep the better result" rule the grid layouts use when choosing an offset (see [05 Offsets](#/docs/offset)).
+Instead of stepping through rows and columns until they fall outside the boundary (see [06 Filling the circle](#/docs/filling)), the generator fills whole rings at once. It builds one candidate layout per **seed**, then keeps whichever candidate holds the most tubes — the same rule the grid layouts use when selecting an offset (see [05 Offsets](#/docs/offset)).
 
-A seed is the innermost pattern: either a **central tube**, or a ring of exactly **2, 3, 4, or 5 tubes** placed at the smallest radius that keeps its tubes exactly one pitch apart (the ring radius formula above).
+A seed is the innermost pattern: either a **central tube**, or a ring of exactly **2, 3, 4, or 5 tubes** placed at the smallest radius that keeps its tubes exactly one pitch apart (see <EqRef id="radial-ring-radius" />).
 
 <DiagramGrid>
   <DiagramCard title="Ring of 2 tubes" formula="r = Pt / 2">
@@ -57,9 +57,9 @@ A seed is the innermost pattern: either a **central tube**, or a ring of exactly
   </DiagramCard>
 </DiagramGrid>
 
-Starting from the seed, the generator places full rings **one pitch further out** at each step ($r_\text{seed} + P_t,\ r_\text{seed} + 2P_t, \dots$), each holding its ring tube capacity. Every ring shares the same starting angle, so the tubes aligned radially across adjacent rings sit exactly one pitch apart and every other cross-ring pair is farther. Therefore, the whole layout keeps at least one pitch of clearance between any two tubes.
+Starting from the seed, the generator places full rings **one pitch further out** at each step ($r_\text{seed} + P_t,\ r_\text{seed} + 2P_t, \dots$), each holding its ring tube capacity. Every ring shares the same starting angle, so the tubes aligned radially across adjacent rings sit exactly one pitch apart and any other pair of tubes on adjacent rings is further apart. Therefore, the whole layout has a minimum clearance of one pitch between any two tubes.
 
-The seeds span the range full rings cannot reach on their own: the two-tube ring at $P_t/2$ is the innermost ring possible at all, and the 3-, 4-, and 5-tube rings fill the gap between $P_t/2$ and $P_t$.
+The seeds span the range full rings cannot reach on their own: the two-tube ring at $P_t/2$ is the smallest ring that can exist, and the 3-, 4-, and 5-tube rings fill the gap between $P_t/2$ and $P_t$.
 
 A minimum tube count that lands on an achievable count based on the seeds resolves to exactly that many tubes; one that falls in a gap resolves to the next achievable count, so a minimum of 6 still gives the 7-tube layout, because the six-tube ring fits in exactly the same shell as the seven-tube one.
 

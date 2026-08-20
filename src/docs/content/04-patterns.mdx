@@ -1,13 +1,13 @@
 import { DiagramGrid, DiagramCard } from "../mdx-components/DiagramCard";
 import { LayoutPatternDiagram } from "../diagrams/LayoutPatternDiagram";
 
-All layout options except the radial pattern (see [07 Radial layout](#/docs/radial-layout)) are all built from the same three constants, computed once from the pitch:
+Every layout option except the radial pattern (see [07 Radial layout](#/docs/radial-layout)) is built from the same three constants unique to each layout, computed once from the pitch:
 
 1. **row spacing** ($d_x$): the spacing between neighbouring tubes *within the same row*.
 2. **row-to-row spacing** ($d_y$): the vertical spacing between one row and the next.
-3. **row stagger** ($C$): the horizontal offset applied to every other row. This is what staggers the pattern instead of stacking it in a plain grid (see [06 Filling the circle](#/docs/filling)).
+3. **row stagger** ($C$): the horizontal offset applied to every other row. Offsetting alternate rows staggers the tubes rather than aligning them into a plain grid (see [06 Filling the circle](#/docs/filling)).
 
-A tube’s nearest neighbour usually sits in the *adjacent* row rather than its own (see [02 Pitch & pitch ratio](#/docs/pitch)), so the pitch would be the diagonal distance to that neighbour, not from $d_x$ or $d_y$ directly:
+A tube’s nearest neighbour usually sits in the *adjacent* row rather than its own (see [02 Pitch and pitch ratio](#/docs/pitch)), so the pitch is the diagonal distance to that neighbour rather than $d_x$ or $d_y$:
 
 :::Formula{id="pattern-pitch" label="Pitch, derived from dx, dy, C"}
 $$
@@ -27,7 +27,7 @@ $$
 $$
 :::
 
-The table below gives each layout’s $d_x$, $d_y$, and $C$ in terms of the pitch, followed by a diagram of the same numbers. Each diagram draws the actual nearest-neighbour tubes: an apex tube plus two base tubes for the 30°/60° triangular patterns, or four tubes forming a square or diamond for the 45°/90° square patterns. The highlighted lines are true pitch-length sides, and the arc marks the angle.
+The table below gives each layout’s $d_x$, $d_y$, and $C$ in terms of the pitch, and the diagrams below show the same values. Each diagram draws the actual nearest-neighbour tubes: an apex tube plus two base tubes for the 30°/60° triangular patterns, or four tubes forming a square or diamond for the 45°/90° square patterns. The highlighted lines are true pitch-length sides, and the arc marks the angle.
 
 :::Table{id="pattern-constants" caption="Layout constants (dx, dy, C) by pattern angle."}
 | Layout | $d_x$ | $d_y$ | $C$ | Row spacing vs. pitch |

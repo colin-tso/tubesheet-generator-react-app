@@ -1,19 +1,13 @@
-import { Note } from "../mdx-components/Note";
-
 Two different offsets are used when building a tubesheet for all layouts except the radial pattern (see [07 Radial layout](#/docs/radial-layout)):
-1. A **row stagger** ($C$), which is baked into the pattern itself and staggers alternating rows, and
-2. A **field offset** ($S$), which is a single shift applied to the *entire tube field*, deciding whether a tube sits exactly on the sheet’s vertical centreline or straddles it.
+1. A **row stagger** ($C$), which is built into the pattern itself and staggers alternating rows, and
+2. A **field offset** ($S$), which is a single shift applied to the *entire tube field* and determines whether a tube sits on the sheet’s vertical centreline or straddles it.
 
-:::Formula{id="offset" label="Offset"}
-$$
-\begin{align}
-S = \begin{cases} \dfrac{d_x}{2} & \text{if enabled} \\[1em] \ 0 & \text{otherwise} \end{cases}
-\end{align}
-$$
-:::
+    :::Formula{id="offset" label="Offset"}
+    $$
+    \begin{align}
+    S = \left\{ \begin{array}{cl} \dfrac{d_x}{2} & \quad \text{if enabled} \\[1em] 0 & \quad \text{otherwise} \end{array} \right.
+    \end{align}
+    $$
+    :::
 
-Because the boundary is a circle, the choice of whether a field offset is applied can result in packing more or less tubes.
-In essence, shifting the whole grid changes which tube centres end up close enough to the edge to fit.
-The calculator tries both, counts the tubes each one produces, and keeps whichever gives more.
-
-<Note> The layout generator calculates layouts with and without the **field offset** simultaneously, and will only display the result with the higher tube count. </Note>
+Because the boundary is a circle, applying the field offset can change the number of tubes that fit. Shifting the whole grid changes which tube centres fall within the boundary. The calculator tries both, counts the tubes each one produces, and keeps whichever yields the higher count.

@@ -1,4 +1,4 @@
-For non-radial layouts, the generator never walks the whole circle. It builds the tube positions for one quarter of the field, then mirrors that quarter across both axes to complete the rest. This works because every layout being considered is symmetric about the tube sheet’s centre. The radial layout is the exception: it fills complete rings at once instead of walking rows (see [07 Radial layout](#/docs/radial-layout)).
+For non-radial layouts, the generator does not step across the whole circle. It computes tube positions for one quarter of the field, then mirrors that quarter across both axes to complete the rest. This works because every layout being considered is symmetric about the centre of the tube sheet. The radial layout is the exception: it fills complete rings at once instead of stepping through rows (see [07 Radial layout](#/docs/radial-layout)).
 
 1. Starting from the centre, step outward row by row using a **row index** ($j$), and within each row, column by column using a **column index** ($i$).
 
@@ -11,7 +11,7 @@ For non-radial layouts, the generator never walks the whole circle. It builds th
     $$
     :::
 
-2. Keep a candidate tube only if its centre is within $( \text{OTL}_\text{max} - D_\text{tube} ) \div 2$ of the origin, meaning the whole tube, including its radius, stays inside the max OTL. Stop walking a row as soon as a tube falls outside that radius, since every following tube in the row would be even further out.
-3. Mirror the resulting quarter horizontally, then vertically, and merge everything into one set, removing duplicate coordinates as points that land on an axis appear in at least one  of the mirrored copies.
+2. Keep a candidate tube only if its centre is within a distance of $( \text{OTL}_\text{max} - D_\text{tube} ) \div 2$ from the centre, meaning the whole tube, including its radius, stays inside the maximum OTL. Stop stepping a row as soon as a tube falls outside this radius, since every following tube in the row would be still further out.
+3. Mirror the resulting quarter horizontally, then vertically, and merge everything into one set, removing duplicate coordinates since points on an axis appear in more than one mirrored copy.
 
-The result is sorted by row, then by column, and handed off as the final tube field. This tube field array is where the drawing, the tube count, and the actual OTL calculations are read from.
+The result is sorted by row, then by column, and becomes the final tube field. This list of tube positions then provides the drawing, the tube count, and the actual OTL.
