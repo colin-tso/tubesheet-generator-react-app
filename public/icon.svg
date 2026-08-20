@@ -3,10 +3,12 @@
   <title>Tubesheet Layout Generator</title>
   <style>
     .bg { fill: #F9F8F6; }
-    .glyph { fill: #10161E; }
+    .glyph-fill { fill: #10161E; }
+    .glyph-stroke { fill: none; stroke: #10161E; }
     @media (prefers-color-scheme: dark) {
       .bg { fill: #10161E; }
-      .glyph { fill: #F9F8F6; }
+      .glyph-fill { fill: #F9F8F6; }
+      .glyph-stroke { stroke: #F9F8F6; }
     }
   </style>
   <defs>
@@ -15,11 +17,11 @@
     </clipPath>
   </defs>
   <g clip-path="url(#squircle)">
-    <rect x="0" y="0" width="512" height="512" fill="#10161E"/>
+    <rect class="bg" x="0" y="0" width="512" height="512"/>
   </g>
   <!-- shell ring, tube triangle flipped 180deg: single tube now at bottom, pair at top -->
-  <circle cx="256" cy="256" r="210" fill="none" stroke="#FFFFFF" stroke-width="26"/>
-  <circle cx="256" cy="351.2" r="78" fill="#FFFFFF"/>
-  <circle cx="173.6" cy="208.4" r="78" fill="#FFFFFF"/>
-  <circle cx="338.4" cy="208.4" r="78" fill="#FFFFFF"/>
+  <circle cx="256" cy="256" r="210" class="glyph-stroke" stroke-width="26"/>
+  <circle cx="256" cy="351.2" r="78" class="glyph-fill"/>
+  <circle cx="173.6" cy="208.4" r="78" class="glyph-fill"/>
+  <circle cx="338.4" cy="208.4" r="78" class="glyph-fill"/>
 </svg>

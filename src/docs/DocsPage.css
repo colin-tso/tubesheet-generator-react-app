@@ -23,29 +23,185 @@
   border-bottom: 1px solid var(--line);
 
   background-color: var(--paper);
+
+  transition: box-shadow var(--transition);
+}
+
+/* Once the page has scrolled out from under the sticky bar, give it a soft
+   shadow so it reads as floating above content rather than blending into
+   the page (both share the --paper fill, so the 1px border alone is a
+   fairly weak separator, especially in dark mode). */
+.docs-topbar.scrolled {
+  box-shadow: var(--elevation-low);
 }
 
 .docs-topbar-left {
   display: flex;
-  gap: 14px;
+  flex: 1 1 auto;
+  gap: 12px;
+  align-items: center;
+
+  min-width: 0;
+}
+
+.docs-topbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
   align-items: center;
 }
 
-.docs-back-link {
+/* App logo */
+.docs-logo-link {
+  touch-action: manipulation;
+
   display: inline-flex;
-  gap: 6px;
   align-items: center;
 
   border-radius: var(--radius-sm);
 
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--blue);
-  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.docs-back-link:hover {
-  color: var(--blue-bright);
+.docs-logo-mark {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+/* Colors come from the app's own theme tokens (not a static asset), so the
+   mark stays in sync with the manual dark-mode toggle instantly — no
+   dependence on OS-level prefers-color-scheme, and no separate palette to
+   keep in sync with the rest of the UI. */
+.docs-logo-bg {
+  fill: var(--ink);
+}
+
+.docs-logo-glyph-fill {
+  fill: var(--paper);
+}
+
+.docs-logo-glyph-stroke {
+  stroke: var(--paper);
+}
+
+/* Thin separator between the app icon and the "Docs" wordmark, echoing the
+   "/" breadcrumb separator further along the same line. */
+.docs-topbar-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--line);
+}
+
+.docs-topbar-title {
+  overflow: hidden;
+
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Current-section breadcrumb, kept in sync with the active ToC entry so the
+   topbar always shows where you are, not just that you're "in the docs". */
+.docs-topbar-crumb-sep {
+  margin: 0 6px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.docs-topbar-crumb {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Back link is the one primary action in the bar (it leaves the docs), so it
+   keeps the bordered "chip" treatment. The burger is a secondary, in-page
+   utility and reads as a plain ghost icon button until it's interacted with,
+   so the two don't compete as equal-weight boxes. Rounded a touch more than
+   before (5px vs. 3px) to sit closer to the theme toggle's pill shape rather
+   than looking like a separate, sharper-cornered control family. */
+.docs-back-btn {
+  touch-action: manipulation;
+
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+
+  background-color: var(--panel);
+
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background-color var(--transition);
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+.docs-back-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.docs-menu-button {
+  touch-action: manipulation;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+
+  color: var(--muted);
+
+  background-color: transparent;
+
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background-color var(--transition);
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+.docs-menu-button:hover {
+  color: var(--blue);
+  background-color: var(--panel);
+}
+
+.docs-menu-button.open {
+  border-color: var(--line);
+  color: var(--blue);
+  background-color: var(--panel);
+}
+
+/* Holds the full "← Back to Calculator" label; arrow and text align on one
+   line at the button's text size. The ← glyph draws slightly low in its line
+   box in the UI font, so nudge the label up to sit optically centered. */
+.docs-back-arrow {
+  transform: translateY(-1px);
+
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+
+  line-height: 1;
 }
 
 .docs-skip-link {
@@ -74,8 +230,11 @@
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
 
-.docs-back-link:focus-visible,
-.docs-toc a:focus-visible {
+.docs-logo-link:focus-visible,
+.docs-back-btn:focus-visible,
+.docs-toc a:focus-visible,
+.docs-menu-button:focus-visible,
+.docs-mobile-toc a:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
@@ -87,14 +246,105 @@
   color: var(--ink);
 }
 
-.docs-topbar .version-text {
-  padding-left: 8px;
+.docs-menu-bars {
+  position: relative;
 
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 400;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+
+  width: 16px;
+  height: 16px;
+}
+
+.docs-menu-bars span {
+  display: block;
+
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+
+  background-color: currentColor;
+
+  transition:
+    transform var(--transition),
+    opacity var(--transition);
+}
+
+/* Bars morph into an X when the panel is open, so the open/closed state of
+   the dropdown reads as a deliberate toggle rather than a static icon that
+   happens to sit above a menu that may or may not be showing. */
+.docs-menu-button.open .docs-menu-bars span:first-child {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.docs-menu-button.open .docs-menu-bars span:nth-child(2) {
+  opacity: 0;
+}
+
+.docs-menu-button.open .docs-menu-bars span:last-child {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Mobile ToC dropdown, anchored just below the sticky topbar. */
+.docs-mobile-toc {
+  position: absolute;
+  z-index: 6;
+  top: 100%;
+  left: 0;
+  transform-origin: top center;
+  transform: translateY(-6px);
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  flex-direction: column;
+  gap: 2px;
+
+  width: 100%;
+  max-height: min(60dvh, 420px);
+  margin: 0;
+  padding: 10px 16px 16px;
+  border-bottom: 1px solid var(--line);
+
+  font-size: 14px;
+
+  visibility: hidden;
+  opacity: 0;
+  background-color: var(--panel);
+  box-shadow: var(--elevation-mid);
+
+  transition:
+    opacity var(--transition),
+    transform var(--transition),
+    visibility var(--transition);
+}
+
+.docs-mobile-toc.open {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 1;
+}
+
+.docs-mobile-toc a {
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
   color: var(--muted);
-  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.docs-mobile-toc a:hover {
+  color: var(--ink);
+  background-color: var(--blue-tint);
+}
+
+.docs-mobile-toc a[aria-current="location"] {
+  font-weight: 600;
+  color: var(--blue);
+  background-color: var(--blue-tint);
 }
 
 .docs-body {
@@ -105,14 +355,14 @@
   justify-content: center;
 
   width: 100%;
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 24px 96px;
+  padding: 0 24px 96px;
 }
 
 .docs-toc {
   position: sticky;
-  top: 76px;
+  top: 61px;
 
   display: flex;
   flex: 0 0 220px;
@@ -123,7 +373,7 @@
 }
 
 .docs-toc-label {
-  margin: 0 0 6px;
+  margin: 34px 0 6px;
 
   font-size: 11px;
   font-weight: 700;
@@ -155,16 +405,33 @@
 .docs-content {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: 760px;
+  max-width: 960px;
+
+  /* Breathing room below the topbar, applied to the content column only so
+     the sticky ToC can sit flush under the bar and pin without first
+     co-scrolling with the page (see .docs-toc's top offset). */
+  padding-top: 32px;
 }
 
 .docs-content > .docs-intro {
   margin-top: 0;
   margin-bottom: 56px;
 
-  font-size: 14.5px;
+  font-size: 16px;
   line-height: 1.65;
   color: var(--ink);
+}
+
+.docs-content > .docs-intro h1 {
+  margin: 0 0 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--ink);
+  text-wrap: balance;
+  /* letter-spacing: -0.01em; */
 }
 
 .docs-content > .docs-intro ul,
@@ -172,7 +439,7 @@
   margin: 10px 0;
   padding-left: 22px;
 
-  font-size: 14.5px;
+  font-size: 16px;
   line-height: 1.65;
   color: var(--ink);
 }
@@ -215,7 +482,7 @@
 
 .docs-section p {
   margin: 10px 0;
-  font-size: 14.5px;
+  font-size: 16px;
   line-height: 1.65;
   color: var(--ink);
 }
@@ -225,7 +492,7 @@
   margin: 10px 0;
   padding-left: 22px;
 
-  font-size: 14.5px;
+  font-size: 16px;
   line-height: 1.65;
   color: var(--ink);
 }
@@ -284,8 +551,8 @@
   border-radius: var(--radius-md);
 
   /* Math sits at the same size as the surrounding body text
-     (.docs-section p is 14.5px). */
-  font-size: 14.5px;
+     (.docs-section p is 16px). */
+  font-size: 16px;
 
   background-color: var(--panel);
 
@@ -342,7 +609,7 @@
 }
 
 /* Drop KaTeX's default 1.21em base scale so math matches the surrounding
-   text size (14.5px in .docs-formula and .docs-section p). Radicals and
+   text size (16px in .docs-formula and .docs-section p). Radicals and
    floor/ceil brackets scale with their content through KaTeX's own Size
    fonts, so they track this automatically. */
 .docs-section .katex {
@@ -396,7 +663,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
 
-  font-size: 14.5px;
+  font-size: 16px;
   color: var(--ink);
 
   opacity: 0;
@@ -458,6 +725,14 @@
   color: var(--muted);
 }
 
+/* Keeps a parenthetical group ("(...)") from splitting across a line break
+   once it wraps — paired with a <wbr> right before the opening paren (see
+   04-patterns.mdx) so a narrow cell breaks cleanly just before "(" instead
+   of at an arbitrary point inside the parenthetical. */
+.docs-table-nowrap {
+  white-space: nowrap;
+}
+
 .docs-section td:first-child {
   font-weight: 600;
   color: var(--ink);
@@ -470,6 +745,8 @@
    bare .docs-section table with no figure/caption. */
 .docs-table {
   scroll-margin-top: 84px;
+
+  overflow-x: auto;
 
   margin: 20px 0 28px;
   padding: 2px 0;
@@ -500,6 +777,7 @@
 }
 
 .docs-glossary-subterm {
+  display: inline-block;
   padding-left: 20px;
 }
 
@@ -661,13 +939,65 @@
     padding: 24px 16px 72px;
   }
 
+  /* The topbar's breathing room comes back via .docs-body's own padding on
+     mobile (the ToC this padding was moved away from is hidden here). */
+  .docs-content {
+    padding-top: 0;
+  }
+
   .docs-diagram-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .docs-menu-button {
+    display: inline-flex;
+  }
+
+  .docs-mobile-toc {
+    display: flex;
   }
 }
 
 @media (max-width: 640px) {
   .docs-diagram-grid {
     grid-template-columns: 1fr;
+  }
+
+  .docs-section td:first-child {
+    white-space: unset;
+  }
+
+  /* The topbar collapses to a single row on phones: back link, theme toggle,
+     and burger menu. */
+  .docs-topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+  }
+
+  .docs-topbar-actions {
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  /* The current-section breadcrumb is a nice-to-have on wider screens; on a
+     phone the logo + "Docs" wordmark plus three action controls already
+     fill the row, so drop the crumb rather than truncating it illegibly. */
+  .docs-topbar-crumb-sep,
+  .docs-topbar-crumb {
+    display: none;
+  }
+
+  /* Collapse "Back to Calculator" to just the arrow below ~400px so it
+     doesn't crowd the theme toggle and menu button on the smallest phones. */
+  .docs-back-arrow span {
+    display: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .docs-back-btn {
+    padding: 0 9px;
   }
 }
