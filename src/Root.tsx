@@ -99,8 +99,8 @@ export function Root() {
             // as setHash rather than firing its own extra render first.
             const scrollYOnLeavingDocs = wasDocs && !isDocs ? window.scrollY : null;
 
-            // Resolve the (likely already-cached, see FormFooter's hover/focus
-            // preload) docs chunk before the transition starts, and hold on to
+            // Resolve the (likely already-cached, see Viewport.DocsButton's
+            // hover/focus preload) docs chunk before the transition starts, and hold on to
             // the resolved component so commit() can hand it to React
             // synchronously — see the module-level comment for why this isn't
             // just a lazy()/Suspense render.
