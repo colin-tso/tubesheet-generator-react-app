@@ -1,7 +1,7 @@
 import { DiagramGrid, DiagramCard } from "../mdx-components/DiagramCard";
 import { LayoutPatternDiagram } from "../diagrams/LayoutPatternDiagram";
 
-All layout options except the radial pattern (see [07 Radial layout](#/docs/radial)) are all built from the same three constants, computed once from the pitch:
+All layout options except the radial pattern (see [07 Radial layout](#/docs/radial-layout)) are all built from the same three constants, computed once from the pitch:
 
 1. **row spacing** ($d_x$): the spacing between neighbouring tubes *within the same row*.
 2. **row-to-row spacing** ($d_y$): the vertical spacing between one row and the next.
@@ -32,9 +32,9 @@ The table below gives each layout’s $d_x$, $d_y$, and $C$ in terms of the pitc
 :::Table{id="pattern-constants" caption="Layout constants (dx, dy, C) by pattern angle."}
 | Layout | $d_x$ | $d_y$ | $C$ | Row spacing vs. pitch |
 | --- | :---: | :---: | :---: | --- |
-| 30° | $P_t$ | $\dfrac{P_t}{\sin 60°}$ | $\dfrac{P_t}{2}$ | equal ($d_x = P_t$) |
+| 30° | $P_t$ | $\dfrac{P_t}{\sin 60°}$ | $\dfrac{P_t}{2}$ | equal<wbr /><span class="docs-table-nowrap"> ($d_x = P_t$)</span> |
 | 60° | $\dfrac{2P_t}{\sin 60°}$ | $\dfrac{P_t}{2}$ | $\dfrac{d_x}{2}$ | $d_x$ greater than $P_t$ |
-| 90° | $P_t$ | $P_t$ | $0$ (square) | equal ($d_x = P_t$) |
+| 90° | $P_t$ | $P_t$ | $0$<wbr /><span class="docs-table-nowrap"> (square)</span> | equal<wbr /><span class="docs-table-nowrap"> ($d_x = P_t$)</span> |
 | 45° | $\dfrac{P_t}{\cos 45°}$ | $\dfrac{d_x}{2}$ | $\dfrac{d_x}{2}$ | $d_x$ greater than $P_t$ |
 :::
 
