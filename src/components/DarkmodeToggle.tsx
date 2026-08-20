@@ -1,24 +1,9 @@
-import React, { useState, useEffect, useId } from "react";
+import { useId } from "react";
 import "./darkmode-toggle.css";
 import "../index.css";
 import MoonIcon from "@/assets/moon.svg?react";
 import SunIcon from "@/assets/sun.svg?react";
-
-const THEME_STORAGE_KEY = "theme-preference";
-
-const THEME_COLOR_LIGHT = "#F9F8F6";
-const THEME_COLOR_DARK = "#10161E";
-
-const updateTheme = (isDarkEnabled: boolean) => {
-    const docEl = document.documentElement;
-    docEl.setAttribute("data-theme", isDarkEnabled ? "dark" : "light");
-    docEl.style.setProperty("color-scheme", isDarkEnabled ? "dark" : "light");
-
-    const meta = document.getElementById("theme-color-meta");
-    if (meta) {
-        meta.setAttribute("content", isDarkEnabled ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
-    }
-};
+import { useTheme } from "@/theme/ThemeContext";
 
 export default function ThemeToggle() {
     // App and DocsPage each mount this component at the same time, so the
@@ -26,37 +11,8 @@ export default function ThemeToggle() {
     // the label activate whichever checkbox comes first in the DOM.
     const id = useId();
 
-    // Initialize from localStorage if present, otherwise fall back to system preference
-    const [isEnabled, setIsEnabled] = useState<boolean>(() => {
-        const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-        if (stored === "dark") return true;
-        if (stored === "light") return false;
-        return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    });
-
-    // Only follow system dark mode changes if the user hasn't set an explicit preference
-    useEffect(() => {
-        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-        const handleChange = (e: MediaQueryListEvent) => {
-            if (window.localStorage.getItem(THEME_STORAGE_KEY) === null) {
-                setIsEnabled(e.matches);
-            }
-        };
-        mediaQuery.addEventListener("change", handleChange);
-        return () => mediaQuery.removeEventListener("change", handleChange);
-    }, []);
-
-    useEffect(() => {
-        updateTheme(isEnabled);
-    }, [isEnabled]);
-
-    const toggleState = () => {
-        setIsEnabled((prevState) => {
-            const next = !prevState;
-            window.localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
-            return next;
-        });
-    };
+    const { state, actions } = useTheme();
+    const isEnabled = state.isDarkEnabled;
 
     return (
         <label className="toggle-wrapper" htmlFor={id}>
@@ -73,7 +29,7 @@ export default function ThemeToggle() {
                     name="toggle"
                     type="checkbox"
                     checked={isEnabled}
-                    onChange={toggleState}
+                    onChange={actions.toggle}
                 />
             </div>
         </label>
