@@ -862,7 +862,9 @@
 }
 
 .docs-diagram-ring {
-  stroke: var(--line);
+  fill: none;
+  stroke: var(--muted);
+  stroke-dasharray: 4 4;
   stroke-width: 1.4;
 }
 
