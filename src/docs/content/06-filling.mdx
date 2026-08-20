@@ -1,12 +1,12 @@
 For non-radial layouts, the generator does not step across the whole circle. It computes tube positions for one quarter of the field, then mirrors that quarter across both axes to complete the rest. This works because every layout being considered is symmetric about the centre of the tube sheet. The radial layout is the exception: it fills complete rings at once instead of stepping through rows (see [07 Radial layout](#/docs/radial-layout)).
 
-1. Starting from the centre, step outward row by row using a **row index** ($j$), and within each row, column by column using a **column index** ($i$).
+1. Starting from the centre, step outward row by row using a **row index** ($j$), and within each row, column by column using a **column index** ($i$). The row-parity term applies the stagger $C$ on alternating rows, and $S$ is the field offset of [05 Offsets](#/docs/offset) (zero when disabled).
 
     :::Formula{id="row-column-indices" label="Row and column indices"}
     $$
     \begin{align}
     y &= j \cdot d_y \\
-    x &= C \cdot (\text{row parity}) + i \cdot d_x - s
+    x &= C \cdot (\text{row parity}) + i \cdot d_x - S
     \end{align}
     $$
     :::

@@ -2,7 +2,7 @@ import { RadialDiagram } from "../diagrams/RadialDiagram";
 import { DiagramGrid, DiagramCard } from "../mdx-components/DiagramCard";
 import { RadialSeedDiagram } from "../diagrams/RadialSeedDiagram";
 
-Radial is a different pattern entirely. Instead of rows and columns, it places tubes on **concentric rings** centred in the tube sheet. On each ring, tubes sit evenly spaced so that neighbouring tubes on the same ring are exactly one pitch apart, and the rings are spaced one pitch apart from one another, so every tube keeps at least one pitch of clearance from the rings on either side.
+The radial layout is a different pattern entirely. Instead of rows and columns, it places tubes on **concentric rings** centred on the tube sheet. On each ring, tubes sit evenly spaced so that neighbouring tubes on the same ring are at least one pitch apart; the seed rings described below are the only rings spaced at exactly one pitch. The rings themselves are spaced one pitch apart, so every tube keeps at least one pitch of clearance from the tubes on the rings on either side.
 
 <div className="docs-diagram-svg-standalone">
   <RadialDiagram />
@@ -61,6 +61,6 @@ Starting from the seed, the generator places full rings **one pitch further out*
 
 The seeds span the range full rings cannot reach on their own: the two-tube ring at $P_t/2$ is the smallest ring that can exist, and the 3-, 4-, and 5-tube rings fill the gap between $P_t/2$ and $P_t$.
 
-A minimum tube count that lands on an achievable count based on the seeds resolves to exactly that many tubes; one that falls in a gap resolves to the next achievable count, so a minimum of 6 still gives the 7-tube layout, because the six-tube ring fits in exactly the same shell as the seven-tube one.
+If the requested minimum count matches a count the seeds can produce, the result has exactly that many tubes. Otherwise the result uses the next higher achievable count: a minimum of 6 still yields the 7-tube layout, because the ring of six tubes sits at radius $P_t$ and the centre tube fits in the same shell, making seven the smallest achievable count above five.
 
 As with the grid layouts, the smallest shell ID that meets the target is found numerically (see [08 Solving for shell ID](#/docs/solving)).

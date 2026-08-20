@@ -14,9 +14,9 @@ The previous sections answer the *forward* question: given a shell ID, how many 
    
    Triangular patterns pack more densely, hence the higher factor.
 
-2. **Heuristic search.** The diameter grows or shrinks by a fixed 1.1× step depending on whether the last two guesses overshot or undershot the target tube count, converging quickly for most inputs.
+2. **Heuristic search.** When both of the last two guesses sit on the same side of the target, the diameter grows or shrinks by a factor of 1.1. Once one guess is too small and the other large enough, the search averages the two. The count typically converges within a few iterations.
 
-3. **Bisection fallback.** If the heuristic does not land on the exact target within its iteration budget, the search falls back to bisecting between a known too-small and a known large-enough diameter until they converge.
+3. **Bisection fallback.** If the heuristic does not reach the exact target within its iteration limit, the search falls back to bisecting between a known too-small and a known large-enough diameter until they converge.
 
 4. **Minimum shell ID.** Once a diameter is found whose tube count meets the target, the result is refined to the tightest shell ID ($D_\text{shell, min}$) that still contains that field: the actual OTL (<EqRef id="otl-actual" />) of the generated field, plus the OTL clearance, rather than the last diameter the search examined.
 
