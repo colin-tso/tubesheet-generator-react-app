@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Tubesheet Layout Generator</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="Tubesheet Layout Generator" content="Tubesheet Layout Generator" />
+        <meta name="theme-color" id="theme-color-meta" content="#F9F8F6" />
+        <link
+            rel="preload"
+            href="/tubesheet-generator-react-app/pr-preview/pr-185/fonts/CommitMono-VariableFont.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="/tubesheet-generator-react-app/pr-preview/pr-185/fonts/InterVariable.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link rel="icon" href="/tubesheet-generator-react-app/pr-preview/pr-185/favicon.ico" sizes="32x32" />
+        <link rel="icon" href="/tubesheet-generator-react-app/pr-preview/pr-185/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/tubesheet-generator-react-app/pr-preview/pr-185/apple-touch-icon.png" />
+        <link rel="mask-icon" href="/tubesheet-generator-react-app/pr-preview/pr-185/mask-icon.svg" color="#10161E" />
+        <link rel="manifest" href="/tubesheet-generator-react-app/pr-preview/pr-185/manifest.webmanifest" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Tubesheet Layout Generator" />
+        <meta property="og:description" content="Shell & tube layout drawings, in the browser" />
+        <meta property="og:image" content="/tubesheet-generator-react-app/pr-preview/pr-185/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Tubesheet Layout Generator" />
+        <meta name="twitter:description" content="Shell & tube layout drawings, in the browser" />
+        <meta name="twitter:image" content="/tubesheet-generator-react-app/pr-preview/pr-185/og-image.png" />
+
+        <script>
+            (function () {
+                try {
+                    var THEME_COLOR_LIGHT = "#F9F8F6";
+                    var THEME_COLOR_DARK = "#10161E";
+                    var stored = localStorage.getItem("theme-preference");
+                    var isDark =
+                        stored === "dark" ||
+                        (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+                    var docEl = document.documentElement;
+                    docEl.setAttribute("data-theme", isDark ? "dark" : "light");
+                    docEl.style.setProperty("color-scheme", isDark ? "dark" : "light");
+                    var meta = document.getElementById("theme-color-meta");
+                    if (meta)
+                        meta.setAttribute("content", isDark ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+                } catch (e) {}
+            })();
+        </script>
+      <script type="module" crossorigin src="/tubesheet-generator-react-app/pr-preview/pr-185/assets/index-CSc67Rp5.js"></script>
+      <link rel="stylesheet" crossorigin href="/tubesheet-generator-react-app/pr-preview/pr-185/assets/index-C7s3maXQ.css">
+    </head>
+    <body>
+        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <div id="root"></div>
+    </body>
+</html>
