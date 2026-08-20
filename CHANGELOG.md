@@ -1,5 +1,20 @@
 # tubesheet-generator-react-app
 
+## 2.1.0
+
+### Minor Changes
+
+- 123aa93: feat: add a "?" help button to the viewport's top-left corner linking to the layout-math docs, replacing the footer link and preloading the docs chunk on hover/focus
+
+### Patch Changes
+
+- 123aa93: fix: give each theme toggle a unique checkbox id so the docs-page toggle drives its own switch instead of the hidden calculator one
+- 285a06d: fix: keep the theme toggle in sync across the calculator and docs pages by lifting theme state into a shared ThemeProvider
+- 36f1c4b: perf: hoist tube-field generation helpers off the search hot path and harden module types (no behavioral change)
+- 26b6750: fix: compute non-radial tube fields at full float precision so tied layouts produce identical shell sizes
+- 3963993: fix: scale floating-point tolerance checks by operand ULP instead of fixed 1e-9 constants
+- ea696ea: fix: mobile docs topbar with collapsible ToC and app logo
+
 ## 2.0.0
 
 ### Major Changes
