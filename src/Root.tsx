@@ -2,6 +2,7 @@ import { type ComponentType, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import App from "./App";
 import { loadDocsPage } from "@/docs/loadDocsPage";
+import { ThemeProvider } from "@/theme/ThemeProvider";
 
 type DocsPageProps = { hash: string; savedScrollY: number | null };
 
@@ -152,7 +153,7 @@ export function Root() {
     }, []);
 
     return (
-        <>
+        <ThemeProvider>
             <div className={isDocsRoute ? "route-hidden" : undefined}>
                 <App />
             </div>
@@ -161,6 +162,6 @@ export function Root() {
                     <DocsPageComponent hash={hash} savedScrollY={docsScrollY} />
                 </div>
             )}
-        </>
+        </ThemeProvider>
     );
 }
