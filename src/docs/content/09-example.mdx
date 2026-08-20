@@ -1,4 +1,4 @@
-Tube OD 19.05 mm, pitch ratio 1.25, OTL clearance 12.7 mm, 30° layout.
+As an example, consider a tube OD of 19.05 mm, a pitch ratio of 1.25, an OTL clearance of 12.7 mm, and a 30° layout.
 
 Using <EqRef id="pitch" /> and <TableRef id="pattern-constants" />:
 
@@ -20,9 +20,9 @@ C &= 11.9063\ \text{mm}
 $$
 :::
 
-### Solve for number of tubes, given a 500 mm shell
+### Number of tubes for a 500 mm shell
 
-With (<EqRef id="otl-max" />) and the “filling the circle” algorithm, the generator produces:
+Using the maximum OTL (<EqRef id="otl-max" />) and the [06 Filling the circle](#/docs/filling) procedure described above, the generator produces:
 
 :::Formula{id="example-forward-result" label="Result"}
 $$
@@ -34,9 +34,9 @@ n_\text{act} &= 349 \\
 $$
 :::
 
-The actual OTL, 478.33 mm, comes in under the 487.3 mm ceiling: the discrete triangular pattern cannot use every last fraction of a millimetre available.
+The actual OTL of 478.33 mm is below the 487.3 mm ceiling, because the discrete triangular pattern cannot fill every remaining fraction of the circle.
 
-### Solve for minimum shell ID, given a target of 350 tubes
+### Minimum shell ID for a target of 350 tubes
 
 Solving for the smallest shell ID ($D_\text{shell, min}$, <EqRef id="solving-initial-estimate" />) that holds at least 350 tubes gives:
 
@@ -49,4 +49,4 @@ n_\text{act} &= 352
 $$
 :::
 
-The result overshoots the 350-tube target slightly, landing on 352, since the next diameter down would have dropped below 350. So 500.20 mm is the tightest shell ID that still clears the target.
+The result overshoots the 350-tube target slightly, yielding 352, since the next smaller diameter would have dropped below 350. So 500.20 mm is the tightest shell ID that still meets the target.

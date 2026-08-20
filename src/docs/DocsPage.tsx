@@ -25,8 +25,8 @@ import Glossary from "./content/10-glossary.mdx";
 // a new topic means adding one entry here and one .mdx file.
 const SECTIONS = [
     { id: "overview", index: "01", title: "Overview", Content: Overview },
-    { id: "pitch", index: "02", title: "Pitch & pitch ratio", Content: Pitch },
-    { id: "otl", index: "03", title: "OTL & shell ID", Content: Otl },
+    { id: "pitch", index: "02", title: "Pitch and pitch ratio", Content: Pitch },
+    { id: "otl", index: "03", title: "OTL and shell ID", Content: Otl },
     { id: "patterns", index: "04", title: "Layout patterns", Content: Patterns },
     { id: "offset", index: "05", title: "Offsets", Content: Offset },
     { id: "filling", index: "06", title: "Filling the circle", Content: Filling },
@@ -108,8 +108,8 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
                 <div className="docs-topbar-left">
                     <a
                         className="docs-logo-link"
-                        href="#/docs"
-                        aria-label="Tubesheet layout generator docs"
+                        href="#/"
+                        aria-label="Tubesheet layout generator — back to calculator"
                     >
                         {/* Inlined (not <img src="icon.svg">) so its colors track the
                             app's own --ink/--paper theme tokens via CSS, staying in

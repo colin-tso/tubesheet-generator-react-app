@@ -1,4 +1,4 @@
-Everything above answers the *forward* question: given a shell ID, how many tubes fit? When you instead specify a **minimum tube count**, the app has to solve the *inverse* problem: the smallest shell ID whose tube count meets the target. Tube count only ever increases in steps as the shell grows, so that step function cannot be inverted algebraically. It is solved numerically instead.
+The previous sections answer the *forward* question: given a shell ID, how many tubes fit? When a **minimum tube count** is specified instead, the calculator must solve the *inverse* problem: find the smallest shell ID whose tube count meets the target. The tube count increases in discrete steps as the shell grows, so it cannot be inverted algebraically. It is solved numerically instead.
 
 1. **Starting guess.** A closed-form packing estimate, the same one used in classic tube-count rules of thumb, seeds the first diameter to try, the **initial estimate** ($D_\text{shell, est}$):
 
@@ -14,12 +14,12 @@ Everything above answers the *forward* question: given a shell ID, how many tube
    
    Triangular patterns pack more densely, hence the higher factor.
 
-2. **Heuristic search.** The diameter grows or shrinks by a fixed 1.1× step depending on whether the last two guesses overshot or undershot the target tube count, converging quickly for most inputs.
+2. **Heuristic search.** When both of the last two guesses sit on the same side of the target, the diameter grows or shrinks by a factor of 1.1. Once one guess is too small and the other large enough, the search averages the two. The count typically converges within a few iterations.
 
-3. **Bisection fallback.** If the heuristic does not land on the exact target within its iteration budget, the search falls back to bisecting between a known too-small and a known large-enough diameter until they converge.
+3. **Bisection fallback.** If the heuristic does not reach the exact target within its iteration limit, the search falls back to bisecting between a known too-small and a known large-enough diameter until they converge.
 
-4. **Snapping.** Once a diameter is found whose tube count meets the target, the result is snapped to the tightest shell ID ($D_\text{shell, min}$) that still contains that field: the actual OTL (<EqRef id="otl-actual" />) of the generated field, plus the OTL clearance, rather than whatever diameter the search happened to stop on.
+4. **Minimum shell ID.** Once a diameter is found whose tube count meets the target, the result is refined to the tightest shell ID ($D_\text{shell, min}$) that still contains that field: the actual OTL (<EqRef id="otl-actual" />) of the generated field, plus the OTL clearance, rather than the last diameter the search examined.
 
-The radial layout (see [07 Radial layout](#/docs/radial-layout)) has no closed-form count either, but it skips the packing-factor seed and the heuristic step: its counts come from concentric rings, so the search simply grows the diameter by 1.1× until the count meets the target and then bisects. Snapping is unchanged.
+The radial layout (see [07 Radial layout](#/docs/radial-layout)) has no closed-form count either, but it skips the packing-factor seed and the heuristic step. Its counts come from concentric rings, so the search simply grows the diameter by a factor of 1.1 until the count meets the target and then bisects. Refinement to the minimum shell ID is unchanged.
 
-Because tube count only increases in discrete jumps, the resulting shell can hold more than the minimum you asked for. See the worked example below.
+Because the tube count only increases in discrete jumps, the resulting shell can hold more than the requested minimum. See the [09 Worked example](#/docs/example) below.

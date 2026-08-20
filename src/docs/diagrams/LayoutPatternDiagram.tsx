@@ -5,8 +5,8 @@ import type { TubeSheetLayout } from "@/plugins/tubesheet-layout-generator";
 // size, matching the reference diagram’s proportions.
 const PITCH = 180;
 const TUBE_R = 47;
-const FONT = 15;
-const FONT_LABEL = 14;
+const FONT = 16;
+const FONT_LABEL = 16;
 const ANGLE_LABEL_OFFSET = 38;
 const ARC_SIZE_PERCENT = 0.6;
 const PADDING = 20;
@@ -499,7 +499,7 @@ function TriangleDiagram30() {
                 x2={dyGuideX}
                 y2={dy}
                 arrowId={arrowId}
-                label="dy = Pt·√(3/2)"
+                label="dy = Pt·√3/2"
                 labelX={dyGuideX - DIM_PADDING}
                 labelY={dy / 2}
                 textAnchor="end"

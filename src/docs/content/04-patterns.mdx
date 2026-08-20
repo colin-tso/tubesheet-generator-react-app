@@ -1,13 +1,16 @@
 import { DiagramGrid, DiagramCard } from "../mdx-components/DiagramCard";
+import { Note } from "../mdx-components/Note";
 import { LayoutPatternDiagram } from "../diagrams/LayoutPatternDiagram";
 
-All layout options except the radial pattern (see [07 Radial layout](#/docs/radial-layout)) are all built from the same three constants, computed once from the pitch:
+Every layout option except the radial pattern (see [07 Radial layout](#/docs/radial-layout)) is built from the same three constants unique to each layout, computed once from the pitch:
+
+<Note>These four layouts are the standard tube-sheet patterns set out in [TEMA](https://www.tema.org) (see [10 Glossary](#/docs/glossary)): 30° and 60° are the two triangular-pitch patterns, and 45° and 90° are the two square-pitch patterns. Only the radial layout (see [07 Radial layout](#/docs/radial-layout)) falls outside these standards.</Note>
 
 1. **row spacing** ($d_x$): the spacing between neighbouring tubes *within the same row*.
 2. **row-to-row spacing** ($d_y$): the vertical spacing between one row and the next.
-3. **row stagger** ($C$): the horizontal offset applied to every other row. This is what staggers the pattern instead of stacking it in a plain grid (see [06 Filling the circle](#/docs/filling)).
+3. **row stagger** ($C$): the horizontal offset applied to every other row. Offsetting alternate rows staggers the tubes rather than aligning them into a plain grid (see [06 Filling the circle](#/docs/filling)).
 
-A tube’s nearest neighbour usually sits in the *adjacent* row rather than its own (see [02 Pitch & pitch ratio](#/docs/pitch)), so the pitch would be the diagonal distance to that neighbour, not from $d_x$ or $d_y$ directly:
+A tube’s nearest neighbour usually sits in the *adjacent* row rather than its own (see [02 Pitch and pitch ratio](#/docs/pitch)), so the pitch is the diagonal distance to that neighbour rather than $d_x$ or $d_y$:
 
 :::Formula{id="pattern-pitch" label="Pitch, derived from dx, dy, C"}
 $$
@@ -17,7 +20,7 @@ P_t = \sqrt{C^2 + d_y^2}
 $$
 :::
 
-The layout’s name (30°, 45°, 60°, or 90°) is the angle ($\theta$) between that diagonal pitch line and the vertical, row-to-row direction:
+The layout’s name (30°, 45°, 60°, or 90°) is the angle between the nearest-neighbour pitch line and the vertical, row-to-row direction. For the 30°, 60°, and 45° layouts the pitch line runs diagonally, and this angle is given by:
 
 :::Formula{id="layout-angle" label="Layout angle"}
 $$
@@ -27,13 +30,15 @@ $$
 $$
 :::
 
-The table below gives each layout’s $d_x$, $d_y$, and $C$ in terms of the pitch, followed by a diagram of the same numbers. Each diagram draws the actual nearest-neighbour tubes: an apex tube plus two base tubes for the 30°/60° triangular patterns, or four tubes forming a square or diamond for the 45°/90° square patterns. The highlighted lines are true pitch-length sides, and the arc marks the angle.
+For the 90° square layout the neighbouring tubes line up horizontally, at right angles to the vertical, so the layout is named for that 90° angle rather than for a diagonal pitch line.
+
+The table below gives each layout’s $d_x$, $d_y$, and $C$ in terms of the pitch, and the diagrams below show the same values. Each diagram draws the actual nearest-neighbour tubes: an apex tube plus two base tubes for the 30°/60° triangular patterns, or four tubes forming a square or diamond for the 45°/90° square patterns. The highlighted lines are true pitch-length sides, and the arc marks the angle.
 
 :::Table{id="pattern-constants" caption="Layout constants (dx, dy, C) by pattern angle."}
 | Layout | $d_x$ | $d_y$ | $C$ | Row spacing vs. pitch |
 | --- | :---: | :---: | :---: | --- |
-| 30° | $P_t$ | $\dfrac{P_t}{\sin 60°}$ | $\dfrac{P_t}{2}$ | equal<wbr /><span class="docs-table-nowrap"> ($d_x = P_t$)</span> |
-| 60° | $\dfrac{2P_t}{\sin 60°}$ | $\dfrac{P_t}{2}$ | $\dfrac{d_x}{2}$ | $d_x$ greater than $P_t$ |
+| 30° | $P_t$ | $P_t\cdot\sin 60°$ | $\dfrac{P_t}{2}$ | equal<wbr /><span class="docs-table-nowrap"> ($d_x = P_t$)</span> |
+| 60° | $2P_t\cdot\sin 60°$ | $\dfrac{P_t}{2}$ | $\dfrac{d_x}{2}$ | $d_x$ greater than $P_t$ |
 | 90° | $P_t$ | $P_t$ | $0$<wbr /><span class="docs-table-nowrap"> (square)</span> | equal<wbr /><span class="docs-table-nowrap"> ($d_x = P_t$)</span> |
 | 45° | $\dfrac{P_t}{\cos 45°}$ | $\dfrac{d_x}{2}$ | $\dfrac{d_x}{2}$ | $d_x$ greater than $P_t$ |
 :::
@@ -53,6 +58,6 @@ The table below gives each layout’s $d_x$, $d_y$, and $C$ in terms of the pitc
   </DiagramCard>
 </DiagramGrid>
 
-30° and 60° are the two equilateral-triangle (“triangular pitch”) patterns, rotated relative to each other. Each tube sits exactly one pitch from the nearest vertically or horizontally aligned tube.
+30° and 60° are the two equilateral-triangle (“triangular pitch”) patterns, rotated relative to each other. In the 30° pattern, horizontally aligned tubes are exactly one pitch apart; in the 60° pattern, vertically aligned tubes are exactly one pitch apart.
 
-45° and 90° are the same square (“diamond”) pattern in two orientations. Every side of that square is one pitch long, so its corner angle is always 90°, regardless of rotation.
+45° and 90° are the same square pattern in two orientations. In the 90° layout the nearest-neighbour lines run horizontally and vertically; in the 45° layout the pattern is rotated so those lines sit at 45° to the horizontal and vertical.
