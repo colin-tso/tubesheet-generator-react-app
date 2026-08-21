@@ -687,3 +687,42 @@ describe("TubeSheet — full float precision for non-radial layouts", () => {
         );
     });
 });
+
+describe("scanQuarterField — lazy count matches full field", () => {
+    const OC = 6.35;
+    const OD = 19.05;
+    const PR = 1.25;
+
+    const angularLayouts: TubeSheetLayout[] = [30, 45, 60, 90];
+
+    it.each(angularLayouts)(
+        "minTubes mode produces same numTubes as shellID mode for layout %s",
+        (layout) => {
+            // Build by shellID (full path) and by minTubes (lazy path via findMinID).
+            // Both must agree on the tube count for the resolved shell.
+            const shellTS = new TubeSheet(OC, OD, PR, layout, undefined, 500);
+            const minTubesTS = new TubeSheet(OC, OD, PR, layout, shellTS.numTubes!);
+
+            expect(minTubesTS.numTubes).toBe(shellTS.numTubes);
+            expect(minTubesTS.minID).toBeCloseTo(shellTS.minID!, 6);
+        },
+    );
+
+    it("lazy OTL matches full OTL for a range of shellIDs", () => {
+        // For each shellID, build via shellID (full) and verify the OTL
+        // matches what findMinID snapped to (lazy path used during search).
+        const shellIDs = [200, 300, 400, 500, 600, 700];
+        for (const layout of angularLayouts) {
+            for (const sid of shellIDs) {
+                const ts = new TubeSheet(OC, OD, PR, layout, undefined, sid);
+                if (ts.numTubes! > 0) {
+                    // Re-build via minTubes using the resolved numTubes.
+                    // findMinID uses the lazy path internally.
+                    const ts2 = new TubeSheet(OC, OD, PR, layout, ts.numTubes!);
+                    expect(ts2.numTubes).toBe(ts.numTubes);
+                    expect(ts2.OTL).toBeCloseTo(ts.OTL!, 6);
+                }
+            }
+        }
+    });
+});
