@@ -17,6 +17,7 @@ export interface LivePreviewRequest {
 
 const DEBOUNCE_MS = 350;
 const TIMEOUT_MS = 2000;
+export const LIVE_PREVIEW_TIMING = { debounce: DEBOUNCE_MS, timeout: TIMEOUT_MS } as const;
 export const LIVE_PREVIEW_MAX_MIN_TUBES = 10000;
 export const LIVE_PREVIEW_MAX_SHELL_ID = 15000;
 
