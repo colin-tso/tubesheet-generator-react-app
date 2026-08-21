@@ -124,7 +124,7 @@ function ViewportToolbar() {
     const { state, actions } = useViewportContext();
 
     return (
-        <div className="viewport-options">
+        <div className="viewport-options" data-no-context-menu>
             <div className="viewport-options-group">
                 <button
                     type="button"
@@ -225,10 +225,10 @@ function ViewportTable() {
 // shown as a hover/focus tooltip (mirror of the grid/table toggles).
 function ViewportDocsButton() {
     return (
-        <div className="viewport-help">
+        <div className="viewport-help" data-no-context-menu>
             <div className="viewport-options-group">
                 <a
-                    className="help-toggle"
+                    className="help-button"
                     href="#/docs"
                     aria-label="How the layout math works"
                     data-title="How the layout math works"
@@ -264,7 +264,7 @@ function ViewportExportActions() {
                     : "";
 
     return (
-        <div className="viewport-actions" hidden={state.drawingSVG === state.placeholderSVG}>
+        <div className="viewport-actions" data-no-context-menu hidden={state.drawingSVG === state.placeholderSVG}>
             <div className="viewport-actions-group">
                 <div className="copy-button-wrap">
                     <span
