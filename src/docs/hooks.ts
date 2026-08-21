@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 // How long the "you've arrived" highlight (see .docs-jump-highlight in
 // DocsPage.css) stays on the target before fading back out.
@@ -140,4 +140,36 @@ export function useActiveSection(sectionIds: string[]) {
     }, [sectionIds]);
 
     return activeId;
+}
+
+// Drives a progress-bar element's scaleX transform (0–1) directly from scroll
+// position, bypassing React state to avoid re-renders on every frame.
+export function useReadingProgress(barRef: RefObject<HTMLDivElement | null>) {
+    useEffect(() => {
+        let raf: number | undefined;
+
+        const update = () => {
+            const el = barRef.current;
+            if (!el) return;
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            const max = scrollHeight - clientHeight;
+            const scale = max > 0 ? scrollTop / max : 0;
+            el.style.transform = `scaleX(${scale})`;
+        };
+
+        const onScroll = () => {
+            if (raf !== undefined) return;
+            raf = requestAnimationFrame(() => {
+                raf = undefined;
+                update();
+            });
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        update();
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            if (raf !== undefined) cancelAnimationFrame(raf);
+        };
+    }, [barRef]);
 }

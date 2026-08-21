@@ -35,6 +35,20 @@
   box-shadow: var(--elevation-low);
 }
 
+.docs-progress-bar {
+  will-change: transform;
+
+  position: sticky;
+  z-index: 5;
+  top: 60px;
+  transform-origin: left;
+  transform: scaleX(0);
+
+  height: 3px;
+
+  background: var(--blue);
+}
+
 .docs-topbar-left {
   display: flex;
   flex: 1 1 auto;
@@ -994,6 +1008,10 @@
      doesn't crowd the theme toggle and menu button on the smallest phones. */
   .docs-back-arrow span {
     display: none;
+  }
+
+  .docs-progress-bar {
+    top: 56px;
   }
 }
 

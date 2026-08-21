@@ -7,7 +7,7 @@ import { Section } from "./mdx-components/Section";
 import { Formula } from "./mdx-components/Formula";
 import { Table } from "./mdx-components/Table";
 import { DocsRegistryProvider, EqRef, TableRef } from "./context/DocsRegistry";
-import { useHashScroll, useActiveSection } from "./hooks";
+import { useHashScroll, useActiveSection, useReadingProgress } from "./hooks";
 
 import Intro from "./content/00-intro.mdx";
 import Overview from "./content/01-overview.mdx";
@@ -82,6 +82,8 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
     }, []);
 
     const activeSection = SECTIONS.find((s) => s.id === activeId);
+    const progressBarRef = useRef<HTMLDivElement>(null);
+    useReadingProgress(progressBarRef);
 
     // Move focus into the list when the panel opens so keyboard users land on
     // the first heading instead of tabbing blindly into the page.
@@ -225,6 +227,7 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
                     ))}
                 </nav>
             </div>
+            <div ref={progressBarRef} className="docs-progress-bar" aria-hidden="true" />
 
             <div className="docs-body">
                 <nav className="docs-toc" aria-label="Table of contents">
