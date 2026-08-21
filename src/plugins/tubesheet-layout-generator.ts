@@ -375,45 +375,9 @@ const memoizeBounded = <Args extends unknown[], R>(
 };
 
 // Symmetry helpers used by generateTubeField's quarter-field expansion. Hoisted
-// to module scope so they aren't re-created (along with their closure arrays)
-// on every call: generateTubeField runs dozens of times inside findMinID's
-// bisection/heuristic loops.
-const FLIP_HORZ: number[][] = [
-    [-1, 0],
-    [0, 1],
-];
-
-const FLIP_VERT: number[][] = [
-    [1, 0],
-    [0, -1],
-];
-
-const applyMatrix = (point: Tube, matrix: number[][]): Tube => {
-    const x = point.x;
-    const y = point.y;
-
-    return {
-        x: x * matrix[0][0] + y * matrix[0][1],
-        y: x * matrix[1][0] + y * matrix[1][1],
-    };
-};
-
+// to module scope so they aren't re-created on every call: generateTubeField
+// runs dozens of times inside findMinID's bisection/heuristic loops.
 const normalize = (n: number): number => (n === 0 ? 0 : n);
-
-const mergeUniqueCoordinates = (...arrays: TubeField[]): TubeField => {
-    const seen = new Map<string, Tube>();
-    for (const arr of arrays) {
-        for (const point of arr) {
-            const x = normalize(point.x);
-            const y = normalize(point.y);
-            const key = `${x}|${y}`;
-            if (!seen.has(key)) {
-                seen.set(key, { x, y });
-            }
-        }
-    }
-    return Array.from(seen.values());
-};
 
 const sortTubePositions = (tubeField: TubeField): TubeField => {
     return tubeField.sort((a, b) => {
@@ -424,24 +388,75 @@ const sortTubePositions = (tubeField: TubeField): TubeField => {
     });
 };
 
-const applySymmetry = (quarterTubeField: TubeField): TubeField => {
-    const flippedHorz: TubeField = quarterTubeField.map((point) =>
-        applyMatrix(point, FLIP_HORZ),
-    );
-    const flippedVert: TubeField = mergeUniqueCoordinates(
-        quarterTubeField,
-        flippedHorz,
-    ).map((point) => applyMatrix(point, FLIP_VERT));
+/**
+ * Expands a quarter-plane tube field into the full 4-quadrant field by
+ * partitioning the input into axis points (x===0 || y===0) and strict-quadrant
+ * core points (x>0 && y>0), mirroring each partition, and sorting the result.
+ *
+ * Points with x<0 (the offset layout's -dx/2 column) are skipped — they are
+ * auto-covered by core mirroring. Axis points are canonicalised to the positive
+ * half-axis and deduped via float-keyed Sets (O(perimeter/pitch), tiny).
+ *
+ * Full float precision is preserved (no rounding); only −0 → 0 normalization
+ * is applied to match the historical dedup behaviour.
+ */
+const expandQuarterField = (quarterTubeField: TubeField): TubeField => {
+    const xAxisMags = new Set<number>(); // stores |x| for points on y===0
+    const yAxisMags = new Set<number>(); // stores |y| for points on x===0
+    const core: TubeField = [];
+    let hasOrigin = false;
 
-    // Merge and deduplicate tube positions
-    const mergedFields = mergeUniqueCoordinates(
-        quarterTubeField,
-        flippedHorz,
-        flippedVert,
-    );
+    for (const point of quarterTubeField) {
+        const x = normalize(point.x);
+        const y = normalize(point.y);
+        if (x === 0 && y === 0) {
+            hasOrigin = true;
+            continue;
+        }
+        if (x === 0) {
+            // y-axis point: canonicalise to positive y
+            const mag = y < 0 ? -y : y;
+            yAxisMags.add(mag);
+        } else if (y === 0) {
+            // x-axis point: canonicalise to positive x
+            const mag = x < 0 ? -x : x;
+            xAxisMags.add(mag);
+        } else if (x > 0 && y > 0) {
+            // Strict core quadrant
+            core.push({ x, y });
+        }
+        // Else: x<0 && y>0 (offset column) — skipped, auto-covered by core mirroring.
+        // (y<0 never occurs in the quarter field since scan starts at y=0 and increases.)
+    }
 
-    // Sort the final tube positions
-    return sortTubePositions(mergedFields);
+    const result: TubeField = [];
+
+    // Origin
+    if (hasOrigin) {
+        result.push({ x: 0, y: 0 });
+    }
+
+    // Axis mirrors
+    for (const mag of yAxisMags) {
+        result.push({ x: 0, y: mag });
+        result.push({ x: 0, y: -mag });
+    }
+    for (const mag of xAxisMags) {
+        result.push({ x: mag, y: 0 });
+        result.push({ x: -mag, y: 0 });
+    }
+
+    // Core 4-way mirrors (no dedup needed; strict-quadrant copies never collide)
+    for (const point of core) {
+        const x = point.x;
+        const y = point.y;
+        result.push({ x, y });
+        result.push({ x: -x, y });
+        result.push({ x, y: -y });
+        result.push({ x: -x, y: -y });
+    }
+
+    return sortTubePositions(result);
 };
 
 /**
@@ -564,7 +579,7 @@ const generateTubeField = memoizeBounded(
                 j++;
             }
 
-            const tubeField = applySymmetry(quarterTubeField);
+            const tubeField = expandQuarterField(quarterTubeField);
 
             return tubeField;
         } catch (error) {
@@ -645,6 +660,27 @@ const buildSeedField = (count: number, pitch: number, maxCentreDist: number): Tu
 };
 
 /**
+ * Counts how many tubes a given seed would produce without building the field.
+ * Mirrors the exact loop and stopping conditions of {@link buildSeedField} so
+ * the winning seed is chosen identically to the full-build comparison.
+ */
+const seedTubeCount = (count: number, pitch: number, maxCentreDist: number): number => {
+    const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
+    if (seedRadius > maxCentreDist + ulpTolerance(Math.max(seedRadius, maxCentreDist))) {
+        return 0;
+    }
+    let total = count; // count===1 → central tube (1); else seed ring (count tubes)
+    for (let k = 1; ; k++) {
+        const ringRadius = seedRadius + k * pitch;
+        if (ringRadius > maxCentreDist + ulpTolerance(Math.max(ringRadius, maxCentreDist))) {
+            break;
+        }
+        total += ringTubeCount(ringRadius, pitch);
+    }
+    return total;
+};
+
+/**
  * Generates a radial tube field comprised of concentric rings of tubes.
  *
  * One candidate is built for each seed in {@link RADIAL_SEED_COUNTS}: the seed
@@ -682,15 +718,17 @@ const radialTubeField = (
     }
 
     // Keep the layout holding the most tubes, matching the `offset="AUTO"`
-    // "keep the better result" behaviour used elsewhere in the module. Build
-    // each seed candidate in turn and track the best in place (no intermediate
-    // candidate array). On a tie the earliest seed (the central-tube layout)
-    // wins, preserving the pre-existing behaviour.
+    // "keep the better result" behaviour used elsewhere in the module. Pick
+    // the winning seed by tube count (same `>` tie-break: earliest seed wins),
+    // then build only the winner. The 4 discarded candidates are reduced to
+    // O(rings) count scans with no array allocation.
     let bestField: TubeField = [];
+    let bestCount = -1;
     for (const count of RADIAL_SEED_COUNTS) {
-        const candidate = buildSeedField(count, pitch, maxCentreDist);
-        if (candidate.length > bestField.length) {
-            bestField = candidate;
+        const n = seedTubeCount(count, pitch, maxCentreDist);
+        if (n > bestCount) {
+            bestCount = n;
+            bestField = buildSeedField(count, pitch, maxCentreDist);
         }
     }
     return bestField;
@@ -705,10 +743,7 @@ const radialTubeField = (
  */
 const SIN_60 = Math.sqrt(3) / 2;
 
-const getLayoutConstants = (
-    pitch: number,
-    layout: TubeSheetLayout,
-): LayoutConstants => {
+const getLayoutConstants = (pitch: number, layout: TubeSheetLayout): LayoutConstants => {
     // Only compute the trig/division for the requested layout instead of
     // building an object with all five layouts' constants (four of which are
     // discarded) on every call. This function sits on the bisection/heuristic
