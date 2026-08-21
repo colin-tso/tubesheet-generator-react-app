@@ -21,6 +21,26 @@ import Solving from "./content/08-solving.mdx";
 import Example from "./content/09-example.mdx";
 import Glossary from "./content/10-glossary.mdx";
 
+// Custom MDX link component — applies the .docs-ref-link class to internal
+// doc cross-references so they match the styled EqRef/TableRef links.
+function DocRefLink({
+    href,
+    children,
+    className: inheritedClass,
+    ...rest
+}: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+    const className = href?.startsWith("#/docs/")
+        ? inheritedClass
+            ? `${inheritedClass} docs-ref-link`
+            : "docs-ref-link"
+        : inheritedClass;
+    return (
+        <a href={href} className={className} {...rest}>
+            {children}
+        </a>
+    );
+}
+
 // Single source of truth for section order, ids, numbering, and the TOC. Adding
 // a new topic means adding one entry here and one .mdx file.
 const SECTIONS = [
@@ -222,13 +242,15 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
 
                 <main id="docs-main" className="docs-content">
                     <div className="docs-intro">
-                        <Intro components={{ Formula, EqRef, Table, TableRef }} />
+                        <Intro components={{ a: DocRefLink, Formula, EqRef, Table, TableRef }} />
                     </div>
 
                     <DocsRegistryProvider>
                         {SECTIONS.map(({ id, index, title, Content }) => (
                             <Section key={id} id={id} index={index} title={title}>
-                                <Content components={{ Formula, EqRef, Table, TableRef }} />
+                                <Content
+                                    components={{ a: DocRefLink, Formula, EqRef, Table, TableRef }}
+                                />
                             </Section>
                         ))}
                     </DocsRegistryProvider>
