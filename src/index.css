@@ -571,6 +571,16 @@ input.calculated-field[type="text"]:read-only {
   background-color: var(--input-readonly-background);
 }
 
+input[type="text"]:read-only:not(.calculated-field) {
+  color: var(--input-readonly-text);
+  background-color: var(--input-readonly-background);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background-color 0.15s ease 0.15s,
+    color 0.15s ease 0.15s;
+}
+
 input[type="text"].field-invalid {
   border-color: var(--redline);
 }
@@ -585,6 +595,11 @@ input[type="text"].field-valid {
 }
 
 input[type="text"].field-valid:focus {
+  border-color: var(--greenline);
+  box-shadow: 0 0 0 3px var(--greenline-glow);
+}
+
+input[type="text"].field-valid:read-only {
   border-color: var(--greenline);
   box-shadow: 0 0 0 3px var(--greenline-glow);
 }
