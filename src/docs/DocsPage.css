@@ -335,6 +335,11 @@
     visibility var(--transition);
 }
 
+.docs-mobile-toc::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+
 .docs-mobile-toc.open {
   transform: translateY(0);
   visibility: visible;
@@ -397,7 +402,7 @@
 }
 
 .docs-toc a {
-  padding: 6px 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
 
   font-size: 13.5px;
@@ -947,6 +952,10 @@
 @media (max-width: 860px) {
   .docs-toc {
     display: none;
+  }
+
+  .docs-toc-label {
+    margin-top: 10px;
   }
 
   .docs-body {
