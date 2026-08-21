@@ -1554,8 +1554,13 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         const radius = diameter / 2;
         const radiusStr = radius.toString();
 
-        // Build circles in a detached DocumentFragment and append it once, to
-        // the final svg.
+        // Create a <g> wrapper to hold style attributes once (inherited by all circles)
+        const group = document.createElementNS(svgNamespace, "g");
+        for (const [key, value] of styleEntries) {
+            group.setAttribute(key, value);
+        }
+
+        // Build circles in a detached DocumentFragment and append it once to the group.
         const fragment = document.createDocumentFragment();
 
         // Loop through each tube to create circles. A tube field can hold
@@ -1577,11 +1582,6 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
                 circle.setAttribute("id", (i + 1).toString());
             }
 
-            // Apply the SVG path styles
-            for (const [key, value] of styleEntries) {
-                circle.setAttribute(key, value);
-            }
-
             // Calculate bounding box based on coordinates and diameter.
             // Deliberately kept as Math.min/Math.max rather than a direct `<` /
             // `>` comparison: this data can come from a hand-built
@@ -1599,7 +1599,8 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
             fragment.appendChild(circle);
         }
 
-        svg.appendChild(fragment);
+        group.appendChild(fragment);
+        svg.appendChild(group);
 
         const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
@@ -1632,17 +1633,19 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
 
         const svg = document.createElementNS(SVG_NAMESPACE, "svg");
 
+        // Create a <g> wrapper to hold style attributes once (inherited by both lines)
+        const group = document.createElementNS(SVG_NAMESPACE, "g");
+        for (const [key, value] of styleEntries) {
+            group.setAttribute(key, value);
+        }
+
         // Horizontal line
         const horzLine = document.createElementNS(SVG_NAMESPACE, "line");
         horzLine.setAttribute("x1", minX.toString());
         horzLine.setAttribute("y1", "0");
         horzLine.setAttribute("x2", maxX.toString());
         horzLine.setAttribute("y2", "0");
-
-        for (const [key, value] of styleEntries) {
-            horzLine.setAttribute(key, value);
-        }
-        svg.appendChild(horzLine);
+        group.appendChild(horzLine);
 
         // Vertical line
         const vertLine = document.createElementNS(SVG_NAMESPACE, "line");
@@ -1650,11 +1653,9 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         vertLine.setAttribute("y1", minY.toString());
         vertLine.setAttribute("x2", "0");
         vertLine.setAttribute("y2", maxY.toString());
+        group.appendChild(vertLine);
 
-        for (const [key, value] of styleEntries) {
-            vertLine.setAttribute(key, value);
-        }
-        svg.appendChild(vertLine);
+        svg.appendChild(group);
 
         const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
@@ -1690,20 +1691,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
             maxY = -Infinity;
 
         for (const svg of svgs) {
-            // Get the child circles from each SVG and append them to the merged
-            // SVG. The tube-field SVG's fragment can hold thousands of circle
-            // nodes, so iterate the live NodeList directly with for-of rather
-            // than materialising it into an array first with Array.from — we
-            // only read and clone nodes here, never remove them from `svg`, so
-            // iterating the live list is safe.
-            for (const child of svg.childNodes) {
-                if (child instanceof SVGElement) {
-                    mergedSVG.appendChild(child.cloneNode(true));
-                }
-            }
-
-            // Calculate the bounding box for the current SVG to adjust the
-            // viewBox
+            // Read the viewBox from the source SVG before moving its children
             const viewBox = svg.getAttribute("viewBox");
             if (viewBox) {
                 const [x, y, width, height] = viewBox.split(" ").map(Number);
@@ -1716,7 +1704,20 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
                 maxX = Math.max(maxX, x + width);
                 maxY = Math.max(maxY, y + height);
             }
+
+            // Move the <g> wrapper (first child) into the merged SVG.
+            // Each source SVG now has a single <g> containing all its elements.
+            const group = svg.firstElementChild;
+            if (group instanceof SVGElement) {
+                mergedSVG.appendChild(group);
+            }
         }
+
+        // Add a <style> element for non-inherited vector-effect (applies to all circles/lines)
+        const style = document.createElementNS(SVG_NAMESPACE, "style");
+        style.textContent =
+            ".tubesheet-svg circle, .tubesheet-svg line { vector-effect: non-scaling-stroke; }";
+        mergedSVG.appendChild(style);
 
         // Set the viewBox of the merged SVG to encompass all contained SVGs
         mergedSVG.setAttribute(
