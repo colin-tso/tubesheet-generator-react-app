@@ -330,7 +330,7 @@ const createMemoKey = (
         return normalised.map((v) => `${typeof v}:${String(v)}`).join("|");
     };
 };
-const MEMO_CACHE_SIZE = 1000;
+const MEMO_CACHE_SIZE = 5000;
 const LAYOUT_FN_MEMO_DEFAULTS: Array<MemoKeyValue> = [
     undefined,
     undefined,
