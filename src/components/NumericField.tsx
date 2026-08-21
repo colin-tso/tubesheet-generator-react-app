@@ -96,9 +96,10 @@ function NumericFieldImpl({
     const hasError = Boolean(errorMessage);
     const errorId = `${id}-error`;
 
-    // Valid/green state, independent of "touched". Previews don't count until
-    // overridden.
-    const isValid = !readOnly && !calculated && !isPreview && utils.isNumber(value) && !outOfRange;
+    // Valid/green state, independent of "touched". Previews and calculated
+    // fields don't count until overridden, but readOnly fields (e.g. during
+    // isCalculating) keep their valid glow.
+    const isValid = !calculated && !isPreview && utils.isNumber(value) && !outOfRange;
 
     // Mirrors missingRequired for native HTML validation on submit.
     const domRequired = required && !utils.isNumber(pairedValue);

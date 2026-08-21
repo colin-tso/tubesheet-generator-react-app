@@ -1,5 +1,26 @@
 # tubesheet-generator-react-app
 
+## 2.2.1
+
+### Patch Changes
+
+- 5753994: Show valid (green) glow on read-only fields during calculation. Debounce the muted color change on temporarily read-only inputs so brief calculations don't flash the grey styling. Export live preview timing constants for test use.
+
+## 2.2.0
+
+### Minor Changes
+
+- 95e8adc: Refine radial diagram visuals on the docs pages
+
+### Patch Changes
+
+- fa114c8: fix: use className instead of class in MDX tables
+- 8c89ea0: add scanQuarterField count-only bisection path
+- 8c89ea0: perf: speed up SVG generation via move-merge and group-style wrappers, identical output
+- fa114c8: docs: add reading progress bar, fix cross-reference link styling, fix horizontal overflow
+- 8c89ea0: raise live-preview limits due to faster worker computation
+- 8c89ea0: perf: speed up tube-field generation (axis-partition symmetry for grid layouts; count-then-build for radial), identical output
+
 ## 2.1.0
 
 ### Minor Changes

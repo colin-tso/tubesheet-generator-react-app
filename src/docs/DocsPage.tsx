@@ -7,7 +7,7 @@ import { Section } from "./mdx-components/Section";
 import { Formula } from "./mdx-components/Formula";
 import { Table } from "./mdx-components/Table";
 import { DocsRegistryProvider, EqRef, TableRef } from "./context/DocsRegistry";
-import { useHashScroll, useActiveSection } from "./hooks";
+import { useHashScroll, useActiveSection, useReadingProgress } from "./hooks";
 
 import Intro from "./content/00-intro.mdx";
 import Overview from "./content/01-overview.mdx";
@@ -20,6 +20,26 @@ import Radial from "./content/07-radial.mdx";
 import Solving from "./content/08-solving.mdx";
 import Example from "./content/09-example.mdx";
 import Glossary from "./content/10-glossary.mdx";
+
+// Custom MDX link component — applies the .docs-ref-link class to internal
+// doc cross-references so they match the styled EqRef/TableRef links.
+function DocRefLink({
+    href,
+    children,
+    className: inheritedClass,
+    ...rest
+}: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+    const className = href?.startsWith("#/docs/")
+        ? inheritedClass
+            ? `${inheritedClass} docs-ref-link`
+            : "docs-ref-link"
+        : inheritedClass;
+    return (
+        <a href={href} className={className} {...rest}>
+            {children}
+        </a>
+    );
+}
 
 // Single source of truth for section order, ids, numbering, and the TOC. Adding
 // a new topic means adding one entry here and one .mdx file.
@@ -62,6 +82,8 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
     }, []);
 
     const activeSection = SECTIONS.find((s) => s.id === activeId);
+    const progressBarRef = useRef<HTMLDivElement>(null);
+    useReadingProgress(progressBarRef);
 
     // Move focus into the list when the panel opens so keyboard users land on
     // the first heading instead of tabbing blindly into the page.
@@ -205,6 +227,7 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
                     ))}
                 </nav>
             </div>
+            <div ref={progressBarRef} className="docs-progress-bar" aria-hidden="true" />
 
             <div className="docs-body">
                 <nav className="docs-toc" aria-label="Table of contents">
@@ -222,13 +245,15 @@ export function DocsPage({ hash, savedScrollY }: { hash: string; savedScrollY: n
 
                 <main id="docs-main" className="docs-content">
                     <div className="docs-intro">
-                        <Intro components={{ Formula, EqRef, Table, TableRef }} />
+                        <Intro components={{ a: DocRefLink, Formula, EqRef, Table, TableRef }} />
                     </div>
 
                     <DocsRegistryProvider>
                         {SECTIONS.map(({ id, index, title, Content }) => (
                             <Section key={id} id={id} index={index} title={title}>
-                                <Content components={{ Formula, EqRef, Table, TableRef }} />
+                                <Content
+                                    components={{ a: DocRefLink, Formula, EqRef, Table, TableRef }}
+                                />
                             </Section>
                         ))}
                     </DocsRegistryProvider>

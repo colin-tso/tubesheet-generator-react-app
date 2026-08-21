@@ -4,6 +4,7 @@ const TUBE_R = 18;
 const RING1_COUNT = 6;
 const RING2_COUNT = 12;
 const ARC_R = 56;
+const FONT_SIZE = 20;
 
 const angleFor = (count: number, i: number): number => i * ((2 * Math.PI) / count) - Math.PI / 2;
 
@@ -27,7 +28,7 @@ export function RadialDiagram() {
     };
 
     const spacingMid = { x: 0, y: -(RING1_R + RING2_R) / 2 };
-    const radiusMid = { x: 0, y: -RING1_R / 2 };
+    // const radiusMid = { x: 0, y: -RING1_R / 2 };
 
     const pad = TUBE_R + 48;
     const viewBox = `${-RING2_R - pad} ${-RING2_R - pad} ${(RING2_R + pad) * 2} ${(RING2_R + pad) * 2}`;
@@ -70,20 +71,8 @@ export function RadialDiagram() {
                 </marker>
             </defs>
 
-            <circle
-                cx={0}
-                cy={0}
-                r={RING1_R}
-                className="docs-diagram-guide-dashed docs-diagram-ring"
-                fill="none"
-            />
-            <circle
-                cx={0}
-                cy={0}
-                r={RING2_R}
-                className="docs-diagram-guide-dashed docs-diagram-ring"
-                fill="none"
-            />
+            <circle cx={0} cy={0} r={RING1_R} className="docs-diagram-ring" fill="none" />
+            <circle cx={0} cy={0} r={RING2_R} className="docs-diagram-ring" fill="none" />
 
             <circle cx={0} cy={0} r={TUBE_R} className="docs-diagram-tube-highlight" />
 
@@ -96,23 +85,15 @@ export function RadialDiagram() {
                 className="docs-diagram-guide-dashed"
             />
 
-            <text
-                x={radiusMid.x + 30}
-                y={radiusMid.y}
-                className="docs-diagram-label"
-                dominantBaseline="central"
-            >
-                r
-            </text>
-
             <path
                 d={`M ${arcStart.x} ${arcStart.y} A ${ARC_R} ${ARC_R} 0 0 1 ${arcEnd.x} ${arcEnd.y}`}
                 className="docs-diagram-arc"
             />
             <text
-                x={ARC_R * 1.65 * Math.cos(-Math.PI / 2 + angleIncrement / 2)}
-                y={ARC_R * 1.65 * Math.sin(-Math.PI / 2 + angleIncrement / 2)}
+                x={ARC_R * 1.4 * Math.cos(-Math.PI / 2 + angleIncrement / 2)}
+                y={ARC_R * 1.4 * Math.sin(-Math.PI / 2 + angleIncrement / 2)}
                 className="docs-diagram-label docs-diagram-label-angle"
+                fontSize={FONT_SIZE}
                 textAnchor="middle"
             >
                 2π / n
@@ -160,6 +141,7 @@ export function RadialDiagram() {
                 x={(p0.x + p1.x) / 2 + 30 + 5}
                 y={(p0.y + p1.y) / 2 - 30 - 5}
                 className="docs-diagram-label"
+                fontSize={FONT_SIZE}
                 dominantBaseline="central"
             >
                 Pitch
@@ -186,6 +168,7 @@ export function RadialDiagram() {
                 y={spacingMid.y}
                 className="docs-diagram-label"
                 dominantBaseline="central"
+                fontSize={FONT_SIZE}
                 textAnchor="start"
             >
                 Pitch
