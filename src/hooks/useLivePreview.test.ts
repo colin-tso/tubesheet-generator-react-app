@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useLivePreview } from "./useLivePreview";
+import { useLivePreview, LIVE_PREVIEW_TIMING } from "./useLivePreview";
+
+const { debounce: DEBOUNCE_MS, timeout: TIMEOUT_MS } = LIVE_PREVIEW_TIMING;
 
 describe("useLivePreview", () => {
     it("keeps showing a ready result instead of reverting to null after the safety timeout window", async () => {
@@ -32,8 +34,8 @@ describe("useLivePreview", () => {
         expect(result.current.status).toBe("ready");
         expect(result.current.result?.numTubes).toBe(0);
 
-        // Advance past the 1500ms safety timeout window (anchored to when the
-        // debounce fired), well after the response already landed.
+        // Advance past some time after the response landed, confirming the
+        // safety timeout was cleared and doesn't revert the result.
         await act(async () => {
             vi.advanceTimersByTime(1500);
         });
@@ -62,7 +64,7 @@ describe("useLivePreview", () => {
         });
 
         await act(async () => {
-            vi.advanceTimersByTime(350 + 1500 + 1);
+            vi.advanceTimersByTime(DEBOUNCE_MS + TIMEOUT_MS + 1);
         });
 
         expect(result.current.status).toBe("unavailable");

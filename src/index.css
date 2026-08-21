@@ -589,6 +589,11 @@ input[type="text"].field-valid:focus {
   box-shadow: 0 0 0 3px var(--greenline-glow);
 }
 
+input[type="text"].field-valid:read-only {
+  border-color: var(--greenline);
+  box-shadow: 0 0 0 3px var(--greenline-glow);
+}
+
 /* Live-preview text: editable, but muted until the user actually overrides
    it (or focuses it to do so), so it doesn't read as a real committed value. */
 input[type="text"].field-preview {
