@@ -862,7 +862,7 @@ button:disabled {
 .copy-button:focus-visible,
 .grid-toggle:focus-visible,
 .table-toggle:focus-visible,
-.help-toggle:focus-visible {
+.help-button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
@@ -1215,7 +1215,7 @@ footer a {
   align-items: flex-start;
 }
 
-.help-toggle {
+.help-button {
   cursor: pointer;
 
   position: relative;
@@ -1245,7 +1245,7 @@ footer a {
 
 /* Label renders as a floating tooltip to the RIGHT of the button (the toggle
    tooltips point left; this one mirrors them). Same chip styling. */
-.help-toggle .btn-label {
+.help-button .btn-label {
   pointer-events: none;
 
   position: absolute;
@@ -1276,7 +1276,7 @@ footer a {
 
 /* Small pointer arrow tying the tooltip to its button (on the left edge,
    pointing left, since the tooltip sits to the right of the button). */
-.help-toggle .btn-label::after {
+.help-button .btn-label::after {
   content: "";
 
   position: absolute;
@@ -1291,14 +1291,14 @@ footer a {
   background-color: inherit;
 }
 
-.help-toggle .btn-icon {
+.help-button .btn-icon {
   width: calc(var(--options-btn-font-size) * 15 / 10.5);
   height: calc(var(--options-btn-font-size) * 15 / 10.5);
 }
 
 /* Hover shows the tooltip only after a short delay, so it doesn't flash
    in while the cursor is just passing by. */
-.help-toggle:hover .btn-label {
+.help-button:hover .btn-label {
   transform: translateY(-50%) scale(1);
   opacity: 1;
   transition-delay: 0.5s;
@@ -1306,13 +1306,13 @@ footer a {
 
 /* Keyboard focus shows the tooltip immediately, since there's no
    "passing by" case to guard against. */
-.help-toggle:focus-visible .btn-label {
+.help-button:focus-visible .btn-label {
   transform: translateY(-50%) scale(1);
   opacity: 1;
 }
 
-.help-toggle:hover,
-.help-toggle:focus-visible {
+.help-button:hover,
+.help-button:focus-visible {
   border-color: var(--blue);
   background-color: var(--blue);
 }

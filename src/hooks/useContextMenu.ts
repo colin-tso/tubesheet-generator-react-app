@@ -38,12 +38,7 @@ export function useContextMenu(containerRef: RefObject<HTMLDivElement | null>) {
     const openContextMenu = useCallback(
         (e: MouseEvent<HTMLDivElement>) => {
             e.preventDefault();
-            if (
-                (e.target as HTMLElement).closest("button") ||
-                (e.target as HTMLElement).closest(".viewport-options") ||
-                (e.target as HTMLElement).closest(".viewport-actions")
-            )
-                return;
+            if ((e.target as HTMLElement).closest("[data-no-context-menu]")) return;
             if (!containerRef.current) return;
 
             const rect = containerRef.current.getBoundingClientRect();

@@ -330,7 +330,7 @@ const createMemoKey = (
         return normalised.map((v) => `${typeof v}:${String(v)}`).join("|");
     };
 };
-const MEMO_CACHE_SIZE = 1000;
+const MEMO_CACHE_SIZE = 5000;
 const LAYOUT_FN_MEMO_DEFAULTS: Array<MemoKeyValue> = [
     undefined,
     undefined,
@@ -375,45 +375,9 @@ const memoizeBounded = <Args extends unknown[], R>(
 };
 
 // Symmetry helpers used by generateTubeField's quarter-field expansion. Hoisted
-// to module scope so they aren't re-created (along with their closure arrays)
-// on every call: generateTubeField runs dozens of times inside findMinID's
-// bisection/heuristic loops.
-const FLIP_HORZ: number[][] = [
-    [-1, 0],
-    [0, 1],
-];
-
-const FLIP_VERT: number[][] = [
-    [1, 0],
-    [0, -1],
-];
-
-const applyMatrix = (point: Tube, matrix: number[][]): Tube => {
-    const x = point.x;
-    const y = point.y;
-
-    return {
-        x: x * matrix[0][0] + y * matrix[0][1],
-        y: x * matrix[1][0] + y * matrix[1][1],
-    };
-};
-
+// to module scope so they aren't re-created on every call: generateTubeField
+// runs dozens of times inside findMinID's bisection/heuristic loops.
 const normalize = (n: number): number => (n === 0 ? 0 : n);
-
-const mergeUniqueCoordinates = (...arrays: TubeField[]): TubeField => {
-    const seen = new Map<string, Tube>();
-    for (const arr of arrays) {
-        for (const point of arr) {
-            const x = normalize(point.x);
-            const y = normalize(point.y);
-            const key = `${x}|${y}`;
-            if (!seen.has(key)) {
-                seen.set(key, { x, y });
-            }
-        }
-    }
-    return Array.from(seen.values());
-};
 
 const sortTubePositions = (tubeField: TubeField): TubeField => {
     return tubeField.sort((a, b) => {
@@ -424,24 +388,75 @@ const sortTubePositions = (tubeField: TubeField): TubeField => {
     });
 };
 
-const applySymmetry = (quarterTubeField: TubeField): TubeField => {
-    const flippedHorz: TubeField = quarterTubeField.map((point) =>
-        applyMatrix(point, FLIP_HORZ),
-    );
-    const flippedVert: TubeField = mergeUniqueCoordinates(
-        quarterTubeField,
-        flippedHorz,
-    ).map((point) => applyMatrix(point, FLIP_VERT));
+/**
+ * Expands a quarter-plane tube field into the full 4-quadrant field by
+ * partitioning the input into axis points (x===0 || y===0) and strict-quadrant
+ * core points (x>0 && y>0), mirroring each partition, and sorting the result.
+ *
+ * Points with x<0 (the offset layout's -dx/2 column) are skipped — they are
+ * auto-covered by core mirroring. Axis points are canonicalised to the positive
+ * half-axis and deduped via float-keyed Sets (O(perimeter/pitch), tiny).
+ *
+ * Full float precision is preserved (no rounding); only −0 → 0 normalization
+ * is applied to match the historical dedup behaviour.
+ */
+const expandQuarterField = (quarterTubeField: TubeField): TubeField => {
+    const xAxisMags = new Set<number>(); // stores |x| for points on y===0
+    const yAxisMags = new Set<number>(); // stores |y| for points on x===0
+    const core: TubeField = [];
+    let hasOrigin = false;
 
-    // Merge and deduplicate tube positions
-    const mergedFields = mergeUniqueCoordinates(
-        quarterTubeField,
-        flippedHorz,
-        flippedVert,
-    );
+    for (const point of quarterTubeField) {
+        const x = normalize(point.x);
+        const y = normalize(point.y);
+        if (x === 0 && y === 0) {
+            hasOrigin = true;
+            continue;
+        }
+        if (x === 0) {
+            // y-axis point: canonicalise to positive y
+            const mag = y < 0 ? -y : y;
+            yAxisMags.add(mag);
+        } else if (y === 0) {
+            // x-axis point: canonicalise to positive x
+            const mag = x < 0 ? -x : x;
+            xAxisMags.add(mag);
+        } else if (x > 0 && y > 0) {
+            // Strict core quadrant
+            core.push({ x, y });
+        }
+        // Else: x<0 && y>0 (offset column) — skipped, auto-covered by core mirroring.
+        // (y<0 never occurs in the quarter field since scan starts at y=0 and increases.)
+    }
 
-    // Sort the final tube positions
-    return sortTubePositions(mergedFields);
+    const result: TubeField = [];
+
+    // Origin
+    if (hasOrigin) {
+        result.push({ x: 0, y: 0 });
+    }
+
+    // Axis mirrors
+    for (const mag of yAxisMags) {
+        result.push({ x: 0, y: mag });
+        result.push({ x: 0, y: -mag });
+    }
+    for (const mag of xAxisMags) {
+        result.push({ x: mag, y: 0 });
+        result.push({ x: -mag, y: 0 });
+    }
+
+    // Core 4-way mirrors (no dedup needed; strict-quadrant copies never collide)
+    for (const point of core) {
+        const x = point.x;
+        const y = point.y;
+        result.push({ x, y });
+        result.push({ x: -x, y });
+        result.push({ x, y: -y });
+        result.push({ x: -x, y: -y });
+    }
+
+    return sortTubePositions(result);
 };
 
 /**
@@ -564,7 +579,7 @@ const generateTubeField = memoizeBounded(
                 j++;
             }
 
-            const tubeField = applySymmetry(quarterTubeField);
+            const tubeField = expandQuarterField(quarterTubeField);
 
             return tubeField;
         } catch (error) {
@@ -575,6 +590,111 @@ const generateTubeField = memoizeBounded(
     createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
     MEMO_CACHE_SIZE,
 );
+
+/**
+ * Counts tubes in the quarter-field scan without allocating, expanding, or
+ * sorting. Mirrors generateTubeField's scan loop exactly so the returned count
+ * is bit-identical to what expandQuarterField would produce. Also tracks the
+ * maximum squared distance from the origin for OTL computation.
+ *
+ * Only valid for non-radial layouts — callers must guard on layout !== "radial".
+ * offsetOption must be a boolean (not "AUTO") — callers must resolve AUTO
+ * before calling.
+ */
+const scanQuarterField = (
+    shellID: number,
+    OTLClearance: number,
+    tubeOD: number,
+    pitchRatio: number,
+    layout: TubeSheetLayout,
+    offsetOption: boolean,
+): { count: number; maxDistSq: number } | null => {
+    try {
+        if (shellID <= 0) {
+            throw new Error("Shell ID must be greater than 0");
+        }
+        if (tubeOD <= 0) {
+            throw new Error("Tube OD must be greater than 0");
+        }
+        if (pitchRatio < 1) {
+            throw new Error("Pitch ratio must be 1 or greater");
+        }
+        if (OTLClearance < 0) {
+            throw new Error("OTL clearance must be 0 or greater");
+        }
+        if (
+            tubeOD >
+            shellID - OTLClearance + ulpTolerance(Math.max(shellID, OTLClearance, tubeOD))
+        ) {
+            throw new Error("Tube OD exceeds max allowable OTL");
+        }
+
+        const DECIMAL_PLACES = 8;
+        shellID = roundUp(shellID, DECIMAL_PLACES);
+
+        const pitch = tubeOD * pitchRatio;
+        const maxOTL = shellID - OTLClearance;
+        const { dx, dy, C } = getLayoutConstants(pitch, layout);
+
+        const offset = offsetOption ? dx / 2 : 0;
+        let i = 0,
+            j = 0,
+            x = 0,
+            y = 0;
+        const maxCentreDist = (maxOTL - tubeOD) / 2;
+        const BOUND_TOLERANCE = ulpTolerance(maxOTL);
+        const maxCentreDistSq =
+            (maxCentreDist + BOUND_TOLERANCE) * (maxCentreDist + BOUND_TOLERANCE);
+
+        let hasOrigin = false;
+        const xAxisMags = new Set<number>();
+        const yAxisMags = new Set<number>();
+        let coreCount = 0;
+        let maxDistSq = 0;
+
+        while (Math.abs(y) <= maxOTL && j < 999999) {
+            y = j * dy;
+            const cMult = j & 1 ? 0 : 1;
+            x = 0;
+            while (Math.abs(x) <= maxOTL && i < 999999) {
+                x = C * cMult + i * dx - offset;
+                i++;
+                if (x * x + y * y <= maxCentreDistSq) {
+                    const nx = normalize(x);
+                    const ny = normalize(y);
+                    const distSq = nx * nx + ny * ny;
+                    if (distSq > maxDistSq) {
+                        maxDistSq = distSq;
+                    }
+                    if (nx === 0 && ny === 0) {
+                        hasOrigin = true;
+                    } else if (nx === 0) {
+                        yAxisMags.add(ny < 0 ? -ny : ny);
+                    } else if (ny === 0) {
+                        xAxisMags.add(nx < 0 ? -nx : nx);
+                    } else if (nx > 0 && ny > 0) {
+                        coreCount++;
+                    }
+                    // x<0 && y>0 points skipped — auto-covered by core mirroring
+                } else {
+                    break;
+                }
+            }
+            i = 0;
+            j++;
+        }
+
+        const originCount = hasOrigin ? 1 : 0;
+        const count =
+            originCount + 2 * xAxisMags.size + 2 * yAxisMags.size + 4 * coreCount;
+        if (count === 0) {
+            return null;
+        }
+        return { count, maxDistSq };
+    } catch {
+        return null;
+    }
+};
 
 /**
  * Innermost patterns ("seeds") for the radial layout. Each seed is either the
@@ -645,6 +765,27 @@ const buildSeedField = (count: number, pitch: number, maxCentreDist: number): Tu
 };
 
 /**
+ * Counts how many tubes a given seed would produce without building the field.
+ * Mirrors the exact loop and stopping conditions of {@link buildSeedField} so
+ * the winning seed is chosen identically to the full-build comparison.
+ */
+const seedTubeCount = (count: number, pitch: number, maxCentreDist: number): number => {
+    const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
+    if (seedRadius > maxCentreDist + ulpTolerance(Math.max(seedRadius, maxCentreDist))) {
+        return 0;
+    }
+    let total = count; // count===1 → central tube (1); else seed ring (count tubes)
+    for (let k = 1; ; k++) {
+        const ringRadius = seedRadius + k * pitch;
+        if (ringRadius > maxCentreDist + ulpTolerance(Math.max(ringRadius, maxCentreDist))) {
+            break;
+        }
+        total += ringTubeCount(ringRadius, pitch);
+    }
+    return total;
+};
+
+/**
  * Generates a radial tube field comprised of concentric rings of tubes.
  *
  * One candidate is built for each seed in {@link RADIAL_SEED_COUNTS}: the seed
@@ -682,15 +823,17 @@ const radialTubeField = (
     }
 
     // Keep the layout holding the most tubes, matching the `offset="AUTO"`
-    // "keep the better result" behaviour used elsewhere in the module. Build
-    // each seed candidate in turn and track the best in place (no intermediate
-    // candidate array). On a tie the earliest seed (the central-tube layout)
-    // wins, preserving the pre-existing behaviour.
+    // "keep the better result" behaviour used elsewhere in the module. Pick
+    // the winning seed by tube count (same `>` tie-break: earliest seed wins),
+    // then build only the winner. The 4 discarded candidates are reduced to
+    // O(rings) count scans with no array allocation.
     let bestField: TubeField = [];
+    let bestCount = -1;
     for (const count of RADIAL_SEED_COUNTS) {
-        const candidate = buildSeedField(count, pitch, maxCentreDist);
-        if (candidate.length > bestField.length) {
-            bestField = candidate;
+        const n = seedTubeCount(count, pitch, maxCentreDist);
+        if (n > bestCount) {
+            bestCount = n;
+            bestField = buildSeedField(count, pitch, maxCentreDist);
         }
     }
     return bestField;
@@ -705,10 +848,7 @@ const radialTubeField = (
  */
 const SIN_60 = Math.sqrt(3) / 2;
 
-const getLayoutConstants = (
-    pitch: number,
-    layout: TubeSheetLayout,
-): LayoutConstants => {
+const getLayoutConstants = (pitch: number, layout: TubeSheetLayout): LayoutConstants => {
     // Only compute the trig/division for the requested layout instead of
     // building an object with all five layouts' constants (four of which are
     // discarded) on every call. This function sits on the bisection/heuristic
@@ -779,7 +919,52 @@ const tubeCount = (
     pitchRatio: number,
     layout: TubeSheetLayout,
     offsetOption: OffsetOption = "AUTO",
+    lazy = false,
 ): number => {
+    if (lazy) {
+        if (layout === "radial") {
+            const pitch = tubeOD * pitchRatio;
+            const maxOTL = shellID - OTLClearance;
+            const maxCentreDist = (maxOTL - tubeOD) / 2;
+            if (maxCentreDist < -ulpTolerance(maxOTL)) return 0;
+            let best = 0;
+            for (const count of RADIAL_SEED_COUNTS) {
+                const n = seedTubeCount(count, pitch, maxCentreDist);
+                if (n > best) best = n;
+            }
+            return best;
+        }
+        if (offsetOption === "AUTO") {
+            const resultTrue = scanQuarterField(
+                shellID,
+                OTLClearance,
+                tubeOD,
+                pitchRatio,
+                layout,
+                true,
+            );
+            const resultFalse = scanQuarterField(
+                shellID,
+                OTLClearance,
+                tubeOD,
+                pitchRatio,
+                layout,
+                false,
+            );
+            const countTrue = resultTrue ? resultTrue.count : 0;
+            const countFalse = resultFalse ? resultFalse.count : 0;
+            return countTrue > countFalse ? countTrue : countFalse;
+        }
+        const result = scanQuarterField(
+            shellID,
+            OTLClearance,
+            tubeOD,
+            pitchRatio,
+            layout,
+            offsetOption,
+        );
+        return result ? result.count : 0;
+    }
     const tubeField = generateTubeField(
         shellID,
         OTLClearance,
@@ -849,6 +1034,7 @@ const tubeFieldOTL = (
     pitchRatio: number,
     layout: TubeSheetLayout,
     offsetOption: OffsetOption = "AUTO",
+    lazy = false,
 ): number | null | undefined => {
     try {
         // See ulpTolerance's doc comment / the matching guard in
@@ -860,6 +1046,87 @@ const tubeFieldOTL = (
         ) {
             throw new Error("Tube OD cannot be greater than max allowable OTL.");
         }
+
+        if (lazy) {
+            if (layout === "radial") {
+                const pitch = tubeOD * pitchRatio;
+                const maxOTL = shellID - OTLClearance;
+                const maxCentreDist = (maxOTL - tubeOD) / 2;
+                if (maxCentreDist < -ulpTolerance(maxOTL)) return null;
+
+                let bestCount = 0;
+                let bestSeedRadius = 0;
+                let bestNumRings = 0;
+
+                for (const count of RADIAL_SEED_COUNTS) {
+                    const seedRadius =
+                        count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
+                    if (
+                        seedRadius >
+                        maxCentreDist + ulpTolerance(Math.max(seedRadius, maxCentreDist))
+                    ) {
+                        continue;
+                    }
+                    let total = count;
+                    let numRings = 1;
+                    for (let k = 1; ; k++) {
+                        const ringRadius = seedRadius + k * pitch;
+                        if (
+                            ringRadius >
+                            maxCentreDist + ulpTolerance(Math.max(ringRadius, maxCentreDist))
+                        ) {
+                            break;
+                        }
+                        total += ringTubeCount(ringRadius, pitch);
+                        numRings++;
+                    }
+                    if (total > bestCount) {
+                        bestCount = total;
+                        bestSeedRadius = seedRadius;
+                        bestNumRings = numRings;
+                    }
+                }
+
+                if (bestCount === 0) return null;
+                const outermostRadius = bestSeedRadius + (bestNumRings - 1) * pitch;
+                return roundUp(outermostRadius * 2 + tubeOD, 11);
+            }
+
+            const computeOTL = (result: { count: number; maxDistSq: number } | null): number | null => {
+                if (!result || result.count === 0) return null;
+                const OTL = roundUp(Math.sqrt(result.maxDistSq) * 2 + tubeOD, 11);
+                return OTL;
+            };
+
+            if (offsetOption === "AUTO") {
+                const resultTrue = scanQuarterField(
+                    shellID,
+                    OTLClearance,
+                    tubeOD,
+                    pitchRatio,
+                    layout,
+                    true,
+                );
+                const resultFalse = scanQuarterField(
+                    shellID,
+                    OTLClearance,
+                    tubeOD,
+                    pitchRatio,
+                    layout,
+                    false,
+                );
+                const countTrue = resultTrue ? resultTrue.count : 0;
+                const countFalse = resultFalse ? resultFalse.count : 0;
+                return countTrue >= countFalse
+                    ? computeOTL(resultTrue)
+                    : computeOTL(resultFalse);
+            }
+
+            return computeOTL(
+                scanQuarterField(shellID, OTLClearance, tubeOD, pitchRatio, layout, offsetOption),
+            );
+        }
+
         const tubeField = generateTubeField(
             shellID,
             OTLClearance,
@@ -969,7 +1236,7 @@ const findMinID = memoizeBounded(
             // would log a spurious "Tube OD exceeds" error.
             let upperBound = lowerBound * BETA;
             let boundIterations = 0;
-            while (tubeCount(upperBound, OTLClearance, tubeOD, pitchRatio, layout) < minTubes) {
+            while (tubeCount(upperBound, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true) < minTubes) {
                 upperBound = upperBound * BETA;
                 if (!Number.isFinite(upperBound) || upperBound <= 0) {
                     throw new Error(
@@ -985,14 +1252,14 @@ const findMinID = memoizeBounded(
 
             while (upperBound - lowerBound > Math.pow(10, -DECIMAL_PLACES)) {
                 const mid = (lowerBound + upperBound) / 2;
-                if (tubeCount(mid, OTLClearance, tubeOD, pitchRatio, layout) >= minTubes) {
+                if (tubeCount(mid, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true) >= minTubes) {
                     upperBound = mid;
                 } else {
                     lowerBound = mid;
                 }
             }
 
-            const OTL = tubeFieldOTL(upperBound, OTLClearance, tubeOD, pitchRatio, layout);
+            const OTL = tubeFieldOTL(upperBound, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true);
             return roundUp(
                 OTL !== null && OTL !== undefined ? OTL + OTLClearance : upperBound,
                 DECIMAL_PLACES,
@@ -1052,6 +1319,7 @@ const findMinID = memoizeBounded(
                                 pitchRatio,
                                 layout,
                                 offsetOption,
+                                true,
                             );
                             if (OTL !== null && OTL !== undefined) {
                                 const D_snap = roundUp(OTL + OTLClearance, DECIMAL_PLACES);
@@ -1115,6 +1383,7 @@ const findMinID = memoizeBounded(
                             pitchRatio,
                             layout,
                             offsetOption,
+                            true,
                         ) === null &&
                         growOldIterations < BOUND_MAX_ITERATIONS
                     ) {
@@ -1141,6 +1410,7 @@ const findMinID = memoizeBounded(
                             pitchRatio,
                             layout,
                             offsetOption,
+                            true,
                         )! + OTLClearance;
                     numTubes_old = tubeCount(
                         D_old,
@@ -1149,6 +1419,7 @@ const findMinID = memoizeBounded(
                         pitchRatio,
                         layout,
                         offsetOption,
+                        true,
                     );
 
                     // Increment diameter, save second guess of tube count into
@@ -1162,6 +1433,7 @@ const findMinID = memoizeBounded(
                             pitchRatio,
                             layout,
                             offsetOption,
+                            true,
                         )! + OTLClearance;
                     numTubes_new = tubeCount(
                         D_new,
@@ -1170,6 +1442,7 @@ const findMinID = memoizeBounded(
                         pitchRatio,
                         layout,
                         offsetOption,
+                        true,
                     );
 
                     updateBounds(D_old, numTubes_old, minTubes);
@@ -1198,6 +1471,7 @@ const findMinID = memoizeBounded(
                                         pitchRatio,
                                         layout,
                                         offsetOption,
+                                        true,
                                     )! + OTLClearance,
                                     DECIMAL_PLACES,
                                 );
@@ -1208,6 +1482,7 @@ const findMinID = memoizeBounded(
                                     pitchRatio,
                                     layout,
                                     offsetOption,
+                                    true,
                                 );
                                 updateBounds(
                                     D_check - Math.pow(10, -DECIMAL_PLACES),
@@ -1246,6 +1521,7 @@ const findMinID = memoizeBounded(
                             pitchRatio,
                             layout,
                             offsetOption,
+                            true,
                         );
                         numTubes_new = tubeCount(
                             D_new,
@@ -1254,6 +1530,7 @@ const findMinID = memoizeBounded(
                             pitchRatio,
                             layout,
                             offsetOption,
+                            true,
                         );
 
                         updateBounds(D_old, numTubes_old, minTubes);
@@ -1280,6 +1557,7 @@ const findMinID = memoizeBounded(
                                 pitchRatio,
                                 layout,
                                 offsetOption,
+                                true,
                             )! + OTLClearance,
                             DECIMAL_PLACES,
                         );
@@ -1312,6 +1590,7 @@ const findMinID = memoizeBounded(
                                 pitchRatio,
                                 layout,
                                 offsetOption,
+                                true,
                             );
                             if (numTubesLower < minTubes) {
                                 D_lowerBound = D_shrink;
@@ -1346,6 +1625,7 @@ const findMinID = memoizeBounded(
                                 pitchRatio,
                                 layout,
                                 offsetOption,
+                                true,
                             );
                             if (numTubesUpper > minTubes) {
                                 D_upperBound = roundUp(
@@ -1356,6 +1636,7 @@ const findMinID = memoizeBounded(
                                         pitchRatio,
                                         layout,
                                         offsetOption,
+                                        true,
                                     )! + OTLClearance,
                                     DECIMAL_PLACES,
                                 );
@@ -1384,6 +1665,7 @@ const findMinID = memoizeBounded(
                             pitchRatio,
                             layout,
                             offsetOption,
+                            true,
                         );
                         if (numTubesMid >= minTubes) {
                             D_upperBound = roundUp(
@@ -1394,6 +1676,7 @@ const findMinID = memoizeBounded(
                                     pitchRatio,
                                     layout,
                                     offsetOption,
+                                    true,
                                 )! + OTLClearance,
                                 DECIMAL_PLACES,
                             );
@@ -1519,8 +1802,13 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         const radius = diameter / 2;
         const radiusStr = radius.toString();
 
-        // Build circles in a detached DocumentFragment and append it once, to
-        // the final svg.
+        // Create a <g> wrapper to hold style attributes once (inherited by all circles)
+        const group = document.createElementNS(svgNamespace, "g");
+        for (const [key, value] of styleEntries) {
+            group.setAttribute(key, value);
+        }
+
+        // Build circles in a detached DocumentFragment and append it once to the group.
         const fragment = document.createDocumentFragment();
 
         // Loop through each tube to create circles. A tube field can hold
@@ -1542,11 +1830,6 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
                 circle.setAttribute("id", (i + 1).toString());
             }
 
-            // Apply the SVG path styles
-            for (const [key, value] of styleEntries) {
-                circle.setAttribute(key, value);
-            }
-
             // Calculate bounding box based on coordinates and diameter.
             // Deliberately kept as Math.min/Math.max rather than a direct `<` /
             // `>` comparison: this data can come from a hand-built
@@ -1564,7 +1847,8 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
             fragment.appendChild(circle);
         }
 
-        svg.appendChild(fragment);
+        group.appendChild(fragment);
+        svg.appendChild(group);
 
         const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
@@ -1597,17 +1881,19 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
 
         const svg = document.createElementNS(SVG_NAMESPACE, "svg");
 
+        // Create a <g> wrapper to hold style attributes once (inherited by both lines)
+        const group = document.createElementNS(SVG_NAMESPACE, "g");
+        for (const [key, value] of styleEntries) {
+            group.setAttribute(key, value);
+        }
+
         // Horizontal line
         const horzLine = document.createElementNS(SVG_NAMESPACE, "line");
         horzLine.setAttribute("x1", minX.toString());
         horzLine.setAttribute("y1", "0");
         horzLine.setAttribute("x2", maxX.toString());
         horzLine.setAttribute("y2", "0");
-
-        for (const [key, value] of styleEntries) {
-            horzLine.setAttribute(key, value);
-        }
-        svg.appendChild(horzLine);
+        group.appendChild(horzLine);
 
         // Vertical line
         const vertLine = document.createElementNS(SVG_NAMESPACE, "line");
@@ -1615,11 +1901,9 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         vertLine.setAttribute("y1", minY.toString());
         vertLine.setAttribute("x2", "0");
         vertLine.setAttribute("y2", maxY.toString());
+        group.appendChild(vertLine);
 
-        for (const [key, value] of styleEntries) {
-            vertLine.setAttribute(key, value);
-        }
-        svg.appendChild(vertLine);
+        svg.appendChild(group);
 
         const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
@@ -1655,20 +1939,7 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
             maxY = -Infinity;
 
         for (const svg of svgs) {
-            // Get the child circles from each SVG and append them to the merged
-            // SVG. The tube-field SVG's fragment can hold thousands of circle
-            // nodes, so iterate the live NodeList directly with for-of rather
-            // than materialising it into an array first with Array.from — we
-            // only read and clone nodes here, never remove them from `svg`, so
-            // iterating the live list is safe.
-            for (const child of svg.childNodes) {
-                if (child instanceof SVGElement) {
-                    mergedSVG.appendChild(child.cloneNode(true));
-                }
-            }
-
-            // Calculate the bounding box for the current SVG to adjust the
-            // viewBox
+            // Read the viewBox from the source SVG before moving its children
             const viewBox = svg.getAttribute("viewBox");
             if (viewBox) {
                 const [x, y, width, height] = viewBox.split(" ").map(Number);
@@ -1681,7 +1952,20 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
                 maxX = Math.max(maxX, x + width);
                 maxY = Math.max(maxY, y + height);
             }
+
+            // Move the <g> wrapper (first child) into the merged SVG.
+            // Each source SVG now has a single <g> containing all its elements.
+            const group = svg.firstElementChild;
+            if (group instanceof SVGElement) {
+                mergedSVG.appendChild(group);
+            }
         }
+
+        // Add a <style> element for non-inherited vector-effect (applies to all circles/lines)
+        const style = document.createElementNS(SVG_NAMESPACE, "style");
+        style.textContent =
+            ".tubesheet-svg circle, .tubesheet-svg line { vector-effect: non-scaling-stroke; }";
+        mergedSVG.appendChild(style);
 
         // Set the viewBox of the merged SVG to encompass all contained SVGs
         mergedSVG.setAttribute(
