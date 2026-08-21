@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.2.1
+
+### Patch Changes
+
+- 5753994: Show valid (green) glow on read-only fields during calculation. Debounce the muted color change on temporarily read-only inputs so brief calculations don't flash the grey styling. Export live preview timing constants for test use.
+
 ## 2.2.0
 
 ### Minor Changes
