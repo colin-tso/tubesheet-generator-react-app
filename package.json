@@ -55,7 +55,7 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "eslint-plugin-react-refresh": "^0.5.4",
         "gh-pages": "^6.3.0",
-        "globals": "^17.10.0",
+        "globals": "^17.11.0",
         "jsdom": "^30.0.1",
         "rehype-katex": "^7.0.1",
         "remark-directive": "^4.0.0",
