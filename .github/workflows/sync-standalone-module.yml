@@ -105,17 +105,16 @@ jobs:
 
             - name: Sync dev-tool dependency versions from source package.json
               run: |
-                  # The FP tolerance-analysis scripts import the module's
-                  # TypeScript, so they need tsx to run; ensure the standalone
-                  # repo's devDependencies carry the same version as the source.
-                  TSX_VERSION=$(jq -r '.devDependencies["tsx"] // empty' source/package.json)
-                  if [ -z "$TSX_VERSION" ]; then
-                      echo "::warning::No tsx devDependency found in source package.json – skipping."
-                  else
-                      jq --arg v "$TSX_VERSION" '.devDependencies["tsx"] = $v' target/package.json > target/package.json.tmp
-                      mv target/package.json.tmp target/package.json
-                      echo "Synced tsx@${TSX_VERSION} into target devDependencies"
-                  fi
+                  for PKG in vitest tsx; do
+                      VERSION=$(jq -r --arg p "$PKG" '.devDependencies[$p] // empty' source/package.json)
+                      if [ -z "$VERSION" ]; then
+                          echo "::warning::No ${PKG} devDependency found in source package.json – skipping."
+                      else
+                          jq --arg p "$PKG" --arg v "$VERSION" '.devDependencies[$p] = $v' target/package.json > target/package.json.tmp
+                          mv target/package.json.tmp target/package.json
+                          echo "Synced ${PKG}@${VERSION} into target devDependencies"
+                      fi
+                  done
 
             - name: Align target tsconfig target/lib with source
               run: |
@@ -138,6 +137,7 @@ jobs:
             - name: Run tests (gate – do not push on failure)
               working-directory: target
               run: npx vitest run
+              timeout-minutes: 10
 
             - name: Run FP tolerance-analysis scripts (gate – do not push on failure)
               working-directory: target
