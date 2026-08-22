@@ -72,7 +72,7 @@
         "vite": "^8.2.1",
         "vite-plugin-mkcert": "^2.1.0",
         "vite-plugin-svgr": "^5.2.0",
-        "vitest": "^4.1.10"
+        "vitest": "^4.1.11"
     },
     "engines": {
         "npm": ">=8.3.0"
