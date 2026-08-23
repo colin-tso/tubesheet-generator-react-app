@@ -1,5 +1,15 @@
 # tubesheet-generator-react-app
 
+## 2.3.0
+
+### Minor Changes
+
+- 9bb3d9b: Add horizontal overflow scroll for overflowing KaTeX formulas in docs
+
+### Patch Changes
+
+- 9bb3d9b: Reorder note block in patterns documentation
+
 ## 2.2.1
 
 ### Patch Changes
