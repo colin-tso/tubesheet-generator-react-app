@@ -23,6 +23,9 @@ on:
             - "scripts/sync-relative-imports.mjs"
             - "package.json"
 
+permissions:
+    contents: read
+
 concurrency:
     group: sync-standalone-module
     cancel-in-progress: false
