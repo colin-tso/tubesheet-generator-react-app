@@ -543,7 +543,7 @@
   border-left: 3px solid var(--blue);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 
-  font-size: 13.5px;
+  /* font-size: 13.5px; */
   line-height: 1.6;
   color: var(--ink);
 
@@ -594,6 +594,12 @@
 }
 
 .docs-formula-body {
+
+  /* Positioning context for the pinned equation number and edge gradients
+     below (see Formula Overflow Scroll spec) — none of these are enabled
+     until useFormulaOverflowScroll (Formula.tsx / EquationPreview.tsx) finds
+     real overflow and sets data-overflow, so a short formula is unaffected. */
+  position: relative;
   /* .docs-formula's `align-items: flex-start` (needed so the label above
      doesn't stretch full-width) otherwise makes this shrink-wrap its
      content. KaTeX right-aligns its `eqn-num` tag to the edge of that
@@ -605,9 +611,139 @@
   width: 100%;
 }
 
+/* SC-001/SC-011: horizontal scroll only once useFormulaOverflowScroll has
+   measured overflow of at least 0.5px, so normal, non-overflowing formulas
+   never gain a scrollbar or clip anything. C-007: native scroll only.
+   overflow-y is pinned to hidden rather than left to its default: setting
+   overflow-x alone forces the UA to compute overflow-y as auto too (CSS
+   Overflow ยง3), and the horizontal scrollbar's own thickness can then
+   shrink the available content height by a pixel or two — enough to clip
+   the top/bottom off a tall multi-row numbered `align` block's stacked
+   equation numbers. The padding-bottom reserves room for that scrollbar so
+   it never eats into real content instead. */
+.docs-formula-body[data-overflow="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+
+  -webkit-overflow-scrolling: touch;
+}
+
 .docs-formula-body .katex-display {
   margin: 0;
   text-align: left;
+}
+
+/* --- Pinning the equation number outside the scrollable area (C-001) ---
+   KaTeX pins a numbered equation's tag via `.katex-tag { position: absolute;
+   right: 0 }` relative to `.katex-html` (see katex.css) — flush with the
+   formula's own box, which is what collides with scrolled content. That
+   default absolute positioning is left alone for the common (non-
+   overflowing) case: it's how the tag stays flush with the box's right edge
+   at all, and — importantly — an absolutely positioned element doesn't
+   contribute to its ancestor's flow width, so it can't itself inflate the
+   overflow measurement below.
+   Only once actually scrolling (data-overflow="true") does the tag switch
+   to `position: sticky`, which keeps it in its normal-flow slot for
+   sizing/vertical purposes (so a multi-line numbered `align` block keeps
+   KaTeX's own per-row vertical alignment intact) while pinning it
+   horizontally to .docs-formula-body's right edge as the box scrolls
+   underneath it. Selector matches katex.css's specificity so it wins
+   outright rather than needing !important. */
+.docs-formula-body[data-overflow="true"] .katex-display > .katex > .katex-html > .katex-tag {
+  position: sticky;
+}
+
+.docs-formula-body .katex-tag {
+  z-index: 2;
+  padding-left: 10px;
+  background-color: var(--panel);
+}
+
+/* Masks the hard cut at the scrollable edge, right where it passes behind
+   the pinned tag. Without this, whatever glyph happens to sit at that
+   boundary before the reader scrolls gets sliced mid-character rather than
+   cleanly hidden — a wide trailing term (e.g. `D_\text{tube}`) can render
+   as an illegible fragment right next to the tag instead of reading as "cut
+   off, scroll for more". Anchored to the tag itself (not the container
+   edge, see the note on .docs-formula-body::after below) so it reliably
+   paints above the formula content it needs to mask: .katex-tag already
+   wins that stacking comparison locally (z-index 2 vs .katex-base's 1,
+   both real elements within the same .katex-html stacking context), so a
+   child pseudo-element of the tag inherits that same win. Not needed once
+   scrolled all the way to the end — there's nothing left to cut there.
+   top/bottom use a generous fixed overshoot rather than 0: for a numbered
+   multi-line `align` block, KaTeX stacks each row's number inside the
+   *same* .katex-tag via an internal vlist with negative `top` offsets, so
+   the tag's own getBoundingClientRect() height is much shorter than the
+   full visual row span its numbers actually occupy — 0/0 insets would only
+   cover roughly the middle row and leave the others unmasked. */
+.docs-formula-body[data-overflow="true"]:not([data-scroll-end="true"]) .katex-tag::before {
+  pointer-events: none;
+  content: "";
+
+  position: absolute;
+  top: -40px;
+  right: 100%;
+  bottom: -40px;
+
+  width: 40px;
+
+  background: linear-gradient(to left, var(--panel), transparent);
+}
+
+/* --- Edge gradients indicating scrollable content (SC-003/004) --- Hidden
+   by default and revealed only while data-overflow is set and the relevant
+   boundary attribute is absent (SC-005/010). Never intercept pointer events
+   (C-004).
+   The whole app resets every element to `position: relative; z-index: 1`
+   (see index.css), which makes nearly every element its own stacking
+   context — so a KaTeX-internal element several levels below
+   .docs-formula-body (like .katex-tag) can't reliably out-rank one of this
+   element's own ::before/::after via z-index; the comparison that actually
+   happens is between .katex-display's *entire* stacking context and this
+   pseudo-element's, and a tie there falls back to DOM order, which the
+   pseudo-element would win purely by coming later. Rather than fight that,
+   the right-edge gradient below is suppressed outright whenever a pinned
+   tag exists (:has(.katex-tag)) — the tag's own opaque background already
+   signals the cut edge there; the plain right gradient is only needed for
+   the unnumbered case (SC-006), which has no tag to collide with. */
+.docs-formula-body::before,
+.docs-formula-body::after {
+  pointer-events: none;
+  content: "";
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+
+  width: 24px;
+
+  opacity: 0;
+
+  transition: opacity 150ms ease;
+}
+
+.docs-formula-body::before {
+  left: 0;
+  background: linear-gradient(to right, var(--panel), transparent);
+}
+
+.docs-formula-body::after {
+  right: 0;
+  background: linear-gradient(to left, var(--panel), transparent);
+}
+
+.docs-formula-body[data-overflow="true"]:not([data-scroll-start="true"])::before {
+  opacity: 1;
+}
+
+.docs-formula-body[data-overflow="true"]:not([data-scroll-end="true"]):has(.katex-tag)::after {
+  opacity: 0;
+}
+
+.docs-formula-body[data-overflow="true"]:not([data-scroll-end="true"])::after {
+  opacity: 1;
 }
 
 /* KaTeX overrides.
@@ -663,6 +799,10 @@
    it's positioned and dismissed completely differently (fixed + JS-driven vs.
    inline layout). */
 .docs-eq-preview {
+  /* Off by default so an invisible (opacity: 0) panel can never intercept
+     clicks meant for whatever's underneath it. Turned back on only while
+     .visible, so a reader can actually scroll an overflowing formula inside
+     the panel (see Formula Overflow Scroll spec C-011/SC-012). */
   pointer-events: none;
 
   position: fixed;
@@ -694,6 +834,7 @@
 }
 
 .docs-eq-preview.visible {
+  pointer-events: auto;
   transform: translateY(0);
   opacity: 1;
 }
@@ -720,6 +861,13 @@
    so it neither renders nor participates in the counter. */
 .docs-eq-preview .eqn-num {
   display: none !important;
+}
+
+/* With .eqn-num hidden above, the tag has nothing left to show — drop the
+   whole pinned-number box (background, padding, fade) rather than leave an
+   empty patch floating at the panel's right edge. */
+.docs-eq-preview .katex-tag {
+  display: none;
 }
 
 /* --- Tables (plain markdown tables from MDX, via remark-gfm) --- */
