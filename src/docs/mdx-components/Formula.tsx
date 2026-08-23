@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { useRef } from "react";
 import { renderInlineMath } from "./inlineMath";
+import { useFormulaOverflowScroll } from "./useFormulaOverflowScroll";
 
 interface FormulaProps {
     id: string;
@@ -26,15 +28,26 @@ interface FormulaProps {
 // built-in `eqn-num` counter (an `align`/`gather` environment is required
 // for a formula to be auto-numbered at all — plain `$$ ... $$` is not).
 //
+// Long formulas get horizontal scroll rather than colliding with the
+// equation number (see Formula Overflow Scroll spec): useFormulaOverflowScroll
+// toggles data-overflow/data-scroll-start/data-scroll-end on the body below,
+// and DocsPage.css does the rest — including re-anchoring KaTeX's own
+// absolutely-positioned `.katex-tag` against this body instead of against
+// the (now scrolling) formula markup, so the number stays pinned outside
+// the scrollable area without us touching KaTeX's internal DOM at all.
+//
 // The caption is a plain string (an MDX directive attribute, not markdown body
 // text), so any `$...$` math in it is rendered explicitly via renderInlineMath
 // rather than by the usual remark-math/rehype-katex pipeline, which never sees
 // directive attributes. See inlineMath.tsx.
 export function Formula({ id, label, children }: FormulaProps) {
+    const bodyRef = useRef<HTMLDivElement>(null);
+    useFormulaOverflowScroll(bodyRef);
+
     return (
         <div id={`eq-${id}`} data-eq-id={id} className="docs-formula">
             {label && <span className="docs-formula-label">{renderInlineMath(label)}</span>}
-            <div className="docs-formula-body">{children}</div>
+            <div className="docs-formula-body" ref={bodyRef}>{children}</div>
         </div>
     );
 }

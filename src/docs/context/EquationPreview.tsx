@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useEquationPreview } from "./EquationPreviewContext";
+import { useFormulaOverflowScroll } from "../mdx-components/useFormulaOverflowScroll";
 
 // Gap between the EqRef link and the panel, and the minimum distance it keeps
 // from the window edge — same shape as the shell/OTL hover tooltip's
@@ -56,10 +57,18 @@ function positionPreview(panel: HTMLElement, anchorRect: DOMRect) {
 export function EquationPreview() {
     const { preview, hidePreview } = useEquationPreview();
     const panelRef = useRef<HTMLDivElement>(null);
+    const bodyRef = useRef<HTMLDivElement>(null);
     // Keeps showing the last-hovered formula while the panel fades out instead
     // of going blank the instant `preview` clears, same trick ShellOTLTooltip
     // uses for the shell/OTL hover readout.
     const [content, setContent] = useState<PreviewContent | null>(null);
+
+    // Same overflow/scroll-gradient behavior as the live Formula box (see
+    // Formula Overflow Scroll spec SC-012) — the cloned KaTeX markup below
+    // can overflow just like the original. The body div is always mounted
+    // (not conditional on `content`) specifically so this attaches once and
+    // keeps working as `content` swaps between previewed formulas.
+    useFormulaOverflowScroll(bodyRef);
 
     if (preview) {
         const next = readFormulaPreview(preview.id);
@@ -76,6 +85,7 @@ export function EquationPreview() {
 
     useEffect(() => {
         if (!preview) return;
+        const panel = panelRef.current;
 
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") hidePreview();
@@ -83,7 +93,16 @@ export function EquationPreview() {
         // Scrolling or resizing can move the anchor out from under a
         // fixed-position panel; dismissing rather than re-tracking keeps this
         // simple, and pointer/focus already cover it 99% of the time.
-        const onScrollOrResize = () => hidePreview();
+        // Scrolling *inside* the panel itself — e.g. an overflowing formula,
+        // see Formula Overflow Scroll spec C-011/SC-012 — isn't the page
+        // moving underneath the anchor, so it's exempted rather than closing
+        // the very panel being scrolled.
+        const onScrollOrResize = (e: Event) => {
+            if (e.type === "scroll" && panel && e.target instanceof Node && panel.contains(e.target)) {
+                return;
+            }
+            hidePreview();
+        };
         // Touch devices have no hover to leave, so a tap anywhere outside the
         // anchor is the only way those readers get to dismiss it.
         const onPointerDownOutside = (e: PointerEvent) => {
@@ -114,16 +133,17 @@ export function EquationPreview() {
             aria-hidden={!preview}
         >
             {content?.label && <span className="docs-formula-label">{content.label}</span>}
-            {content && (
-                <div
-                    className="docs-formula-body"
-                    // Cloning already-rendered markup from this app's own
-                    // build-time rehype-katex output (see Formula.tsx and
-                    // readFormulaPreview above) — not user input, so this is
-                    // the same trust boundary as the original.
-                    dangerouslySetInnerHTML={{ __html: content.bodyHTML }}
-                />
-            )}
+            <div
+                className="docs-formula-body"
+                ref={bodyRef}
+                // Cloning already-rendered markup from this app's own
+                // build-time rehype-katex output (see Formula.tsx and
+                // readFormulaPreview above) — not user input, so this is
+                // the same trust boundary as the original. Always rendered
+                // (rather than only while `content` is set) so bodyRef mounts
+                // once and useFormulaOverflowScroll above can attach to it.
+                dangerouslySetInnerHTML={{ __html: content?.bodyHTML ?? "" }}
+            />
         </div>
     );
 }
