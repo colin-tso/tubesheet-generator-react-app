@@ -4,8 +4,6 @@ import { LayoutPatternDiagram } from "../diagrams/LayoutPatternDiagram";
 
 Every layout option except the radial pattern (see [07 Radial layout](#/docs/radial-layout)) is built from the same three constants unique to each layout, computed once from the pitch:
 
-<Note>These four layouts are the standard tube-sheet patterns set out in [TEMA](https://www.tema.org) (see [10 Glossary](#/docs/glossary)): 30° and 60° are the two triangular-pitch patterns, and 45° and 90° are the two square-pitch patterns. Only the radial layout (see [07 Radial layout](#/docs/radial-layout)) falls outside these standards.</Note>
-
 1. **row spacing** ($d_x$): the spacing between neighbouring tubes *within the same row*.
 2. **row-to-row spacing** ($d_y$): the vertical spacing between one row and the next.
 3. **row stagger** ($C$): the horizontal offset applied to every other row. Offsetting alternate rows staggers the tubes rather than aligning them into a plain grid (see [06 Filling the circle](#/docs/filling)).
@@ -29,6 +27,8 @@ $$
 \end{align}
 $$
 :::
+
+<Note>These four layouts are the standard tube-sheet patterns set out in [TEMA](https://www.tema.org) Standards (see [10 Glossary](#/docs/glossary)): 30° and 60° are the two triangular-pitch patterns, and 45° and 90° are the two square-pitch patterns. Only the radial layout (see [07 Radial layout](#/docs/radial-layout)) falls outside these standards.</Note>
 
 For the 90° square layout the neighbouring tubes line up horizontally, at right angles to the vertical, so the layout is named for that 90° angle rather than for a diagonal pitch line.
 

@@ -2,7 +2,7 @@
     "name": "tubesheet-generator-react-app",
     "author": "Colin Tso",
     "license": "GPL-3.0-only",
-    "version": "2.2.1",
+    "version": "2.3.0",
     "homepage": "https://colin-tso.github.io/tubesheet-generator-react-app/",
     "private": true,
     "dependencies": {
@@ -43,7 +43,7 @@
         "@stylistic/stylelint-config": "^5.0.0",
         "@testing-library/jest-dom": "^7.0.1",
         "@testing-library/react": "^16.3.2",
-        "@testing-library/user-event": "^14.6.4",
+        "@testing-library/user-event": "^14.6.5",
         "@types/lodash.memoize": "^4.1.9",
         "@types/mdx": "^2.0.14",
         "@types/node": "^26.2.0",
@@ -55,7 +55,7 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "eslint-plugin-react-refresh": "^0.5.4",
         "gh-pages": "^6.3.0",
-        "globals": "^17.10.0",
+        "globals": "^17.11.0",
         "jsdom": "^30.0.1",
         "rehype-katex": "^7.0.1",
         "remark-directive": "^4.0.0",
@@ -72,7 +72,7 @@
         "vite": "^8.2.1",
         "vite-plugin-mkcert": "^2.1.0",
         "vite-plugin-svgr": "^5.2.0",
-        "vitest": "^4.1.10"
+        "vitest": "^4.1.11"
     },
     "engines": {
         "npm": ">=8.3.0"
