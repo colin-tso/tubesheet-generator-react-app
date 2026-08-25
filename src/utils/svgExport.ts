@@ -43,9 +43,12 @@ export const sizedSvgString = (svg: SVGSVGElement, scale = 2) => {
     return { svgString: new XMLSerializer().serializeToString(clone), width, height };
 };
 
-// Only used for the clipboard's PNG fallback (not the SVG download), so it
+// Used for the clipboard's PNG fallback (not the SVG/PNG download), so it
 // targets a lower ceiling than a full-resolution export would need.
 const MAX_RASTER_DIMENSION = 2048; // px
+// Used for the "Save as PNG" download, which the user may print or zoom into,
+// so it's allowed a much higher ceiling than the clipboard copy.
+export const MAX_DOWNLOAD_RASTER_DIMENSION = 4096; // px
 const MAX_RASTER_SCALE = 4; // cap upscaling on very small drawings
 
 // Scales so the longest edge lands at (or under) maxDimension. Only caps the
