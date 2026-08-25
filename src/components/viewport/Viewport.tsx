@@ -315,28 +315,30 @@ function ViewportExportActions() {
                         <span className="btn-label">Copy Image</span>
                     </button>
                 </div>
-                <button
-                    className="save-button save-svg-button"
-                    onClick={actions.downloadSVG}
-                    type="button"
-                    data-title="Save as SVG"
-                >
-                    <SaveSvgIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
-                    <span className="btn-label">Save as SVG</span>
-                </button>
-                <button
-                    className={`save-button save-png-button${
-                        state.pngExportState === "error" ? " error" : ""
-                    }`}
-                    onClick={actions.downloadPNG}
-                    type="button"
-                    data-title={pngButtonTitle}
-                    disabled={state.pngExportState === "pending"}
-                    aria-busy={state.pngExportState === "pending"}
-                >
-                    <SavePngIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
-                    <span className="btn-label">{pngButtonTitle}</span>
-                </button>
+                <div className="save-buttons-group">
+                    <button
+                        className="save-button save-svg-button"
+                        onClick={actions.downloadSVG}
+                        type="button"
+                        data-title="Save as SVG"
+                    >
+                        <SaveSvgIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <span className="btn-label">Save as SVG</span>
+                    </button>
+                    <button
+                        className={`save-button save-png-button${
+                            state.pngExportState === "error" ? " error" : ""
+                        }`}
+                        onClick={actions.downloadPNG}
+                        type="button"
+                        data-title={pngButtonTitle}
+                        disabled={state.pngExportState === "pending"}
+                        aria-busy={state.pngExportState === "pending"}
+                    >
+                        <SavePngIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <span className="btn-label">{pngButtonTitle}</span>
+                    </button>
+                </div>
             </div>
         </div>
     );
