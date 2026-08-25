@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.3.1
+
+### Patch Changes
+
+- 9ab6a71: dummy changeset to update dev release workflow
+
 ## 2.3.0
 
 ### Minor Changes
