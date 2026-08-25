@@ -1817,9 +1817,12 @@ footer a {
 
 .context-menu > li {
   cursor: pointer;
+
   display: flex;
   align-items: center;
-  padding: 6px 15px;
+
+  margin: 4px 4px;
+  padding: 5px 5px;
 }
 
 .context-menu-divider {
@@ -1828,6 +1831,7 @@ footer a {
 }
 
 .context-menu-item {
+  border-radius: 4px;
   transition: background-color var(--transition), color var(--transition);
 }
 
