@@ -37,9 +37,8 @@ jobs:
                   git config --global user.name "${{ secrets.GH_ORG_NAME }}"
 
             - name: Create/update "Version Packages" PR
-              uses: changesets/action@v1
+              uses: changesets/action@v2
               with:
-                  commit: "chore: version packages"
-                  title: "chore: version packages"
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GH_ORG_PAT }}
+                  commit-message: "chore: version packages"
+                  pr-title: "chore: version packages"
+                  github-token: ${{ secrets.GH_ORG_PAT }}

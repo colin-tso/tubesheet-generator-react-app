@@ -23,6 +23,9 @@ on:
             - "scripts/sync-relative-imports.mjs"
             - "package.json"
 
+permissions:
+    contents: read
+
 concurrency:
     group: sync-standalone-module
     cancel-in-progress: false
@@ -129,6 +132,24 @@ jobs:
                       target/tsconfig.json > target/tsconfig.json.tmp
                   mv target/tsconfig.json.tmp target/tsconfig.json
                   echo "Aligned target tsconfig to esnext (target + lib)."
+
+            - name: Remove stale compiled output before testing
+              # A prior run's "Compile module for distribution" step commits
+              # compiled .js (+ .d.ts) into target/src alongside the .ts
+              # source. Vitest/Vite's default resolver prefers .js over .ts
+              # for extensionless imports (tests import "../src/modules"),
+              # so a stale compiled .js silently shadows the freshly-synced
+              # .ts and the test gate ends up validating old, possibly-buggy
+              # compiled output instead of the new source. This is also how
+              # a genuinely infinite loop from a pre-iteration-cap version of
+              # findMinID reappeared and hung CI: the .ts had the fix, the
+              # stale .js didn't, and .js won resolution. Removing any
+              # previously-compiled output here guarantees tests always run
+              # against the source we just synced; "Compile module for
+              # distribution" regenerates it fresh afterwards.
+              working-directory: target
+              run: |
+                  find src -name "*.js" -o -name "*.d.ts" -o -name "*.js.map" | xargs -r rm -v
 
             - name: Install target dependencies
               working-directory: target
