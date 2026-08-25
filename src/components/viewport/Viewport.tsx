@@ -12,7 +12,8 @@ import TableIcon from "@/assets/table-icon.svg?react";
 import TableOffIcon from "@/assets/table-off-icon.svg?react";
 import GridIcon from "@/assets/grid-icon.svg?react";
 import GridOffIcon from "@/assets/grid-off-icon.svg?react";
-import SaveIcon from "@/assets/save-icon.svg?react";
+import SaveSvgIcon from "@/assets/save-svg-icon.svg?react";
+import SavePngIcon from "@/assets/save-png-icon.svg?react";
 import CopyIcon from "@/assets/copy-icon.svg?react";
 import HelpIcon from "@/assets/help-icon.svg?react";
 import { loadDocsPage } from "@/docs/loadDocsPage";
@@ -84,8 +85,12 @@ function ViewportContextMenu() {
         actions.copySVG();
         actions.closeContextMenu();
     }, [actions]);
-    const handleSave = useCallback(() => {
+    const handleSaveSVG = useCallback(() => {
         actions.downloadSVG();
+        actions.closeContextMenu();
+    }, [actions]);
+    const handleSavePNG = useCallback(() => {
+        actions.downloadPNG();
         actions.closeContextMenu();
     }, [actions]);
 
@@ -98,9 +103,15 @@ function ViewportContextMenu() {
                 disabled: !state.copyReady,
             },
             { label: "", isDivider: true, onClick: () => {} },
-            { label: "Save Image", icon: <SaveIcon />, onClick: handleSave },
+            { label: "Save as SVG", icon: <SaveSvgIcon />, onClick: handleSaveSVG },
+            {
+                label: "Save as PNG",
+                icon: <SavePngIcon />,
+                onClick: handleSavePNG,
+                disabled: state.pngExportState === "pending",
+            },
         ],
-        [handleCopy, handleSave, state.copyReady],
+        [handleCopy, handleSaveSVG, handleSavePNG, state.copyReady, state.pngExportState],
     );
 
     if (state.contextMenuAnimationState === "idle") return null;
@@ -134,12 +145,12 @@ function ViewportToolbar() {
                     data-title={state.showTable ? "Hide Results Table" : "Show Results Table"}
                 >
                     {state.showTable ? (
-                        <TableIcon className="btn-icon" width="13" height="13" aria-hidden="true" />
+                        <TableIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
                     ) : (
                         <TableOffIcon
                             className="btn-icon"
-                            width="13"
-                            height="13"
+                            width="19"
+                            height="19"
                             aria-hidden="true"
                         />
                     )}
@@ -153,12 +164,12 @@ function ViewportToolbar() {
                     data-title={state.showGrid ? "Hide Grid" : "Show Grid"}
                 >
                     {state.showGrid ? (
-                        <GridIcon className="btn-icon" width="13" height="13" aria-hidden="true" />
+                        <GridIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
                     ) : (
                         <GridOffIcon
                             className="btn-icon"
-                            width="13"
-                            height="13"
+                            width="19"
+                            height="19"
                             aria-hidden="true"
                         />
                     )}
@@ -263,8 +274,19 @@ function ViewportExportActions() {
                     ? "Copy unsupported"
                     : "";
 
+    const pngButtonTitle =
+        state.pngExportState === "pending"
+            ? "Rendering PNG…"
+            : state.pngExportState === "error"
+              ? "PNG export failed"
+              : "Save as PNG";
+
     return (
-        <div className="viewport-actions" data-no-context-menu hidden={state.drawingSVG === state.placeholderSVG}>
+        <div
+            className="viewport-actions"
+            data-no-context-menu
+            hidden={state.drawingSVG === state.placeholderSVG}
+        >
             <div className="viewport-actions-group">
                 <div className="copy-button-wrap">
                     <span
@@ -289,18 +311,31 @@ function ViewportExportActions() {
                         disabled={state.copyState === "pending" || !state.copyReady}
                         aria-busy={state.copyState === "pending" || !state.copyReady}
                     >
-                        <CopyIcon className="btn-icon" width="15" height="15" aria-hidden="true" />
+                        <CopyIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
                         <span className="btn-label">Copy Image</span>
                     </button>
                 </div>
                 <button
-                    className="save-button"
+                    className="save-button save-svg-button"
                     onClick={actions.downloadSVG}
                     type="button"
-                    data-title="Save Image"
+                    data-title="Save as SVG"
                 >
-                    <SaveIcon className="btn-icon" width="15" height="15" aria-hidden="true" />
-                    <span className="btn-label">Save Image</span>
+                    <SaveSvgIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                    <span className="btn-label">Save as SVG</span>
+                </button>
+                <button
+                    className={`save-button save-png-button${
+                        state.pngExportState === "error" ? " error" : ""
+                    }`}
+                    onClick={actions.downloadPNG}
+                    type="button"
+                    data-title={pngButtonTitle}
+                    disabled={state.pngExportState === "pending"}
+                    aria-busy={state.pngExportState === "pending"}
+                >
+                    <SavePngIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                    <span className="btn-label">{pngButtonTitle}</span>
                 </button>
             </div>
         </div>

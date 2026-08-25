@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     downloadBlob,
+    MAX_DOWNLOAD_RASTER_DIMENSION,
     preloadPngEncodeWorker,
     sizedSvgString,
     svgToPngBlob,
 } from "@/utils/svgExport";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported" | "downloaded";
+export type PngExportState = "idle" | "pending" | "error";
 
 // Android Firefox: clipboard image write fails.
 const isAndroidFirefox =
@@ -41,6 +43,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 export function useSvgExportActions(drawingSVG: SVGSVGElement) {
     const [copyState, setCopyState] = useState<CopyState>("idle");
     const copyInFlightRef = useRef(false);
+    const [pngExportState, setPngExportState] = useState<PngExportState>("idle");
+    const pngExportInFlightRef = useRef(false);
 
     useEffect(() => {
         preloadPngEncodeWorker();
@@ -51,6 +55,30 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
     const downloadSVG = useCallback(() => {
         const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
         downloadBlob(blob, "tubesheet.svg");
+    }, [drawingSVG]);
+
+    const downloadPNG = useCallback(() => {
+        if (pngExportInFlightRef.current) return;
+
+        pngExportInFlightRef.current = true;
+        setPngExportState("pending");
+
+        withTimeout(
+            svgToPngBlob(drawingSVG, MAX_DOWNLOAD_RASTER_DIMENSION),
+            COPY_TIMEOUT_MS,
+            "PNG export timed out",
+        )
+            .then((blob) => {
+                downloadBlob(blob, "tubesheet.png");
+                pngExportInFlightRef.current = false;
+                setPngExportState("idle");
+            })
+            .catch((err) => {
+                console.error("PNG export failed:", err);
+                pngExportInFlightRef.current = false;
+                setPngExportState("error");
+                setTimeout(() => setPngExportState("idle"), 2500);
+            });
     }, [drawingSVG]);
 
     const copySVG = useCallback(() => {
@@ -133,5 +161,5 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
             });
     }, [drawingSVG, downloadSVG]);
 
-    return { copyState, downloadSVG, copySVG, copyReady };
+    return { copyState, downloadSVG, downloadPNG, pngExportState, copySVG, copyReady };
 }

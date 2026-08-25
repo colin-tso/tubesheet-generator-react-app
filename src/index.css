@@ -1165,10 +1165,9 @@ footer a {
   background-color: inherit;
 }
 
-.grid-toggle .btn-icon,
-.table-toggle .btn-icon {
-  width: calc(var(--options-btn-font-size) * 15 / 10.5);
-  height: calc(var(--options-btn-font-size) * 15 / 10.5);
+.btn-icon {
+  width: calc(var(--options-btn-font-size) * 19 / 10.5);
+  height: calc(var(--options-btn-font-size) * 19 / 10.5);
 }
 
 /* Hover shows the tooltip only after a short delay, so it doesn't flash
@@ -1305,12 +1304,6 @@ footer a {
 
   background-color: inherit;
 }
-
-.help-button .btn-icon {
-  width: calc(var(--options-btn-font-size) * 15 / 10.5);
-  height: calc(var(--options-btn-font-size) * 15 / 10.5);
-}
-
 /* Hover shows the tooltip only after a short delay, so it doesn't flash
    in while the cursor is just passing by. */
 .help-button:hover .btn-label {
@@ -1612,7 +1605,7 @@ footer a {
   gap: 0;
   align-items: center;
 
-  padding: 7px 7px;
+  padding: 5px 5px;
   border-radius: var(--radius-sm);
 
   transition:
@@ -1697,6 +1690,24 @@ footer a {
 
 .save-button:hover {
   background-color: var(--blue);
+}
+
+.save-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.save-button:disabled:hover {
+  background-color: var(--ink);
+}
+
+/* PNG export failed: flag the button red until the next attempt/reset. */
+.save-button.error {
+  background-color: var(--redline);
+}
+
+.save-button.error:hover {
+  background-color: var(--redline);
 }
 
 .copy-button {
@@ -1955,6 +1966,11 @@ footer a {
     font-size: 9.5px;
   }
 
+  .viewport-overlay-footer {
+    right: 16px;
+    bottom: 16px;
+  }
+
   .reg-tl,
   .reg-tr,
   .reg-bl,
@@ -1988,8 +2004,8 @@ footer a {
   }
 
   .btn-icon {
-    width: calc(var(--options-btn-font-size) *0.92);
-    height: calc(var(--options-btn-font-size) *0.92);
+    width: calc(var(--options-btn-font-size) * 17 / 10.5);
+    height: calc(var(--options-btn-font-size) * 17 / 10.5);
   }
 
   .tubesheet-data-table {

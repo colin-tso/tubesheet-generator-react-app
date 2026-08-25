@@ -87,7 +87,8 @@ export function ViewportProvider({
         onAnimationEnd,
     } = useContextMenu(containerRef);
 
-    const { copyState, downloadSVG, copySVG, copyReady } = useSvgExportActions(drawingSVG);
+    const { copyState, downloadSVG, downloadPNG, pngExportState, copySVG, copyReady } =
+        useSvgExportActions(drawingSVG);
 
     const { viewportBottomReserve } = useViewportFooterReserve({
         containerRef,
@@ -117,7 +118,7 @@ export function ViewportProvider({
             state: {
                 showGrid,
                 showTable,
-                isBusy: isCalculating || copyState === "pending",
+                isBusy: isCalculating || copyState === "pending" || pngExportState === "pending",
                 drawingSVG,
                 placeholderSVG,
                 lastSingleResult,
@@ -126,6 +127,7 @@ export function ViewportProvider({
                 announcement,
                 copyState,
                 copyReady,
+                pngExportState,
                 contextMenuPos,
                 contextMenuAnimationState,
                 hovered,
@@ -138,6 +140,7 @@ export function ViewportProvider({
                 toggleTable,
                 copySVG,
                 downloadSVG,
+                downloadPNG,
                 onDrawingRendered,
                 openContextMenu,
                 closeContextMenu: requestClose,
@@ -158,6 +161,7 @@ export function ViewportProvider({
             announcement,
             copyState,
             copyReady,
+            pngExportState,
             contextMenuPos,
             contextMenuAnimationState,
             hovered,
@@ -168,6 +172,7 @@ export function ViewportProvider({
             toggleTable,
             copySVG,
             downloadSVG,
+            downloadPNG,
             onDrawingRendered,
             openContextMenu,
             requestClose,
