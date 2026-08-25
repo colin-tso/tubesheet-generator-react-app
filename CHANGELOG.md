@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.4.0
+
+### Minor Changes
+
+- 8a7c3ea: Add PNG and SVG export via save button with context menu
+
 ## 2.3.1
 
 ### Patch Changes
