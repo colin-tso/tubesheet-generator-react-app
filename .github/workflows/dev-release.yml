@@ -3,7 +3,6 @@ on:
     push:
         branches:
             - dev
-    workflow_dispatch:
 
 # Only one version PR should ever be in flight; queue runs rather than
 # letting them race each other.
