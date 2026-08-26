@@ -1,5 +1,17 @@
 # tubesheet-generator-react-app
 
+## 2.5.0
+
+### Minor Changes
+
+- 0c90223: Add PDF export for tube sheet drawings
+
+### Patch Changes
+
+- 67f895d: Add info icon header to Note component
+- 4352569: Group SVG and PNG save buttons inside a shared background fill
+- a7ed687: Polish context menu item hover highlight with inset rounded fill
+
 ## 2.4.0
 
 ### Minor Changes

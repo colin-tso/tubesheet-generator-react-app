@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { AnimationLifecycle } from "@/hooks/useContextMenu";
-import type { CopyState, PngExportState } from "@/hooks/useSvgExportActions";
+import type { CopyState, PdfExportState, PngExportState } from "@/hooks/useSvgExportActions";
 import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
 import type { HighlightRegion } from "@/hooks/useShellOTLHighlight";
 
@@ -21,6 +21,7 @@ export interface ViewportState {
     copyState: CopyState;
     copyReady: boolean;
     pngExportState: PngExportState;
+    pdfExportState: PdfExportState;
     contextMenuPos: { x: number; y: number };
     contextMenuAnimationState: AnimationLifecycle;
     hovered: HighlightRegion;
@@ -35,6 +36,7 @@ export interface ViewportActions {
     copySVG: () => void;
     downloadSVG: () => void;
     downloadPNG: () => void;
+    downloadPDF: () => void;
     onDrawingRendered: () => void;
     openContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void;
     closeContextMenu: () => void;

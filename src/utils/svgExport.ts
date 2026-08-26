@@ -17,7 +17,7 @@ const FALLBACK_VB_HEIGHT = 150;
 // Reads the viewBox's width/height, falling back to sane defaults if missing,
 // zero, or non-finite. An invalid intrinsic size makes SVG rasterisation fail
 // outright, so this guards every path that derives pixel dimensions from it.
-const readViewBoxSize = (svg: SVGSVGElement) => {
+export const readViewBoxSize = (svg: SVGSVGElement) => {
     const viewBox = svg.getAttribute("viewBox");
     const parts = viewBox ? viewBox.split(" ").map(Number) : [];
     const width = parts[2];

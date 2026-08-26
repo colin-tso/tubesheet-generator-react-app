@@ -554,6 +554,21 @@
   color: var(--blue);
 }
 
+.docs-note-header {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+
+  margin-bottom: 6px;
+
+  font-weight: 600;
+  color: var(--blue);
+}
+
+.docs-note-header svg {
+  flex-shrink: 0;
+}
+
 /* --- Formula blocks --- */
 .docs-formula {
   scroll-margin-top: 84px;

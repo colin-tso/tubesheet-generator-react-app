@@ -6,9 +6,12 @@ import {
     sizedSvgString,
     svgToPngBlob,
 } from "@/utils/svgExport";
+import { buildTubeSheetPdfBlob } from "@/utils/pdfExport";
+import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported" | "downloaded";
 export type PngExportState = "idle" | "pending" | "error";
+export type PdfExportState = "idle" | "pending" | "error";
 
 // Android Firefox: clipboard image write fails.
 const isAndroidFirefox =
@@ -22,7 +25,7 @@ const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) &&
     !("MSStream" in window);
 
-const COPY_TIMEOUT_MS = 15000;
+const COPY_TIMEOUT_MS = 30000; // 30s
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -40,11 +43,18 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
     });
 }
 
-export function useSvgExportActions(drawingSVG: SVGSVGElement) {
+export function useSvgExportActions(
+    drawingSVG: SVGSVGElement,
+    tableData: (ITubeSheetData & { numTubes?: number }) | null,
+    tableLayoutLabel: string,
+    tableRequestedTubes: number | undefined,
+) {
     const [copyState, setCopyState] = useState<CopyState>("idle");
     const copyInFlightRef = useRef(false);
     const [pngExportState, setPngExportState] = useState<PngExportState>("idle");
     const pngExportInFlightRef = useRef(false);
+    const [pdfExportState, setPdfExportState] = useState<PdfExportState>("idle");
+    const pdfExportInFlightRef = useRef(false);
 
     useEffect(() => {
         preloadPngEncodeWorker();
@@ -80,6 +90,30 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
                 setTimeout(() => setPngExportState("idle"), 2500);
             });
     }, [drawingSVG]);
+
+    const downloadPDF = useCallback(() => {
+        if (pdfExportInFlightRef.current) return;
+
+        pdfExportInFlightRef.current = true;
+        setPdfExportState("pending");
+
+        withTimeout(
+            buildTubeSheetPdfBlob(drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes),
+            COPY_TIMEOUT_MS,
+            "PDF export timed out",
+        )
+            .then((blob) => {
+                downloadBlob(blob, "tubesheet.pdf");
+                pdfExportInFlightRef.current = false;
+                setPdfExportState("idle");
+            })
+            .catch((err) => {
+                console.error("PDF export failed:", err);
+                pdfExportInFlightRef.current = false;
+                setPdfExportState("error");
+                setTimeout(() => setPdfExportState("idle"), 2500);
+            });
+    }, [drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes]);
 
     const copySVG = useCallback(() => {
         if (copyInFlightRef.current) return;
@@ -161,5 +195,14 @@ export function useSvgExportActions(drawingSVG: SVGSVGElement) {
             });
     }, [drawingSVG, downloadSVG]);
 
-    return { copyState, downloadSVG, downloadPNG, pngExportState, copySVG, copyReady };
+    return {
+        copyState,
+        downloadSVG,
+        downloadPNG,
+        pngExportState,
+        downloadPDF,
+        pdfExportState,
+        copySVG,
+        copyReady,
+    };
 }

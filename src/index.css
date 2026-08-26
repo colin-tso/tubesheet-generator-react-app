@@ -1710,6 +1710,71 @@ footer a {
   background-color: var(--redline);
 }
 
+/* Grouped save buttons — dark card, light individual highlights */
+.save-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  padding: 0px;
+  border-radius: var(--radius-sm);
+
+  background-color: var(--ink);
+}
+
+.save-buttons-group .save-button {
+  margin: 0px 0;
+  padding: 4px 6px;
+  color: var(--panel);
+  background-color: var(--ink);
+}
+
+.save-buttons-group .save-button:has(+ .save-button) {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.save-buttons-group .save-button + .save-button {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.save-buttons-group .save-button + .save-button::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  right: 6px;
+  left: 6px;
+
+  height: 1px;
+
+  background-color: var(--line);
+}
+
+.save-buttons-group .save-button:hover {
+  background-color: var(--blue);
+}
+
+.save-buttons-group .save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.save-buttons-group .save-button:disabled:hover {
+  color: var(--ink);
+  background-color: var(--panel);
+}
+
+/* PNG export failed: red highlight on that button only */
+.save-buttons-group .save-button.error {
+  color: var(--panel);
+  background-color: var(--redline);
+}
+
+.save-buttons-group .save-button.error:hover {
+  background-color: var(--redline);
+}
+
 .copy-button {
   border: 1.5px solid transparent;
   color: var(--ink);
@@ -1817,9 +1882,12 @@ footer a {
 
 .context-menu > li {
   cursor: pointer;
+
   display: flex;
   align-items: center;
-  padding: 6px 15px;
+
+  margin: 4px 4px;
+  padding: 5px 5px;
 }
 
 .context-menu-divider {
@@ -1828,6 +1896,7 @@ footer a {
 }
 
 .context-menu-item {
+  border-radius: 4px;
   transition: background-color var(--transition), color var(--transition);
 }
 
