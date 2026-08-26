@@ -14,6 +14,7 @@ import GridIcon from "@/assets/grid-icon.svg?react";
 import GridOffIcon from "@/assets/grid-off-icon.svg?react";
 import SaveSvgIcon from "@/assets/save-svg-icon.svg?react";
 import SavePngIcon from "@/assets/save-png-icon.svg?react";
+import SavePdfIcon from "@/assets/save-pdf-icon.svg?react";
 import CopyIcon from "@/assets/copy-icon.svg?react";
 import HelpIcon from "@/assets/help-icon.svg?react";
 import { loadDocsPage } from "@/docs/loadDocsPage";
@@ -93,6 +94,10 @@ function ViewportContextMenu() {
         actions.downloadPNG();
         actions.closeContextMenu();
     }, [actions]);
+    const handleSavePDF = useCallback(() => {
+        actions.downloadPDF();
+        actions.closeContextMenu();
+    }, [actions]);
 
     const items: ContextMenuItem[] = useMemo(
         () => [
@@ -110,8 +115,22 @@ function ViewportContextMenu() {
                 onClick: handleSavePNG,
                 disabled: state.pngExportState === "pending",
             },
+            {
+                label: "Save as PDF",
+                icon: <SavePdfIcon />,
+                onClick: handleSavePDF,
+                disabled: state.pdfExportState === "pending",
+            },
         ],
-        [handleCopy, handleSaveSVG, handleSavePNG, state.copyReady, state.pngExportState],
+        [
+            handleCopy,
+            handleSaveSVG,
+            handleSavePNG,
+            handleSavePDF,
+            state.copyReady,
+            state.pngExportState,
+            state.pdfExportState,
+        ],
     );
 
     if (state.contextMenuAnimationState === "idle") return null;
@@ -281,6 +300,13 @@ function ViewportExportActions() {
               ? "PNG export failed"
               : "Save as PNG";
 
+    const pdfButtonTitle =
+        state.pdfExportState === "pending"
+            ? "Rendering PDF…"
+            : state.pdfExportState === "error"
+              ? "PDF export failed"
+              : "Save as PDF";
+
     return (
         <div
             className="viewport-actions"
@@ -337,6 +363,19 @@ function ViewportExportActions() {
                     >
                         <SavePngIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
                         <span className="btn-label">{pngButtonTitle}</span>
+                    </button>
+                    <button
+                        className={`save-button save-pdf-button${
+                            state.pdfExportState === "error" ? " error" : ""
+                        }`}
+                        onClick={actions.downloadPDF}
+                        type="button"
+                        data-title={pdfButtonTitle}
+                        disabled={state.pdfExportState === "pending"}
+                        aria-busy={state.pdfExportState === "pending"}
+                    >
+                        <SavePdfIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <span className="btn-label">{pdfButtonTitle}</span>
                     </button>
                 </div>
             </div>
