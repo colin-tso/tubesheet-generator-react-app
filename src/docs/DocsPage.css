@@ -556,9 +556,11 @@
 
 .docs-note-header {
   display: flex;
-  align-items: center;
   gap: 6px;
+  align-items: center;
+
   margin-bottom: 6px;
+
   font-weight: 600;
   color: var(--blue);
 }
