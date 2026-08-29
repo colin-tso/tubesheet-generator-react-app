@@ -685,8 +685,7 @@ const scanQuarterField = (
         }
 
         const originCount = hasOrigin ? 1 : 0;
-        const count =
-            originCount + 2 * xAxisMags.size + 2 * yAxisMags.size + 4 * coreCount;
+        const count = originCount + 2 * xAxisMags.size + 2 * yAxisMags.size + 4 * coreCount;
         if (count === 0) {
             return null;
         }
@@ -1059,8 +1058,7 @@ const tubeFieldOTL = (
                 let bestNumRings = 0;
 
                 for (const count of RADIAL_SEED_COUNTS) {
-                    const seedRadius =
-                        count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
+                    const seedRadius = count === 1 ? 0 : pitch / (2 * Math.sin(Math.PI / count));
                     if (
                         seedRadius >
                         maxCentreDist + ulpTolerance(Math.max(seedRadius, maxCentreDist))
@@ -1092,7 +1090,9 @@ const tubeFieldOTL = (
                 return roundUp(outermostRadius * 2 + tubeOD, 11);
             }
 
-            const computeOTL = (result: { count: number; maxDistSq: number } | null): number | null => {
+            const computeOTL = (
+                result: { count: number; maxDistSq: number } | null,
+            ): number | null => {
                 if (!result || result.count === 0) return null;
                 const OTL = roundUp(Math.sqrt(result.maxDistSq) * 2 + tubeOD, 11);
                 return OTL;
@@ -1117,9 +1117,7 @@ const tubeFieldOTL = (
                 );
                 const countTrue = resultTrue ? resultTrue.count : 0;
                 const countFalse = resultFalse ? resultFalse.count : 0;
-                return countTrue >= countFalse
-                    ? computeOTL(resultTrue)
-                    : computeOTL(resultFalse);
+                return countTrue >= countFalse ? computeOTL(resultTrue) : computeOTL(resultFalse);
             }
 
             return computeOTL(
@@ -1236,7 +1234,10 @@ const findMinID = memoizeBounded(
             // would log a spurious "Tube OD exceeds" error.
             let upperBound = lowerBound * BETA;
             let boundIterations = 0;
-            while (tubeCount(upperBound, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true) < minTubes) {
+            while (
+                tubeCount(upperBound, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true) <
+                minTubes
+            ) {
                 upperBound = upperBound * BETA;
                 if (!Number.isFinite(upperBound) || upperBound <= 0) {
                     throw new Error(
@@ -1252,14 +1253,25 @@ const findMinID = memoizeBounded(
 
             while (upperBound - lowerBound > Math.pow(10, -DECIMAL_PLACES)) {
                 const mid = (lowerBound + upperBound) / 2;
-                if (tubeCount(mid, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true) >= minTubes) {
+                if (
+                    tubeCount(mid, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true) >=
+                    minTubes
+                ) {
                     upperBound = mid;
                 } else {
                     lowerBound = mid;
                 }
             }
 
-            const OTL = tubeFieldOTL(upperBound, OTLClearance, tubeOD, pitchRatio, layout, "AUTO", true);
+            const OTL = tubeFieldOTL(
+                upperBound,
+                OTLClearance,
+                tubeOD,
+                pitchRatio,
+                layout,
+                "AUTO",
+                true,
+            );
             return roundUp(
                 OTL !== null && OTL !== undefined ? OTL + OTLClearance : upperBound,
                 DECIMAL_PLACES,
@@ -1768,7 +1780,24 @@ const parseSVGStyleString = (svgStyles: string): { [key: string]: string } => {
     );
 };
 
-export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
+/**
+ * Options accepted by {@link generateTubeSheetSVG}.
+ */
+export interface TubeSheetSVGOptions {
+    /**
+     * When true, draws each tube's number at its centre. The number matches the
+     * `id` attribute already assigned to that tube's `<circle>` (its 1-based
+     * position in `ts.tubeField`), so labels always match what
+     * `document.getElementById` / the drawing's own tube IDs report. Off by
+     * default since it adds a text element per tube.
+     */
+    showTubeLabels?: boolean;
+}
+
+export const generateTubeSheetSVG = (
+    ts: ITubeSheetData,
+    options?: TubeSheetSVGOptions,
+): SVGSVGElement => {
     /**
      * Generates an SVG element containing circles based on the provided data.
      *
@@ -1853,6 +1882,83 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
 
         // Set SVG attributes
+        svg.setAttribute("xmlns", svgNamespace);
+        svg.setAttribute("height", "100dvh");
+        svg.setAttribute("viewBox", viewBox);
+
+        return svg;
+    };
+
+    /**
+     * Generates an SVG element containing one text label per tube, centred on
+     * that tube's coordinates. Each label is the tube's 1-based index in
+     * `circles` — identical to the `id` attribute generateSVGCircles assigns
+     * that same tube (see the `id` param there) — so the visible number always
+     * matches the circle's own id. Mirrors generateSVGCircles'
+     * bounding-box/merge conventions so it can be fed straight into mergeSVGs.
+     *
+     * @param {T[]} circles        Tube coordinates.
+     * @param {number} diameter    Tube diameter (used only for the bounding box).
+     * @param {string} svgStyles   The styles to apply to the labels.
+     * @returns {SVGSVGElement}    The generated SVG element.
+     */
+    const generateSVGLabels = <T extends { x: number; y: number }>(
+        circles: ReadonlyArray<T>,
+        diameter: number,
+        svgStyles: string,
+    ): SVGSVGElement => {
+        const svgNamespace = "http://www.w3.org/2000/svg";
+
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+
+        const svg = document.createElementNS(svgNamespace, "svg");
+        const radius = diameter / 2;
+
+        const styleEntries = Object.entries(parseSVGStyleString(svgStyles));
+        const group = document.createElementNS(svgNamespace, "g");
+        for (const [key, value] of styleEntries) {
+            group.setAttribute(key, value);
+        }
+
+        const fragment = document.createDocumentFragment();
+        const { length } = circles;
+        for (let i = 0; i < length; i++) {
+            const c = circles[i];
+            const cx = c.x;
+            const cy = c.y;
+
+            const text = document.createElementNS(svgNamespace, "text");
+            text.setAttribute("x", cx.toString());
+            text.setAttribute("y", cy.toString());
+            // Vertical centering is done via `dy` rather than the
+            // `dominant-baseline: central` CSS property: browsers honor
+            // dominant-baseline fine, but svg2pdf.js (used for the PDF
+            // export) ignores it and falls back to the text's default
+            // alphabetic baseline, which visibly drops each label below the
+            // tube's centre in the exported PDF only. `dy="0.35em"` is the
+            // standard baseline-based vertical-centering offset — computed
+            // from the font's own metrics rather than a CSS property engines
+            // are free to skip — so it renders identically in the live SVG,
+            // the PNG export (canvas), and the PDF export.
+            text.setAttribute("dy", "0.35em");
+            // Matches the id generateSVGCircles assigns this same tube.
+            text.textContent = (i + 1).toString();
+            fragment.appendChild(text);
+
+            minX = Math.min(minX, cx - radius);
+            minY = Math.min(minY, cy - radius);
+            maxX = Math.max(maxX, cx + radius);
+            maxY = Math.max(maxY, cy + radius);
+        }
+
+        group.appendChild(fragment);
+        svg.appendChild(group);
+
+        const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
+
         svg.setAttribute("xmlns", svgNamespace);
         svg.setAttribute("height", "100dvh");
         svg.setAttribute("viewBox", viewBox);
@@ -1994,15 +2100,21 @@ export const generateTubeSheetSVG = (ts: ITubeSheetData): SVGSVGElement => {
         "stroke:black; fill:none; stroke-dasharray:8 4; stroke-width:0.5; vector-effect:non-scaling-stroke;";
     const CROSSHAIRS_STYLE =
         "stroke:black; fill:none; stroke-dasharray:8 4; stroke-width:0.5; vector-effect:non-scaling-stroke;";
+    const TUBE_LABEL_STYLE = `stroke:none; font-family:sans-serif; font-size:${(
+        ts.tubeOD * 0.28
+    ).toFixed(4)}; text-anchor:middle; pointer-events:none;`;
 
     const tubeFieldSVG = generateSVGCircles(ts.tubeField, ts.tubeOD, TUBE_STYLE, true);
     const shellSVG = generateSVGCircles([{ x: 0, y: 0 }], effectiveShellID, SHELL_STYLE);
     const OTLSVG = generateSVGCircles([{ x: 0, y: 0 }], ts.OTL, OTL_STYLE);
     const crossHairs = generateSVGCenteredCross(effectiveShellID, CROSSHAIRS_STYLE);
-    const mergedSVG = mergeSVGs(
-        [shellSVG, OTLSVG, tubeFieldSVG, crossHairs],
-        VIEWBOX_PADDING_AS_FRACTION,
-    );
+
+    const svgsToMerge = [shellSVG, OTLSVG, tubeFieldSVG, crossHairs];
+    if (options?.showTubeLabels) {
+        svgsToMerge.push(generateSVGLabels(ts.tubeField, ts.tubeOD, TUBE_LABEL_STYLE));
+    }
+
+    const mergedSVG = mergeSVGs(svgsToMerge, VIEWBOX_PADDING_AS_FRACTION);
 
     mergedSVG.setAttribute("title", "Tubesheet Layout Drawing");
     mergedSVG.setAttribute("aria-label", "Tubesheet Layout Drawing");

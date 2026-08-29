@@ -11,6 +11,7 @@ import type { HighlightRegion } from "@/hooks/useShellOTLHighlight";
 export interface ViewportState {
     showGrid: boolean;
     showTable: boolean;
+    showTubeLabels: boolean;
     isBusy: boolean;
     drawingSVG: SVGSVGElement;
     placeholderSVG: SVGSVGElement;
@@ -33,6 +34,7 @@ export interface ViewportState {
 export interface ViewportActions {
     toggleGrid: () => void;
     toggleTable: () => void;
+    toggleTubeLabels: () => void;
     copySVG: () => void;
     downloadSVG: () => void;
     downloadPNG: () => void;

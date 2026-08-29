@@ -5,6 +5,7 @@ import { useSvgExportActions } from "@/hooks/useSvgExportActions";
 import { useViewportFooterReserve } from "@/hooks/useViewportFooterReserve";
 import { useShellOtlHighlight } from "@/hooks/useShellOTLHighlight";
 import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
+import { generateTubeSheetSVG, type ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 import { ViewportContext, type ViewportContextValue } from "./ViewportContext";
 
 // Reads/writes a boolean preference to localStorage, initialized lazily so the
@@ -74,10 +75,26 @@ export function ViewportProvider({
 
     const [showGrid, setShowGrid] = usePersistedBoolean("view-options.showGrid", true);
     const [showTable, setShowTable] = usePersistedBoolean("view-options.showTable", true);
+    const [showTubeLabels, setShowTubeLabels] = usePersistedBoolean(
+        "view-options.showTubeLabels",
+        false,
+    );
 
     const containerRef = useRef<HTMLDivElement>(null);
     const footerRef = useRef<HTMLDivElement>(null);
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
+
+    // Tube row/column labels are drawn by re-running SVG generation (cheap,
+    // main-thread work already done once per committed result) rather than
+    // threading the preference into the worker: this keeps the toggle
+    // self-contained in the viewport layer, and re-deriving from
+    // lastSingleResult means SVG/PNG/PDF export also reflect the toggle.
+    const labeledDrawingSVG = useMemo(() => {
+        if (!showTubeLabels || !lastSingleResult) return drawingSVG;
+        return generateTubeSheetSVG(lastSingleResult as ITubeSheetData, {
+            showTubeLabels: true,
+        });
+    }, [drawingSVG, lastSingleResult, showTubeLabels]);
 
     const {
         contextMenuPos,
@@ -97,7 +114,7 @@ export function ViewportProvider({
         copySVG,
         copyReady,
     } = useSvgExportActions(
-        drawingSVG,
+        labeledDrawingSVG,
         lastSingleResult,
         drawingTableLabel,
         drawingTableRequestedTubes,
@@ -114,7 +131,7 @@ export function ViewportProvider({
 
     const { hovered, tooltipRef } = useShellOtlHighlight(
         containerRef,
-        drawingSVG,
+        labeledDrawingSVG,
         lastSingleResult,
     );
 
@@ -125,18 +142,20 @@ export function ViewportProvider({
 
     const toggleGrid = useCallback(() => setShowGrid((v) => !v), [setShowGrid]);
     const toggleTable = useCallback(() => setShowTable((v) => !v), [setShowTable]);
+    const toggleTubeLabels = useCallback(() => setShowTubeLabels((v) => !v), [setShowTubeLabels]);
 
     const value = useMemo<ViewportContextValue>(
         () => ({
             state: {
                 showGrid,
                 showTable,
+                showTubeLabels,
                 isBusy:
                     isCalculating ||
                     copyState === "pending" ||
                     pngExportState === "pending" ||
                     pdfExportState === "pending",
-                drawingSVG,
+                drawingSVG: labeledDrawingSVG,
                 placeholderSVG,
                 lastSingleResult,
                 calcError,
@@ -156,6 +175,7 @@ export function ViewportProvider({
             actions: {
                 toggleGrid,
                 toggleTable,
+                toggleTubeLabels,
                 copySVG,
                 downloadSVG,
                 downloadPNG,
@@ -171,8 +191,9 @@ export function ViewportProvider({
         [
             showGrid,
             showTable,
+            showTubeLabels,
             isCalculating,
-            drawingSVG,
+            labeledDrawingSVG,
             placeholderSVG,
             lastSingleResult,
             calcError,
@@ -190,6 +211,7 @@ export function ViewportProvider({
             viewportStyle,
             toggleGrid,
             toggleTable,
+            toggleTubeLabels,
             copySVG,
             downloadSVG,
             downloadPNG,
