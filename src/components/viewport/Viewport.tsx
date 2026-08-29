@@ -12,6 +12,8 @@ import TableIcon from "@/assets/table-icon.svg?react";
 import TableOffIcon from "@/assets/table-off-icon.svg?react";
 import GridIcon from "@/assets/grid-icon.svg?react";
 import GridOffIcon from "@/assets/grid-off-icon.svg?react";
+import TubeLabelsIcon from "@/assets/tube-labels-icon.svg?react";
+import TubeLabelsOffIcon from "@/assets/tube-labels-off-icon.svg?react";
 import SaveSvgIcon from "@/assets/save-svg-icon.svg?react";
 import SavePngIcon from "@/assets/save-png-icon.svg?react";
 import SavePdfIcon from "@/assets/save-pdf-icon.svg?react";
@@ -149,7 +151,7 @@ function ViewportContextMenu() {
     );
 }
 
-// Grid/results-table visibility toggles.
+// Grid/results-table/tube-label visibility toggles.
 function ViewportToolbar() {
     const { state, actions } = useViewportContext();
 
@@ -193,6 +195,30 @@ function ViewportToolbar() {
                         />
                     )}
                     <span className="btn-label">Grid</span>
+                </button>
+                <button
+                    type="button"
+                    className={`tube-labels-toggle ${state.showTubeLabels ? "active" : ""}`}
+                    onClick={actions.toggleTubeLabels}
+                    aria-pressed={state.showTubeLabels}
+                    data-title={state.showTubeLabels ? "Hide Tube Labels" : "Show Tube Labels"}
+                >
+                    {state.showTubeLabels ? (
+                        <TubeLabelsIcon
+                            className="btn-icon"
+                            width="19"
+                            height="19"
+                            aria-hidden="true"
+                        />
+                    ) : (
+                        <TubeLabelsOffIcon
+                            className="btn-icon"
+                            width="19"
+                            height="19"
+                            aria-hidden="true"
+                        />
+                    )}
+                    <span className="btn-label">Tube Labels</span>
                 </button>
             </div>
         </div>
@@ -348,7 +374,12 @@ function ViewportExportActions() {
                         type="button"
                         data-title="Save as SVG"
                     >
-                        <SaveSvgIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <SaveSvgIcon
+                            className="btn-icon"
+                            width="19"
+                            height="19"
+                            aria-hidden="true"
+                        />
                         <span className="btn-label">Save as SVG</span>
                     </button>
                     <button
@@ -361,7 +392,12 @@ function ViewportExportActions() {
                         disabled={state.pngExportState === "pending"}
                         aria-busy={state.pngExportState === "pending"}
                     >
-                        <SavePngIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <SavePngIcon
+                            className="btn-icon"
+                            width="19"
+                            height="19"
+                            aria-hidden="true"
+                        />
                         <span className="btn-label">{pngButtonTitle}</span>
                     </button>
                     <button
@@ -374,7 +410,12 @@ function ViewportExportActions() {
                         disabled={state.pdfExportState === "pending"}
                         aria-busy={state.pdfExportState === "pending"}
                     >
-                        <SavePdfIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <SavePdfIcon
+                            className="btn-icon"
+                            width="19"
+                            height="19"
+                            aria-hidden="true"
+                        />
                         <span className="btn-label">{pdfButtonTitle}</span>
                     </button>
                 </div>

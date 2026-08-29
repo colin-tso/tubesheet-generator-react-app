@@ -552,6 +552,71 @@ describe("getEffectiveShellID", () => {
     });
 });
 
+describe("generateTubeSheetSVG — tube labels", () => {
+    const buildData = (): ITubeSheetData => {
+        const ts = new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, 30, undefined, 200);
+        return {
+            tubeField: ts.tubeField,
+            OTL: ts.OTL,
+            shellID: ts.shellID,
+            minID: ts.minID,
+            tubeOD: ts.tubeOD,
+            pitchRatio: ts.pitchRatio,
+            layout: ts.layout,
+            numTubes: ts.numTubes,
+        };
+    };
+
+    it("omits <text> labels by default", () => {
+        const svg = generateTubeSheetSVG(buildData());
+        expect(svg.querySelectorAll("text").length).toBe(0);
+    });
+
+    it("draws one <text> label per tube when showTubeLabels is set, matching the tube's circle id", () => {
+        const data = buildData();
+        const svg = generateTubeSheetSVG(data, { showTubeLabels: true });
+
+        const tubeCount = (data.tubeField as TubeField).length;
+        const labels = Array.from(svg.querySelectorAll("text")).map((el) => el.textContent);
+
+        expect(labels).toHaveLength(tubeCount);
+        expect(labels).toEqual(Array.from({ length: tubeCount }, (_, i) => (i + 1).toString()));
+
+        // Every tube circle already carries this same id (see generateSVGCircles'
+        // `id` param) — the labels should reproduce it exactly, not a separate
+        // numbering scheme.
+        const circleIds = Array.from(svg.querySelectorAll("circle[id]")).map((el) =>
+            el.getAttribute("id"),
+        );
+        expect(labels).toEqual(circleIds);
+    });
+
+    it("vertically centers labels with a dy attribute rather than dominant-baseline, so PDF export (svg2pdf.js) centers them too", () => {
+        // svg2pdf.js — used for the PDF export — does not honor the CSS
+        // `dominant-baseline` property, so relying on it alone leaves labels
+        // sitting on their alphabetic baseline (visibly below tube centre) in
+        // the exported PDF even though they look centred on screen. `dy` is a
+        // plain SVG attribute svg2pdf.js does support, so it's the
+        // renderer-agnostic way to centre the labels everywhere.
+        const svg = generateTubeSheetSVG(buildData(), { showTubeLabels: true });
+        const texts = Array.from(svg.querySelectorAll("text"));
+
+        expect(texts.length).toBeGreaterThan(0);
+        for (const text of texts) {
+            expect(text.getAttribute("dy")).toBe("0.35em");
+        }
+
+        // Not required for centering anymore, and if both were present a
+        // renderer that *does* support dominant-baseline would apply both
+        // offsets and double-shift the label. (parseSVGStyleString turns
+        // each style entry into its own presentation attribute on the
+        // wrapping <g>, so this checks for the attribute directly on the
+        // <g> that actually wraps the label <text> elements.)
+        const labelsGroup = texts[0].closest("g");
+        expect(labelsGroup?.hasAttribute("dominant-baseline")).toBe(false);
+    });
+});
+
 describe("TubeSheet — regression: unknown layout must not hang", () => {
     // The UI stores the radial layout as the number 0 (see layoutOptionRows).
     // A stray 0 used to reach the plugin as an unknown layout, where the

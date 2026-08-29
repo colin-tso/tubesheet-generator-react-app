@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.6.0
+
+### Minor Changes
+
+- 9043457: Add tube labels toggle to viewport toolbar. When enabled, numbered labels are drawn at each tube's centre and reflected in SVG/PNG/PDF exports.
+
 ## 2.5.0
 
 ### Minor Changes
