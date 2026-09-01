@@ -1,14 +1,26 @@
 import {
     TubeSheet,
     TUBE_SHEET_LAYOUTS,
+    findDiscreteSweepPoints,
     type TubeSheetLayout,
 } from "@/plugins/tubesheet-layout-generator";
+
+// The radial layout is stored as the number 0 by the UI radio inputs, but the
+// plugin only knows the string "radial". Normalise here so a stray 0 (an
+// invalid layout) can never reach the plugin, where it would be treated as an
+// unknown layout and hang.
+const normalizeLayoutOption = (layoutOption: unknown): TubeSheetLayout =>
+    layoutOption === 0 ? "radial" : (layoutOption as TubeSheetLayout);
 
 self.onmessage = (event: MessageEvent) => {
     const { type, requestId, payload } = event.data;
 
     try {
-        if (type !== "CALCULATE_ALL" && type !== "CALCULATE_SINGLE") {
+        if (
+            type !== "CALCULATE_ALL" &&
+            type !== "CALCULATE_SINGLE" &&
+            type !== "CALCULATE_SWEEP"
+        ) {
             throw new Error(`Unknown message type: ${type}`);
         }
 
@@ -55,12 +67,7 @@ self.onmessage = (event: MessageEvent) => {
 
         if (type === "CALCULATE_SINGLE") {
             const { OTLtoShell, tubeOD, pitchRatio, layoutOption, minTubes, shellID } = payload;
-            // The radial layout is stored as the number 0 by the UI radio
-            // inputs, but the plugin only knows the string "radial". Normalise
-            // here so a stray 0 (an invalid layout) can never reach the plugin,
-            // where it would be treated as an unknown layout and hang.
-            const normalizedLayout: TubeSheetLayout =
-                layoutOption === 0 ? "radial" : (layoutOption as TubeSheetLayout);
+            const normalizedLayout = normalizeLayoutOption(layoutOption);
             if (!TUBE_SHEET_LAYOUTS.includes(normalizedLayout)) {
                 throw new Error(`Invalid layout option: ${String(layoutOption)}`);
             }
@@ -86,6 +93,31 @@ self.onmessage = (event: MessageEvent) => {
                     pitchRatio: generated.pitchRatio,
                     shellID: generated.shellID,
                 },
+            });
+        }
+
+        if (type === "CALCULATE_SWEEP") {
+            const { OTLtoShell, tubeOD, pitchRatio, layoutOption, currentNumTubes, centerShellID } = payload;
+            const normalizedLayout = normalizeLayoutOption(layoutOption);
+            if (!TUBE_SHEET_LAYOUTS.includes(normalizedLayout)) {
+                throw new Error(`Invalid layout option: ${String(layoutOption)}`);
+            }
+            if (typeof currentNumTubes !== "number" || typeof centerShellID !== "number") {
+                throw new Error("currentNumTubes and centerShellID must be numbers");
+            }
+
+            const points = findDiscreteSweepPoints(
+                    centerShellID,
+                    OTLtoShell,
+                    tubeOD,
+                    pitchRatio,
+                    normalizedLayout,
+                );
+
+            self.postMessage({
+                type: "SWEEP_RESULTS",
+                requestId,
+                payload: points,
             });
         }
     } catch (error) {
