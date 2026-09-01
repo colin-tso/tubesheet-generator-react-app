@@ -144,6 +144,124 @@ describe("tubesheet.worker — radial layout is stored as 0 by the UI", () => {
     });
 });
 
+describe("tubesheet.worker — CALCULATE_SWEEP", () => {
+    it("responds with SWEEP_RESULTS using discrete sweep points", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_SWEEP",
+                requestId: "req-sweep",
+                payload: {
+                    OTLtoShell: 6.35,
+                    tubeOD: 19.05,
+                    pitchRatio: 1.25,
+                    layoutOption: 30,
+                    currentNumTubes: 37,
+                    centerShellID: 200,
+                },
+            },
+        } as MessageEvent);
+
+        const sent = postMessageSpy.mock.calls[0][0] as {
+            type: string;
+            requestId: string;
+            payload: Array<{ shellID: number; numTubes: number; OTL: number | null }>;
+        };
+
+        expect(sent.type).toBe("SWEEP_RESULTS");
+        expect(sent.requestId).toBe("req-sweep");
+        expect(sent.payload.length).toBeGreaterThanOrEqual(1);
+        expect(sent.payload.some((p) => p.shellID === 200)).toBe(true);
+        expect(sent.payload.every((p) => typeof p.numTubes === "number")).toBe(true);
+
+        postMessageSpy.mockRestore();
+    });
+
+    it("normalises layoutOption 0 to the radial layout instead of hanging", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_SWEEP",
+                requestId: "req-sweep-radial",
+                payload: {
+                    OTLtoShell: 150,
+                    tubeOD: 90.53,
+                    pitchRatio: 1.25,
+                    layoutOption: 0,
+                    currentNumTubes: 50,
+                    centerShellID: 400,
+                },
+            },
+        } as MessageEvent);
+
+        expect(postMessageSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ type: "SWEEP_RESULTS", requestId: "req-sweep-radial" }),
+        );
+
+        postMessageSpy.mockRestore();
+    });
+
+    it("replies with ERROR for an unknown layout instead of hanging", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_SWEEP",
+                requestId: "req-sweep-bad-layout",
+                payload: {
+                    OTLtoShell: 6.35,
+                    tubeOD: 19.05,
+                    pitchRatio: 1.25,
+                    layoutOption: 999,
+                    currentNumTubes: 37,
+                    centerShellID: 200,
+                },
+            },
+        } as MessageEvent);
+
+        expect(postMessageSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: "ERROR",
+                requestId: "req-sweep-bad-layout",
+                requestType: "CALCULATE_SWEEP",
+                payload: expect.stringContaining("Invalid layout option: 999"),
+            }),
+        );
+
+        postMessageSpy.mockRestore();
+    });
+
+    it("replies with ERROR when currentNumTubes or centerShellID are missing", () => {
+        const postMessageSpy = vi.spyOn(self, "postMessage").mockImplementation(() => {});
+
+        getHandler()({
+            data: {
+                type: "CALCULATE_SWEEP",
+                requestId: "req-sweep-missing",
+                payload: {
+                    OTLtoShell: 6.35,
+                    tubeOD: 19.05,
+                    pitchRatio: 1.25,
+                    layoutOption: 30,
+                },
+            },
+        } as MessageEvent);
+
+        expect(postMessageSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: "ERROR",
+                requestId: "req-sweep-missing",
+                requestType: "CALCULATE_SWEEP",
+                payload: expect.stringContaining("currentNumTubes and centerShellID must be numbers"),
+            }),
+        );
+
+        postMessageSpy.mockRestore();
+    });
+});
+
 describe("tubesheet.worker — preferred-layout ties at full precision", () => {
     // 45° and radial realises the same 4-tube diamond for these inputs. Their
     // minIDs must be bit-identical (full float precision on both paths) so the

@@ -243,22 +243,7 @@ export function useLayoutForm({
         // shellID: last-edited wins, so committing a value here clears any
         // min-tubes value and recalculates using the new shell ID.
         if (name === "shellID") {
-            const changed = fields.shellID !== parsed;
-            const clearsMinTubes = utils.isNumber(fields.minTubes);
-            setGenericField("shellID", parsed);
-            if (clearsMinTubes) {
-                setGenericField("minTubes", undefined);
-            }
-            if (changed || clearsMinTubes) {
-                requestAllLayoutResults({ shellID: parsed, minTubes: undefined });
-            }
-            if (
-                (changed || clearsMinTubes) &&
-                layoutInputsDefined &&
-                utils.isNumber(fields.layoutOption)
-            ) {
-                triggerSingleCalculation({ shellID: parsed, minTubes: undefined });
-            }
+            applyShellID(parsed);
             return;
         }
 
@@ -339,6 +324,34 @@ export function useLayoutForm({
             postCalculateSingle,
         ],
     );
+
+    // Commits a new shell ID exactly as if the user had typed it into the
+    // shellID field and blurred: clears any min-tubes value (last-edited
+    // wins), and refreshes both the layout-options comparison and the
+    // current single drawing. Shared by onBlur's shellID branch and by
+    // anything else that wants to programmatically set the shell ID (e.g.
+    // applying a shell-size sweep result). A plain function (like onBlur/
+    // onAcceptEmpty above), not a useCallback: it closes over the same
+    // per-render fields/triggerSingleCalculation those already do, and nothing
+    // downstream depends on it being referentially stable across renders.
+    const applyShellID = (value: number) => {
+        const changed = fields.shellID !== value;
+        const clearsMinTubes = utils.isNumber(fields.minTubes);
+        setGenericField("shellID", value);
+        if (clearsMinTubes) {
+            setGenericField("minTubes", undefined);
+        }
+        if (changed || clearsMinTubes) {
+            requestAllLayoutResults({ shellID: value, minTubes: undefined });
+        }
+        if (
+            (changed || clearsMinTubes) &&
+            layoutInputsDefined &&
+            utils.isNumber(fields.layoutOption)
+        ) {
+            triggerSingleCalculation({ shellID: value, minTubes: undefined });
+        }
+    };
 
     const formOnSubmitHandler = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -530,5 +543,6 @@ export function useLayoutForm({
         formOnSubmitHandler,
         inputOnSubmitHandler,
         triggerSingleCalculation,
+        applyShellID,
     };
 }

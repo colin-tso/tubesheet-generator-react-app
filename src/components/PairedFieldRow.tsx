@@ -94,6 +94,38 @@ export function PairedFieldRow({
 
     useEffect(() => clearDraft, [clearDraft]);
 
+    // Preview minTubes when shellID changes externally (e.g. a sweep row
+    // click via applyShellID).  Tracks the previous shellID so we only
+    // react to actual changes, not every render.
+    const prevShellIDRef = useRef(fieldValues.shellID);
+    useEffect(() => {
+        const prevShellID = prevShellIDRef.current;
+        const currentShellID = fieldValues.shellID;
+        prevShellIDRef.current = currentShellID;
+
+        if (prevShellID === currentShellID) return;
+        if (!utils.isNumber(currentShellID)) return;
+        if (utils.isNumber(fieldValues.minTubes)) return;
+
+        // Don't interfere with active typing in the shellID field.
+        if (focusedFieldIdRef.current === "shellID") return;
+        if (pinnedField?.id === "shellID") return;
+
+        if (!previewConfig || previewConfig.kind !== "worker") return;
+        const ctx = { ...fieldValues, layoutOption };
+        if (!previewConfig.isReady(ctx)) return;
+
+        setPreviewTargetId("minTubes");
+        requestPreview(previewConfig.buildRequest("shellID", currentShellID, ctx));
+    }, [
+        fieldValues.shellID,
+        fieldValues.minTubes,
+        layoutOption,
+        previewConfig,
+        requestPreview,
+        pinnedField,
+    ]);
+
     // Current live-preview number for a field, if any.
     const previewNumberFor = useCallback(
         (fieldId: string): number | undefined => {
