@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, expectTypeOf, vi } from "vitest";
 import {
     TubeSheet,
