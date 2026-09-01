@@ -48,14 +48,14 @@ export function DocsRegistryProvider({ children }: { children: ReactNode }) {
 
     return (
         <div ref={containerRef}>
-            <EquationNumbersContext.Provider value={equationNumbers}>
-                <TableNumbersContext.Provider value={tableNumbers}>
-                    <EquationPreviewContext.Provider value={{ preview, showPreview, hidePreview }}>
+            <EquationNumbersContext value={equationNumbers}>
+                <TableNumbersContext value={tableNumbers}>
+                    <EquationPreviewContext value={{ preview, showPreview, hidePreview }}>
                         {children}
                         <EquationPreview />
-                    </EquationPreviewContext.Provider>
-                </TableNumbersContext.Provider>
-            </EquationNumbersContext.Provider>
+                    </EquationPreviewContext>
+                </TableNumbersContext>
+            </EquationNumbersContext>
         </div>
     );
 }

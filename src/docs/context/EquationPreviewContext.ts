@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 
 // Which EqRef (if any) is currently hovered/focused, and the anchor element
 // EquationPreview should position itself against. A single panel is shared
@@ -19,7 +19,7 @@ export interface EquationPreviewContextValue {
 export const EquationPreviewContext = createContext<EquationPreviewContextValue | null>(null);
 
 export function useEquationPreview(): EquationPreviewContextValue {
-    const ctx = useContext(EquationPreviewContext);
+    const ctx = use(EquationPreviewContext);
     if (!ctx) {
         throw new Error("useEquationPreview must be used within DocsRegistryProvider");
     }
