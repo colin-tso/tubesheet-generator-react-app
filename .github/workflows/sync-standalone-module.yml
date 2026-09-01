@@ -119,6 +119,26 @@ jobs:
                       fi
                   done
 
+            - name: Sync devDependencies required by @vitest-environment directives
+              working-directory: target
+              run: |
+                  ENVS=$(grep -rhoP '(?<=@vitest-environment )\w+' tests src 2>/dev/null | sort -u)
+                  echo "Detected vitest environment directives: ${ENVS:-none}"
+
+                  for ENV in $ENVS; do
+                      [ "$ENV" = "node" ] && continue  # already the default, nothing to install
+
+                      VERSION=$(jq -r --arg p "$ENV" '.devDependencies[$p] // empty' ../source/package.json)
+                      if [ -z "$VERSION" ]; then
+                          echo "::warning::Test requires vitest environment '${ENV}' but source package.json has no matching devDependency – skipping."
+                          continue
+                      fi
+
+                      jq --arg p "$ENV" --arg v "$VERSION" '.devDependencies[$p] = $v' package.json > package.json.tmp
+                      mv package.json.tmp package.json
+                      echo "Synced ${ENV}@${VERSION} into target devDependencies"
+                  done
+
             - name: Align target tsconfig target/lib with source
               run: |
                   # The source module targets ESNext and iterates DOM
