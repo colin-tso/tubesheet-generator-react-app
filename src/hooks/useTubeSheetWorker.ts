@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateTubeSheetSVG, TUBE_SHEET_LAYOUTS } from "@/plugins/tubesheet-layout-generator";
+import {
+    generateTubeSheetSVG,
+    TUBE_SHEET_LAYOUTS,
+    type ShellSweepPoint,
+} from "@/plugins/tubesheet-layout-generator";
 import type { ITubeSheetData, TubeSheetLayout } from "@/plugins/tubesheet-layout-generator";
 
 export type LayoutResults = Record<
@@ -7,6 +11,7 @@ export type LayoutResults = Record<
     (ITubeSheetData & { preferred: boolean }) | null
 >;
 export type SingleResultPayload = (ITubeSheetData & { numTubes?: number }) | null;
+export type SweepResultPayload = ShellSweepPoint[] | null;
 
 const emptyLayoutResults: LayoutResults = Object.fromEntries(
     TUBE_SHEET_LAYOUTS.map((layout) => [layout, null]),
@@ -19,16 +24,18 @@ const MIN_VISIBLE_MS = 300;
 
 export type SingleCallback = (payload: SingleResultPayload) => void;
 export type AllCallback = (payload: LayoutResults) => void;
+export type SweepCallback = (payload: SweepResultPayload) => void;
 export type CallbackEntry =
     | { type: "single"; callback: SingleCallback; isPreview: boolean }
-    | { type: "all"; callback: AllCallback; isPreview: boolean };
+    | { type: "all"; callback: AllCallback; isPreview: boolean }
+    | { type: "sweep"; callback: SweepCallback; isPreview: boolean };
 
 // Shape of a message posted back from tubesheet.worker.ts.
 export interface WorkerMessage {
     type: string;
     requestId: number;
     payload: unknown;
-    requestType?: "CALCULATE_ALL" | "CALCULATE_SINGLE";
+    requestType?: "CALCULATE_ALL" | "CALCULATE_SINGLE" | "CALCULATE_SWEEP";
 }
 
 // Everything dispatchWorkerMessage needs to apply one worker response.
@@ -67,9 +74,11 @@ export function dispatchWorkerMessage(message: WorkerMessage, ctx: WorkerDispatc
 
         // Resolve live-preview callbacks with null so they mark themselves
         // unavailable. Committed callbacks are skipped so the last good
-        // drawing/results stay on screen.
-        if (entry?.isPreview) {
-            (entry.callback as SingleCallback)(null);
+        // drawing/results stay on screen. Sweep requests have no "committed,
+        // keep the last good state" mode — they're always a one-off ask for a
+        // fresh chart/table, so always resolve them (with null) on error too.
+        if (entry?.isPreview || entry?.type === "sweep") {
+            (entry.callback as SingleCallback | SweepCallback)(null);
         }
 
         if (entry) {
@@ -92,6 +101,8 @@ export function dispatchWorkerMessage(message: WorkerMessage, ctx: WorkerDispatc
         ctx.pendingCallbacks.delete(requestId);
         if (entry.type === "single") {
             (entry.callback as SingleCallback)(payload as SingleResultPayload);
+        } else if (entry.type === "sweep") {
+            (entry.callback as SweepCallback)(payload as SweepResultPayload);
         } else {
             (entry.callback as AllCallback)(payload as LayoutResults);
         }
@@ -175,9 +186,9 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     // Core dispatcher – stores callback for preview requests, skips loading badge for previews.
     const makeRequest = useCallback(
         (
-            type: "CALCULATE_SINGLE" | "CALCULATE_ALL",
+            type: "CALCULATE_SINGLE" | "CALCULATE_ALL" | "CALCULATE_SWEEP",
             payload: Record<string, unknown>,
-            callback?: SingleCallback | AllCallback,
+            callback?: SingleCallback | AllCallback | SweepCallback,
             isPreview = false,
         ): number => {
             if (!workerRef.current) {
@@ -186,15 +197,26 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
             const requestId = ++nextRequestIdRef.current;
             if (type === "CALCULATE_SINGLE") {
                 latestSingleRequestIdRef.current = requestId;
-            } else {
+            } else if (type === "CALCULATE_ALL") {
                 latestAllRequestIdRef.current = requestId;
             }
+            // CALCULATE_SWEEP has no "latest wins, others are stale" concept
+            // here — it's always a one-off callback request, and the caller
+            // (e.g. a sweep panel) is responsible for discarding stale
+            // responses itself, the same way useLivePreview does for
+            // requestSingle previews.
 
             if (callback) {
                 if (type === "CALCULATE_SINGLE") {
                     pendingCallbacksRef.current.set(requestId, {
                         type: "single",
                         callback: callback as SingleCallback,
+                        isPreview,
+                    });
+                } else if (type === "CALCULATE_SWEEP") {
+                    pendingCallbacksRef.current.set(requestId, {
+                        type: "sweep",
+                        callback: callback as SweepCallback,
                         isPreview,
                     });
                 } else {
@@ -222,6 +244,16 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     const requestAll = useCallback(
         (payload: Record<string, unknown>, callback: AllCallback, isPreview = true): number =>
             makeRequest("CALCULATE_ALL", payload, callback, isPreview),
+        [makeRequest],
+    );
+
+    // A shell-size sweep is always a one-off ask for a fresh chart/table, not
+    // a piece of persistent app state, so it's always "preview-style": it
+    // never toggles the global isCalculating/busy-cursor state, matching how
+    // live-preview requests behave while typing.
+    const requestSweep = useCallback(
+        (payload: Record<string, unknown>, callback: SweepCallback): number =>
+            makeRequest("CALCULATE_SWEEP", payload, callback, true),
         [makeRequest],
     );
 
@@ -341,5 +373,6 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         postCalculateAll,
         requestSingle,
         requestAll,
+        requestSweep,
     };
 }

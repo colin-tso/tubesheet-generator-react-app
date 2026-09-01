@@ -54,9 +54,7 @@ describe("dispatchWorkerMessage — ERROR handling", () => {
         expect(ctx.pendingCallbacks.size).toBe(0);
         expect(calls.completeCalculation).toHaveLength(1);
         expect(calls.setCalcError).toEqual([["Invalid layout option: 999"]]);
-        expect(calls.setAnnouncement).toEqual([
-            ["Calculation failed: Invalid layout option: 999"],
-        ]);
+        expect(calls.setAnnouncement).toEqual([["Calculation failed: Invalid layout option: 999"]]);
         // Last good drawing/results are left untouched.
         expect(calls.setDrawingSVG).toBeUndefined();
         expect(calls.setLastSingleResult).toBeUndefined();
@@ -77,6 +75,22 @@ describe("dispatchWorkerMessage — ERROR handling", () => {
         expect(calls.completeCalculation).toBeUndefined();
         expect(calls.setCalcError).toEqual([["boom"]]);
         expect(calls.setAnnouncement).toEqual([["Calculation failed: boom"]]);
+    });
+
+    it("resolves a sweep callback with null on error, same as a preview", () => {
+        const { ctx, calls } = makeCtx({ latestSingleRequestId: 99 });
+        const callback = vi.fn();
+        ctx.pendingCallbacks.set(4, { type: "sweep", callback, isPreview: true });
+
+        dispatchWorkerMessage(
+            { type: "ERROR", requestId: 4, requestType: "CALCULATE_SWEEP", payload: "bad shellID" },
+            ctx,
+        );
+
+        expect(callback).toHaveBeenCalledWith(null);
+        expect(ctx.pendingCallbacks.size).toBe(0);
+        // Sweep is always preview-style, so it never touches completion accounting.
+        expect(calls.completeCalculation).toBeUndefined();
     });
 
     it("leaves committed all-results state untouched on error", () => {
@@ -114,14 +128,24 @@ describe("dispatchWorkerMessage — success paths", () => {
         const callback = vi.fn();
         ctx.pendingCallbacks.set(9, { type: "single", callback, isPreview: false });
 
-        dispatchWorkerMessage(
-            { type: "SINGLE_RESULT", requestId: 9, payload: { minID: 50 } },
-            ctx,
-        );
+        dispatchWorkerMessage({ type: "SINGLE_RESULT", requestId: 9, payload: { minID: 50 } }, ctx);
 
         expect(callback).toHaveBeenCalledWith({ minID: 50 });
         expect(ctx.pendingCallbacks.size).toBe(0);
         expect(calls.completeCalculation).toHaveLength(1);
+    });
+
+    it("invokes a sweep callback with the results array and never touches completion accounting", () => {
+        const { ctx, calls } = makeCtx();
+        const callback = vi.fn();
+        ctx.pendingCallbacks.set(10, { type: "sweep", callback, isPreview: true });
+
+        const points = [{ shellID: 200, numTubes: 37, OTL: 180.5 }];
+        dispatchWorkerMessage({ type: "SWEEP_RESULTS", requestId: 10, payload: points }, ctx);
+
+        expect(callback).toHaveBeenCalledWith(points);
+        expect(ctx.pendingCallbacks.size).toBe(0);
+        expect(calls.completeCalculation).toBeUndefined();
     });
 
     it("updates state for the latest request made without a callback", () => {
