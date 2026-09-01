@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { AnimationLifecycle } from "@/hooks/useContextMenu";
 import type { CopyState, PdfExportState, PngExportState } from "@/hooks/useSvgExportActions";
@@ -63,7 +63,7 @@ export const ViewportContext = createContext<ViewportContextValue | null>(null);
 // Components that need shared viewport state just need to render inside
 // Viewport.Provider -- they don't need to be visually inside Viewport.Frame.
 export function useViewportContext(): ViewportContextValue {
-    const ctx = useContext(ViewportContext);
+    const ctx = use(ViewportContext);
     if (!ctx) {
         throw new Error("Viewport.* components must be rendered inside <Viewport.Provider>");
     }
