@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.7.0
+
+### Minor Changes
+
+- 8096fd4: Add shell size comparison sweep panel
+
 ## 2.6.0
 
 ### Minor Changes
