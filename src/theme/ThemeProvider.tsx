@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { ThemeContext } from "./ThemeContext";
 import type { ThemeContextValue } from "./ThemeContext";
@@ -28,38 +28,44 @@ const readStoredPreference = (): "dark" | "light" | null => {
     }
 };
 
+// Subscribe to OS color-scheme changes via useSyncExternalStore. The snapshot
+// returns the raw OS preference; the override from useState is layered on top
+// in the component body.
+function subscribeOsTheme(callback: () => void): () => void {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", callback);
+    return () => mq.removeEventListener("change", callback);
+}
+
+function getOsTheme(): boolean {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
 // Single source of truth for the app theme. App and DocsPage stay mounted
 // simultaneously (see Root.tsx) and each renders its own DarkmodeToggle, so
 // the value must live here rather than inside either toggle's own state —
 // otherwise the two instances would drift out of sync with each other.
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [isDarkEnabled, setIsDarkEnabled] = useState<boolean>(() => {
-        const stored = readStoredPreference();
-        if (stored === "dark") return true;
-        if (stored === "light") return false;
-        return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    });
+    // User override (non-null wins over OS pref). Null means "follow OS".
+    const [override, setOverride] = useState<"dark" | "light" | null>(() =>
+        readStoredPreference(),
+    );
 
-    useEffect(() => {
-        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-        const handleChange = (e: MediaQueryListEvent) => {
-            if (readStoredPreference() === null) {
-                setIsDarkEnabled(e.matches);
-            }
-        };
-        mediaQuery.addEventListener("change", handleChange);
-        return () => mediaQuery.removeEventListener("change", handleChange);
-    }, []);
+    // Subscribe to OS preference changes without a manual useEffect listener.
+    const osDark = useSyncExternalStore(subscribeOsTheme, getOsTheme, getOsTheme);
+
+    // User override takes precedence; otherwise follow the OS.
+    const isDarkEnabled = override !== null ? override === "dark" : osDark;
 
     useEffect(() => {
         updateTheme(isDarkEnabled);
     }, [isDarkEnabled]);
 
     const toggle = useCallback(() => {
-        setIsDarkEnabled((prev) => {
-            const next = !prev;
+        setOverride((prev) => {
+            const next = prev === "dark" ? "light" : "dark";
             try {
-                window.localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
+                window.localStorage.setItem(THEME_STORAGE_KEY, next);
             } catch {
                 // localStorage can throw in private browsing or when quota is
                 // exceeded; the in-memory theme still applies.
