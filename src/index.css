@@ -232,9 +232,16 @@ a,
    Layout skeleton
    ============================================================ */
 .row-pane {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-areas:
+    "form viewport"
+    "footer viewport";
+  grid-template-columns: 24rem 1fr;
+  grid-template-rows: 1fr auto;
+  /* Grid rows need a definite container height to resolve the "form" row's
+     1fr track against the "footer" row's auto (content) height — see .left
+     below. */
+  height: 100vh;
 }
 
 /* Hides the inactive route (calculator or docs) while keeping it mounted, so
@@ -261,10 +268,15 @@ a,
 .left {
   position: relative;
 
-  flex: 0 0 24rem;
+  grid-area: form;
   flex-direction: column;
   align-items: normal;
 
+  /* Overrides .column-pane's height: 100vh — .left now only spans the "form"
+     grid row (sized to fill whatever's left above the footer's own row), not
+     the full row-pane height that row-pane itself already accounts for. */
+  height: 100%;
+  min-height: 0;
   border-right: 1px solid var(--line);
 
   background-color: var(--panel);
@@ -276,7 +288,10 @@ form.column-pane.left {
 
 .right {
   position: relative;
-  flex: 1;
+  grid-area: viewport;
+  /* Spans both grid rows (see .row-pane's grid-template-areas), so 100% here
+     still resolves to the full row-pane height, matching the old 100vh. */
+  height: 100%;
   padding: 0;
 }
 
@@ -370,6 +385,7 @@ hr {
 
   /* Firefox */
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
 
   overflow-y: auto;
   flex: 1;
@@ -654,7 +670,6 @@ input[type="text"].field-preview:focus {
   gap: 12px;
   align-items: baseline;
 
-  font-family: var(--font-mono);
   font-size: 9.5px;
   font-weight: 700;
   color: var(--muted);
@@ -703,13 +718,13 @@ input[type="text"].field-preview:focus {
     opacity var(--transition);
 }
 
-.layout-row:first-child {
+.layout-row:first-of-type {
   margin-top: 0;
   border-top-left-radius: var(--radius-sm);
   border-top-right-radius: var(--radius-sm);
 }
 
-.layout-row:last-child {
+.layout-row:last-of-type {
   border-bottom-right-radius: var(--radius-sm);
   border-bottom-left-radius: var(--radius-sm);
 }
@@ -842,7 +857,92 @@ input[type="text"].field-preview:focus {
 }
 
 .layout-row .row-stats .empty {
+  line-height: 1;
   color: var(--line);
+}
+
+/* ============================================================
+   Shell size comparison (sweep) panel
+   ============================================================ */
+.sweep-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+
+  margin-bottom: 10px;
+}
+
+.sweep-button {
+  flex: 0 0 auto;
+
+  padding: 8px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+
+  font-size: 12.5px;
+  color: var(--ink);
+
+  background-color: transparent;
+
+  transition:
+    background-color var(--transition),
+    border-color var(--transition);
+}
+
+.sweep-button:hover:not(:disabled) {
+  background-color: var(--input-readonly-background);
+}
+
+.sweep-button:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+.sweep-status {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sweep-status.error {
+  color: var(--redline);
+}
+
+/* .sweep-row reuses .layout-row's card look (border, hover, the
+   .row-bar-track/.row-bar-fill bar) but has no radio input, so it drops the
+   16px input column .layout-row otherwise reserves. */
+.sweep-row {
+  grid-template-columns: 52px 1fr auto;
+
+  width: 100%;
+
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.sweep-header {
+  grid-template-columns: 52px 1fr auto;
+}
+
+.sweep-header .header-minid,
+.sweep-header .header-tubes {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.sweep-header .header-minid {
+  text-align: left;
+}
+
+.sweep-row.current {
+  z-index: 1;
+  border-color: var(--blue);
+  background-color: var(--blue-tint);
 }
 
 /* ============================================================
@@ -878,6 +978,7 @@ button:disabled {
 .grid-toggle:focus-visible,
 .table-toggle:focus-visible,
 .tube-labels-toggle:focus-visible,
+.sweep-button:focus-visible,
 .help-button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-glow);
@@ -907,9 +1008,13 @@ button:disabled {
 }
 
 .form-footer {
-  flex: 0 0 auto;
+  grid-area: footer;
+
   padding: 18px 24px 20px;
   border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+
+  background-color: var(--panel);
 }
 
 footer {
@@ -1979,13 +2084,30 @@ footer a {
     width: 100%;
   }
   .row-pane {
-    flex-direction: column;
+    display: grid;
+    grid-template-areas:
+      "form"
+      "viewport"
+      "footer";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    /* Desktop pins this to 100vh so the 1fr/auto row split resolves against a
+       definite height; mobile stacks everything with natural content height
+       instead (matches .left/.form-scroll's own height:auto/overflow:visible
+       overrides just below). */
+    height: auto;
   }
   .left {
-    flex: 0 0 auto;
     height: auto;
     border-right: none;
     border-bottom: 1px solid var(--line);
+  }
+  /* .right previously stayed pinned at the desktop 100vh even on mobile,
+     which was harmless while it was the last element in the stack. Now that
+     .form-footer renders after it, .right must shrink to its actual content
+     height too, or the footer would sit below a large empty gap. */
+  .right {
+    height: auto;
   }
   .form-scroll {
     overflow-y: visible;
@@ -2027,6 +2149,11 @@ footer a {
   .layout-row,
   .layout-list-header {
     grid-template-columns: 16px 44px 1fr auto;
+    gap: 8px;
+  }
+  .sweep-row,
+  .sweep-header {
+    grid-template-columns: 44px 1fr auto;
     gap: 8px;
   }
   .layout-row {

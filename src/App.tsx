@@ -9,6 +9,7 @@ import ThemeToggle from "@/components/DarkmodeToggle";
 import { useTubeSheetWorker } from "@/hooks/useTubeSheetWorker";
 import { useLayoutForm } from "@/hooks/useLayoutForm";
 import { LayoutOptionsList } from "@/components/LayoutOptionsList";
+import { ShellSweepPanel } from "@/components/ShellSweepPanel";
 import { FormFooter } from "@/components/FormFooter";
 import { Viewport } from "@/components/viewport/Viewport";
 import { useViewportContext } from "@/components/viewport/ViewportContext";
@@ -117,6 +118,7 @@ const App = () => {
         onLayoutOptionChange,
         formOnSubmitHandler,
         inputOnSubmitHandler,
+        applyShellID,
     } = useLayoutForm({
         lastSingleResult,
         postCalculateSingle: worker.postCalculateSingle,
@@ -239,6 +241,20 @@ const App = () => {
                             showLoadingBadge={showLoadingBadge}
                             onLayoutOptionChange={onLayoutOptionChange}
                         />
+                        <ShellSweepPanel
+                            OTLtoShell={OTLtoShell}
+                            tubeOD={tubeOD}
+                            pitchRatio={pitchRatio}
+                            layoutOption={layoutOption}
+                            layoutInputsDefined={layoutInputsDefined}
+                            layoutOptionSelected={layoutOptionSelected}
+                            centerShellID={
+                                lastSingleResult?.shellID ?? lastSingleResult?.minID ?? undefined
+                            }
+                            currentNumTubes={lastSingleResult?.numTubes ?? undefined}
+                            requestSweep={worker.requestSweep}
+                            onApplyShellID={applyShellID}
+                        />
                         {/* Disabled while a calculation is in flight */}
                         <button
                             type="submit"
@@ -250,7 +266,6 @@ const App = () => {
                             Regenerate Drawing
                         </button>
                     </div>
-                    <FormFooter />
                 </FormPane>
                 <Viewport.Frame>
                     <Viewport.ContextMenu />
@@ -262,6 +277,12 @@ const App = () => {
                         <Viewport.ExportActions />
                     </Viewport.Footer>
                 </Viewport.Frame>
+                {/* A grid sibling of .left/.right (not nested in the form) so
+                    it can occupy its own named grid area: pinned below the
+                    form on desktop, but reordered to after the viewport on
+                    mobile — see the "form"/"viewport"/"footer" grid-template-
+                    areas on .row-pane in index.css. */}
+                <FormFooter />
             </BusyRow>
         </Viewport.Provider>
     );
