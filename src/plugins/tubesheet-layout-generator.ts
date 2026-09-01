@@ -1146,6 +1146,191 @@ const tubeFieldOTL = (
     }
 };
 
+export interface ShellSweepPoint {
+    shellID: number;
+    numTubes: number;
+    OTL: number | null;
+    minID: number;
+}
+
+/**
+ * Finds the next discrete shell sizes i.e. the shell IDs where the tube count
+ * changes, stepping outward from a center point in whole-unit increments.
+ * Returns the current result plus up to 2 transitions in each direction (5
+ * points max), ordered from smallest to largest shell ID.
+ *
+ * Each direction's search stops early, and yields one fewer point than the max,
+ * if it runs past `minShellID` (downward) or 500 steps without finding a change
+ * in tube count.
+ *
+ * @param {number} centerShellID                The shell ID to search outward
+ *                                              from.
+ * @param {number} OTLClearance                 The minimum diametrical
+ *                                              clearance from the tube outer
+ *                                              diameter to the shell ID.
+ * @param {number} tubeOD                       The tube outer diameter.
+ * @param {number} pitchRatio                   The tube pitch ratio.
+ * @param {TubeSheetLayout} layout              The layout of the tube sheet.
+ * @param {OffsetOption} [offsetOption="AUTO"]  The offset option.
+ * @returns {ShellSweepPoint[]}                 Up to 5 points — the center
+ *                                              point plus any transitions found
+ *                                              in each direction — sorted by
+ *                                              ascending shell ID.
+ */
+export const findDiscreteSweepPoints = (
+    centerShellID: number,
+    OTLClearance: number,
+    tubeOD: number,
+    pitchRatio: number,
+    layout: TubeSheetLayout,
+    offsetOption: OffsetOption = "AUTO",
+): ShellSweepPoint[] => {
+    const STEP = 1;
+    const minShellID = tubeOD + OTLClearance;
+
+    const makePoint = (shellID: number): ShellSweepPoint => ({
+        shellID,
+        numTubes: tubeCount(shellID, OTLClearance, tubeOD, pitchRatio, layout, offsetOption, true),
+        OTL:
+            tubeFieldOTL(shellID, OTLClearance, tubeOD, pitchRatio, layout, offsetOption, true) ??
+            null,
+        minID: shellID,
+    });
+
+    const current = makePoint(centerShellID);
+    if (current.numTubes > 0) {
+        try {
+            current.minID = findMinID(
+                current.numTubes,
+                OTLClearance,
+                tubeOD,
+                pitchRatio,
+                layout,
+                offsetOption,
+            );
+        } catch {
+            current.minID = centerShellID;
+        }
+    }
+    const centerTubeCount = current.numTubes;
+
+    const findTransitionUp = (startShellID: number): ShellSweepPoint | null => {
+        const startCount = tubeCount(
+            startShellID,
+            OTLClearance,
+            tubeOD,
+            pitchRatio,
+            layout,
+            offsetOption,
+            true,
+        );
+        try {
+            const targetID = findMinID(
+                startCount + 1,
+                OTLClearance,
+                tubeOD,
+                pitchRatio,
+                layout,
+                offsetOption,
+            );
+            const point = makePoint(targetID);
+            point.minID = findMinID(
+                point.numTubes,
+                OTLClearance,
+                tubeOD,
+                pitchRatio,
+                layout,
+                offsetOption,
+            );
+            return point;
+        } catch {
+            return null;
+        }
+    };
+
+    const findTransitionDown = (
+        startShellID: number,
+        centerTubeCountLocal: number,
+    ): ShellSweepPoint | null => {
+        const startCount = tubeCount(
+            startShellID,
+            OTLClearance,
+            tubeOD,
+            pitchRatio,
+            layout,
+            offsetOption,
+            true,
+        );
+
+        // Step 1: find the first shell ID where tube count drops
+        let shellID = startShellID;
+        let numTubes = startCount;
+        for (let i = 0; i < 500; i++) {
+            shellID -= STEP;
+            if (shellID < minShellID) return null;
+            numTubes = tubeCount(
+                shellID,
+                OTLClearance,
+                tubeOD,
+                pitchRatio,
+                layout,
+                offsetOption,
+                true,
+            );
+            if (numTubes !== startCount) break;
+        }
+        if (numTubes === startCount) return null;
+
+        // Step 2: sanity check — walk tube count up until findMinID(N+1) >= centerShellID
+        //         short-circuit: never exceed centerTubeCount
+        while (numTubes > 0 && numTubes + 1 <= centerTubeCountLocal) {
+            try {
+                const nextMinID = findMinID(
+                    numTubes + 1,
+                    OTLClearance,
+                    tubeOD,
+                    pitchRatio,
+                    layout,
+                    offsetOption,
+                );
+                if (nextMinID >= centerShellID) {
+                    const point = makePoint(shellID);
+                    point.minID = findMinID(
+                        point.numTubes,
+                        OTLClearance,
+                        tubeOD,
+                        pitchRatio,
+                        layout,
+                        offsetOption,
+                    );
+                    return point;
+                }
+            } catch {
+                break;
+            }
+            numTubes += 1;
+        }
+
+        const point = makePoint(shellID);
+        point.minID = findMinID(
+            point.numTubes,
+            OTLClearance,
+            tubeOD,
+            pitchRatio,
+            layout,
+            offsetOption,
+        );
+        return point;
+    };
+
+    const up1 = findTransitionUp(centerShellID);
+    const up2 = up1 ? findTransitionUp(up1.shellID) : null;
+    const down1 = findTransitionDown(centerShellID, centerTubeCount);
+    const down2 = down1 ? findTransitionDown(down1.shellID, centerTubeCount) : null;
+
+    return [down2, down1, current, up1, up2].filter((p): p is ShellSweepPoint => p !== null);
+};
+
 /**
  * Finds the minimum shell ID for a given set of parameters.
  *
@@ -1158,7 +1343,7 @@ const tubeFieldOTL = (
  * @param {string | TubeSheetLayout} layout         The layout type. Can be a
  *                                                  string or a TubeSheetLayout
  *                                                  object.
- * @param {OffsetOption} [offsetOption="AUTO"]  The offset option. Can be a
+ * @param {OffsetOption} [offsetOption="AUTO"]      The offset option. Can be a
  *                                                  boolean or "AUTO".
  * @returns {number}                                The minimum shell ID.
  * @throws {Error}                                  If the tube outer diameter
@@ -1171,7 +1356,7 @@ const tubeFieldOTL = (
  *                                                  minimum shell ID could not
  *                                                  be found.
  */
-const findMinID = memoizeBounded(
+export const findMinID = memoizeBounded(
     (
         minTubes: number,
         OTLClearance: number,
