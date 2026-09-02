@@ -908,23 +908,15 @@ input[type="text"].field-preview:focus {
   color: var(--redline);
 }
 
-/* .sweep-row reuses .layout-row's card look (border, hover, the
-   .row-bar-track/.row-bar-fill bar) but has no radio input, so it drops the
-   16px input column .layout-row otherwise reserves. */
-.sweep-row {
-  grid-template-columns: 52px 1fr auto;
-
-  width: 100%;
-
-  font: inherit;
-  color: inherit;
-  text-align: left;
-}
-
-.sweep-header {
-  grid-template-columns: 52px 1fr auto;
-}
-
+/* .sweep-row/.sweep-header are rendered as real <label>/radio rows now (a
+   proper radiogroup, for native roving-tabindex arrow-key navigation between
+   shell-size options), so they share .layout-row's/.layout-list-header's
+   16px-input-column grid and "current" (:has(input:checked)) highlighting
+   outright — no column or highlight override needed here anymore. These
+   classes stay only as hooks for the label-only overrides below (sweep rows
+   show tube count but not a separate minID stat column, so the header
+   labels need their own sizing/case treatment rather than the nested
+   .header-stats one .layout-list-header expects). */
 .sweep-header .header-minid,
 .sweep-header .header-tubes {
   font-size: 9.5px;
@@ -935,14 +927,9 @@ input[type="text"].field-preview:focus {
   white-space: nowrap;
 }
 
-.sweep-header .header-minid {
-  text-align: left;
-}
-
-.sweep-row.current {
-  z-index: 1;
-  border-color: var(--blue);
-  background-color: var(--blue-tint);
+.sweep-header .header-minid,
+.sweep-row .row-angle {
+  justify-content: center;
 }
 
 /* ============================================================
@@ -2149,11 +2136,6 @@ footer a {
   .layout-row,
   .layout-list-header {
     grid-template-columns: 16px 44px 1fr auto;
-    gap: 8px;
-  }
-  .sweep-row,
-  .sweep-header {
-    grid-template-columns: 44px 1fr auto;
     gap: 8px;
   }
   .layout-row {

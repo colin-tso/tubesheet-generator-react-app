@@ -600,100 +600,118 @@ const generateTubeField = memoizeBounded(
  * Only valid for non-radial layouts — callers must guard on layout !== "radial".
  * offsetOption must be a boolean (not "AUTO") — callers must resolve AUTO
  * before calling.
+ *
+ * @param {number} shellID          The shell ID.
+ * @param {number} OTLClearance     The OTL clearance.
+ * @param {number} tubeOD           The tube OD.
+ * @param {number} pitchRatio       The pitch ratio.
+ * @param {TubeSheetLayout} layout  The tube sheet layout. Must not be
+ *                                  "radial".
+ * @param {boolean} offsetOption    Whether the tube field is offset. Must be
+ *                                  resolved to a boolean by the caller (not
+ *                                  "AUTO").
+ * @returns {{ count: number; maxDistSq: number } | null}
+ *                                  The tube count and the maximum squared
+ *                                  distance from the origin, or null if an
+ *                                  error occurred.
  */
-const scanQuarterField = (
-    shellID: number,
-    OTLClearance: number,
-    tubeOD: number,
-    pitchRatio: number,
-    layout: TubeSheetLayout,
-    offsetOption: boolean,
-): { count: number; maxDistSq: number } | null => {
-    try {
-        if (shellID <= 0) {
-            throw new Error("Shell ID must be greater than 0");
-        }
-        if (tubeOD <= 0) {
-            throw new Error("Tube OD must be greater than 0");
-        }
-        if (pitchRatio < 1) {
-            throw new Error("Pitch ratio must be 1 or greater");
-        }
-        if (OTLClearance < 0) {
-            throw new Error("OTL clearance must be 0 or greater");
-        }
-        if (
-            tubeOD >
-            shellID - OTLClearance + ulpTolerance(Math.max(shellID, OTLClearance, tubeOD))
-        ) {
-            throw new Error("Tube OD exceeds max allowable OTL");
-        }
-
-        const DECIMAL_PLACES = 8;
-        shellID = roundUp(shellID, DECIMAL_PLACES);
-
-        const pitch = tubeOD * pitchRatio;
-        const maxOTL = shellID - OTLClearance;
-        const { dx, dy, C } = getLayoutConstants(pitch, layout);
-
-        const offset = offsetOption ? dx / 2 : 0;
-        let i = 0,
-            j = 0,
-            x = 0,
-            y = 0;
-        const maxCentreDist = (maxOTL - tubeOD) / 2;
-        const BOUND_TOLERANCE = ulpTolerance(maxOTL);
-        const maxCentreDistSq =
-            (maxCentreDist + BOUND_TOLERANCE) * (maxCentreDist + BOUND_TOLERANCE);
-
-        let hasOrigin = false;
-        const xAxisMags = new Set<number>();
-        const yAxisMags = new Set<number>();
-        let coreCount = 0;
-        let maxDistSq = 0;
-
-        while (Math.abs(y) <= maxOTL && j < 999999) {
-            y = j * dy;
-            const cMult = j & 1 ? 0 : 1;
-            x = 0;
-            while (Math.abs(x) <= maxOTL && i < 999999) {
-                x = C * cMult + i * dx - offset;
-                i++;
-                if (x * x + y * y <= maxCentreDistSq) {
-                    const nx = normalize(x);
-                    const ny = normalize(y);
-                    const distSq = nx * nx + ny * ny;
-                    if (distSq > maxDistSq) {
-                        maxDistSq = distSq;
-                    }
-                    if (nx === 0 && ny === 0) {
-                        hasOrigin = true;
-                    } else if (nx === 0) {
-                        yAxisMags.add(ny < 0 ? -ny : ny);
-                    } else if (ny === 0) {
-                        xAxisMags.add(nx < 0 ? -nx : nx);
-                    } else if (nx > 0 && ny > 0) {
-                        coreCount++;
-                    }
-                    // x<0 && y>0 points skipped — auto-covered by core mirroring
-                } else {
-                    break;
-                }
+const scanQuarterField = memoizeBounded(
+    (
+        shellID: number,
+        OTLClearance: number,
+        tubeOD: number,
+        pitchRatio: number,
+        layout: TubeSheetLayout,
+        offsetOption: boolean,
+    ): { count: number; maxDistSq: number } | null => {
+        try {
+            if (shellID <= 0) {
+                throw new Error("Shell ID must be greater than 0");
             }
-            i = 0;
-            j++;
-        }
+            if (tubeOD <= 0) {
+                throw new Error("Tube OD must be greater than 0");
+            }
+            if (pitchRatio < 1) {
+                throw new Error("Pitch ratio must be 1 or greater");
+            }
+            if (OTLClearance < 0) {
+                throw new Error("OTL clearance must be 0 or greater");
+            }
+            if (
+                tubeOD >
+                shellID - OTLClearance + ulpTolerance(Math.max(shellID, OTLClearance, tubeOD))
+            ) {
+                throw new Error("Tube OD exceeds max allowable OTL");
+            }
 
-        const originCount = hasOrigin ? 1 : 0;
-        const count = originCount + 2 * xAxisMags.size + 2 * yAxisMags.size + 4 * coreCount;
-        if (count === 0) {
+            const DECIMAL_PLACES = 8;
+            shellID = roundUp(shellID, DECIMAL_PLACES);
+
+            const pitch = tubeOD * pitchRatio;
+            const maxOTL = shellID - OTLClearance;
+            const { dx, dy, C } = getLayoutConstants(pitch, layout);
+
+            const offset = offsetOption ? dx / 2 : 0;
+            let i = 0,
+                j = 0,
+                x = 0,
+                y = 0;
+            const maxCentreDist = (maxOTL - tubeOD) / 2;
+            const BOUND_TOLERANCE = ulpTolerance(maxOTL);
+            const maxCentreDistSq =
+                (maxCentreDist + BOUND_TOLERANCE) * (maxCentreDist + BOUND_TOLERANCE);
+
+            let hasOrigin = false;
+            const xAxisMags = new Set<number>();
+            const yAxisMags = new Set<number>();
+            let coreCount = 0;
+            let maxDistSq = 0;
+
+            while (Math.abs(y) <= maxOTL && j < 999999) {
+                y = j * dy;
+                const cMult = j & 1 ? 0 : 1;
+                x = 0;
+                while (Math.abs(x) <= maxOTL && i < 999999) {
+                    x = C * cMult + i * dx - offset;
+                    i++;
+                    if (x * x + y * y <= maxCentreDistSq) {
+                        const nx = normalize(x);
+                        const ny = normalize(y);
+                        const distSq = nx * nx + ny * ny;
+                        if (distSq > maxDistSq) {
+                            maxDistSq = distSq;
+                        }
+                        if (nx === 0 && ny === 0) {
+                            hasOrigin = true;
+                        } else if (nx === 0) {
+                            yAxisMags.add(ny < 0 ? -ny : ny);
+                        } else if (ny === 0) {
+                            xAxisMags.add(nx < 0 ? -nx : nx);
+                        } else if (nx > 0 && ny > 0) {
+                            coreCount++;
+                        }
+                        // x<0 && y>0 points skipped — auto-covered by core mirroring
+                    } else {
+                        break;
+                    }
+                }
+                i = 0;
+                j++;
+            }
+
+            const originCount = hasOrigin ? 1 : 0;
+            const count = originCount + 2 * xAxisMags.size + 2 * yAxisMags.size + 4 * coreCount;
+            if (count === 0) {
+                return null;
+            }
+            return { count, maxDistSq };
+        } catch {
             return null;
         }
-        return { count, maxDistSq };
-    } catch {
-        return null;
-    }
-};
+    },
+    createMemoKey(...LAYOUT_FN_MEMO_DEFAULTS),
+    MEMO_CACHE_SIZE,
+);
 
 /**
  * Innermost patterns ("seeds") for the radial layout. Each seed is either the
@@ -1212,8 +1230,6 @@ export const findDiscreteSweepPoints = (
             current.minID = centerShellID;
         }
     }
-    const centerTubeCount = current.numTubes;
-
     const findTransitionUp = (startShellID: number): ShellSweepPoint | null => {
         const startCount = tubeCount(
             startShellID,
@@ -1248,10 +1264,25 @@ export const findDiscreteSweepPoints = (
         }
     };
 
-    const findTransitionDown = (
-        startShellID: number,
-        centerTubeCountLocal: number,
-    ): ShellSweepPoint | null => {
+    /**
+     * Finds the discrete transition point stepping down from `startShellID` —
+     * the shell ID (in whole-unit steps) closest to `startShellID` at which the
+     * tube count differs from `tubeCount(startShellID)`.
+     *
+     * Binary searches over k = 1..stepLimit for the smallest k where
+     * `tubeCount(startShellID - k) !== startCount`. Tube count is monotonic
+     * non-decreasing in shell ID, so that condition is a monotonic boolean in k
+     * (false, false, ..., true, true), which makes it searchable in O(log 500)
+     * `tubeCount` calls instead of a linear scan.
+     *
+     * @param {number} startShellID       The shell ID to search downward from.
+     * @returns {ShellSweepPoint | null}  The transition point closest to
+     *                                    `startShellID`, or null if none is
+     *                                    found within 500 whole-unit steps or
+     *                                    before `minShellID` is reached.
+     */
+
+    const findTransitionDown = (startShellID: number): ShellSweepPoint | null => {
         const startCount = tubeCount(
             startShellID,
             OTLClearance,
@@ -1262,14 +1293,30 @@ export const findDiscreteSweepPoints = (
             true,
         );
 
-        // Step 1: find the first shell ID where tube count drops
-        let shellID = startShellID;
-        let numTubes = startCount;
+        // How many whole-unit steps down from startShellID are actually available
+        // before hitting minShellID (same bound the old linear walk enforced),
+        // capped at 500. This is pure arithmetic — no tubeCount calls — so it's
+        // cheap even though it mirrors the original step-by-step subtraction
+        // exactly (avoiding any float-drift difference from computing
+        // startShellID - k directly).
+        let stepLimit = 0;
+        let probe = startShellID;
         for (let i = 0; i < 500; i++) {
-            shellID -= STEP;
-            if (shellID < minShellID) return null;
-            numTubes = tubeCount(
-                shellID,
+            probe -= STEP;
+            if (probe < minShellID) break;
+            stepLimit = i + 1;
+        }
+        if (stepLimit === 0) return null;
+
+        // Tube count is monotonic non-decreasing in shell ID, so stepping down
+        // from startShellID it can only stay the same or fall — i.e. whether
+        // tubeCount(startShellID - k) !== startCount is a monotonic boolean in
+        // k. That makes the search for the first (smallest) k where it changes
+        // a binary search instead of the previous linear walk of up to 500
+        // tubeCount calls (each an unmemoized quarter-field scan).
+        const countAtK = (k: number): number =>
+            tubeCount(
+                startShellID - k,
                 OTLClearance,
                 tubeOD,
                 pitchRatio,
@@ -1277,40 +1324,21 @@ export const findDiscreteSweepPoints = (
                 offsetOption,
                 true,
             );
-            if (numTubes !== startCount) break;
-        }
-        if (numTubes === startCount) return null;
 
-        // Step 2: sanity check — walk tube count up until findMinID(N+1) >= centerShellID
-        //         short-circuit: never exceed centerTubeCount
-        while (numTubes > 0 && numTubes + 1 <= centerTubeCountLocal) {
-            try {
-                const nextMinID = findMinID(
-                    numTubes + 1,
-                    OTLClearance,
-                    tubeOD,
-                    pitchRatio,
-                    layout,
-                    offsetOption,
-                );
-                if (nextMinID >= centerShellID) {
-                    const point = makePoint(shellID);
-                    point.minID = findMinID(
-                        point.numTubes,
-                        OTLClearance,
-                        tubeOD,
-                        pitchRatio,
-                        layout,
-                        offsetOption,
-                    );
-                    return point;
-                }
-            } catch {
-                break;
+        if (countAtK(stepLimit) === startCount) return null; // no transition within range
+
+        let lo = 1;
+        let hi = stepLimit;
+        while (lo < hi) {
+            const mid = Math.floor((lo + hi) / 2);
+            if (countAtK(mid) !== startCount) {
+                hi = mid;
+            } else {
+                lo = mid + 1;
             }
-            numTubes += 1;
         }
 
+        const shellID = startShellID - lo;
         const point = makePoint(shellID);
         point.minID = findMinID(
             point.numTubes,
@@ -1325,8 +1353,8 @@ export const findDiscreteSweepPoints = (
 
     const up1 = findTransitionUp(centerShellID);
     const up2 = up1 ? findTransitionUp(up1.shellID) : null;
-    const down1 = findTransitionDown(centerShellID, centerTubeCount);
-    const down2 = down1 ? findTransitionDown(down1.shellID, centerTubeCount) : null;
+    const down1 = findTransitionDown(centerShellID);
+    const down2 = down1 ? findTransitionDown(down1.shellID) : null;
 
     return [down2, down1, current, up1, up2].filter((p): p is ShellSweepPoint => p !== null);
 };
