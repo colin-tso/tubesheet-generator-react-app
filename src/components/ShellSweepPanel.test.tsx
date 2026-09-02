@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { ShellSweepPanel } from "./ShellSweepPanel";
 import type { ShellSweepPoint } from "@/plugins/tubesheet-layout-generator";
@@ -87,13 +87,13 @@ describe("ShellSweepPanel", () => {
 
         fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
 
-        const row = screen.getByRole("button", { name: /use shell id 145/i });
+        const row = screen.getByRole("radio", { name: /use shell id 145/i });
         fireEvent.click(row);
 
         expect(onApplyShellID).toHaveBeenCalledWith(145);
     });
 
-    it("highlights the current shell ID row", () => {
+    it("renders shell size options as a keyboard-navigable radiogroup, with the current one checked", () => {
         const points: ShellSweepPoint[] = [
             { shellID: 180, numTubes: 33, OTL: 160, minID: 170 },
             { shellID: 200, numTubes: 37, OTL: 180, minID: 185 },
@@ -107,11 +107,15 @@ describe("ShellSweepPanel", () => {
 
         fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
 
-        const currentRow = screen.getByRole("button", { name: /use shell id 185/i });
-        expect(currentRow).toHaveClass("current");
+        expect(
+            screen.getByRole("radiogroup", { name: /shell size comparison/i }),
+        ).toBeInTheDocument();
 
-        const otherRow = screen.getByRole("button", { name: /use shell id 170/i });
-        expect(otherRow).not.toHaveClass("current");
+        const currentRow = screen.getByRole("radio", { name: /use shell id 185/i });
+        expect(currentRow).toBeChecked();
+
+        const otherRow = screen.getByRole("radio", { name: /use shell id 170/i });
+        expect(otherRow).not.toBeChecked();
     });
 
     it("renders column headers", () => {
@@ -125,7 +129,7 @@ describe("ShellSweepPanel", () => {
 
         fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
 
-        expect(screen.getByText("ID (mm)")).toBeInTheDocument();
+        expect(screen.getByText("Min ID (mm)")).toBeInTheDocument();
         expect(screen.getByText("Tubes")).toBeInTheDocument();
     });
 
@@ -140,7 +144,24 @@ describe("ShellSweepPanel", () => {
         fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
 
         expect(screen.getByText(/couldn't compute the sweep/i)).toBeInTheDocument();
-        expect(screen.queryAllByRole("button", { name: /use shell id/i })).toHaveLength(0);
+        expect(screen.queryAllByRole("radio", { name: /use shell id/i })).toHaveLength(0);
+    });
+
+    it("shows a distinct message when the sweep times out instead of failing outright", () => {
+        const requestSweep = vi.fn(() => 1); // never calls back — times out
+        vi.useFakeTimers();
+
+        render(<ShellSweepPanel {...baseProps} requestSweep={requestSweep} />);
+
+        fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
+        act(() => {
+            vi.advanceTimersByTime(4001);
+        });
+
+        expect(screen.getByText(/taking longer than expected/i)).toBeInTheDocument();
+        expect(screen.queryByText(/couldn't compute the sweep/i)).not.toBeInTheDocument();
+
+        vi.useRealTimers();
     });
 
     it("expands and runs sweep on first click, then collapses on second click", () => {
@@ -156,22 +177,71 @@ describe("ShellSweepPanel", () => {
         render(<ShellSweepPanel {...baseProps} requestSweep={requestSweep} />);
 
         // Initially collapsed — no rows visible
-        expect(screen.queryAllByRole("button", { name: /use shell id/i })).toHaveLength(0);
+        expect(screen.queryAllByRole("radio", { name: /use shell id/i })).toHaveLength(0);
         expect(screen.getByRole("button", { name: /compare shell sizes/i })).toBeInTheDocument();
 
         // First click — runs sweep and expands
         fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
-        expect(screen.getAllByRole("button", { name: /use shell id/i })).toHaveLength(2);
+        expect(screen.getAllByRole("radio", { name: /use shell id/i })).toHaveLength(2);
         expect(screen.getByRole("button", { name: /hide comparison/i })).toBeInTheDocument();
 
         // Second click — collapses
         fireEvent.click(screen.getByRole("button", { name: /hide comparison/i }));
-        expect(screen.queryAllByRole("button", { name: /use shell id/i })).toHaveLength(0);
+        expect(screen.queryAllByRole("radio", { name: /use shell id/i })).toHaveLength(0);
         expect(screen.getByRole("button", { name: /show comparison/i })).toBeInTheDocument();
 
         // Third click — re-expands
         fireEvent.click(screen.getByRole("button", { name: /show comparison/i }));
-        expect(screen.getAllByRole("button", { name: /use shell id/i })).toHaveLength(2);
+        expect(screen.getAllByRole("radio", { name: /use shell id/i })).toHaveLength(2);
         expect(screen.getByRole("button", { name: /hide comparison/i })).toBeInTheDocument();
+    });
+
+    it("auto-refreshes an expanded, resolved sweep when centerShellID changes", () => {
+        const requestSweep = vi
+            .fn<(payload: Record<string, unknown>, callback: SweepCallback) => number>()
+            .mockImplementation((_payload, callback) => {
+                callback([{ shellID: 200, numTubes: 37, OTL: 180, minID: 185 }]);
+                return 1;
+            });
+
+        const { rerender } = render(<ShellSweepPanel {...baseProps} requestSweep={requestSweep} />);
+
+        fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
+        expect(requestSweep).toHaveBeenCalledTimes(1);
+
+        // centerShellID changes (e.g. the user regenerated the drawing) while expanded.
+        rerender(
+            <ShellSweepPanel
+                {...baseProps}
+                centerShellID={250}
+                currentNumTubes={45}
+                requestSweep={requestSweep}
+            />,
+        );
+
+        expect(requestSweep).toHaveBeenCalledTimes(2);
+        const [secondPayload] = requestSweep.mock.calls[1]!;
+        expect(secondPayload).toMatchObject({ centerShellID: 250, currentNumTubes: 45 });
+    });
+
+    it("cancels an in-flight sweep when an input drifts before the worker responds", () => {
+        let pendingCallback: ((points: unknown) => void) | undefined;
+        const requestSweep = vi.fn((_payload, callback) => {
+            pendingCallback = callback;
+            return 1;
+        });
+
+        const { rerender } = render(<ShellSweepPanel {...baseProps} requestSweep={requestSweep} />);
+
+        fireEvent.click(screen.getByRole("button", { name: /compare shell sizes/i }));
+        expect(requestSweep).toHaveBeenCalledTimes(1);
+
+        // tubeOD changes while the sweep is still pending
+        rerender(<ShellSweepPanel {...baseProps} tubeOD={25.4} requestSweep={requestSweep} />);
+
+        // The stale response landing afterwards must not populate the panel.
+        pendingCallback?.([{ shellID: 999, numTubes: 5, OTL: 100, minID: 90 }]);
+        expect(screen.queryAllByRole("radio", { name: /use shell id/i })).toHaveLength(0);
+        expect(screen.getByRole("button", { name: /compare shell sizes/i })).toBeInTheDocument();
     });
 });

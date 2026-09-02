@@ -64,12 +64,11 @@ describe("useShellSweep", () => {
             { shellID: 150, numTubes: 19, OTL: 130 },
             { shellID: 200, numTubes: 37, OTL: 180 },
         ];
-        const newPoints = [
-            { shellID: 250, numTubes: 61, OTL: 230 },
-        ];
+        const newPoints = [{ shellID: 250, numTubes: 61, OTL: 230 }];
 
         let firstCallback: ((points: unknown) => void) | undefined;
-        const requestSweep = vi.fn()
+        const requestSweep = vi
+            .fn()
             .mockImplementationOnce((_payload, callback) => {
                 // Resolve first request immediately to seed old points
                 callback(oldPoints);
@@ -145,7 +144,7 @@ describe("useShellSweep", () => {
         expect(result.current.status).toBe("ready");
     });
 
-    it("surfaces a null (failed) response as unavailable instead of an empty chart", () => {
+    it("surfaces a null (failed) response as unavailable instead of an empty chart, tagged as a computation failure", () => {
         const requestSweep = vi.fn((_payload, callback) => {
             callback(null);
             return 1;
@@ -159,9 +158,10 @@ describe("useShellSweep", () => {
 
         expect(result.current.status).toBe("unavailable");
         expect(result.current.points).toBeNull();
+        expect(result.current.failureReason).toBe("computation");
     });
 
-    it("marks the sweep unavailable if the worker never responds", () => {
+    it("marks the sweep unavailable if the worker never responds, tagged as a timeout", () => {
         const requestSweep = vi.fn(() => 1); // never calls back
 
         const { result } = renderHook(() => useShellSweep(requestSweep as never));
@@ -170,6 +170,7 @@ describe("useShellSweep", () => {
             result.current.request(basePayload);
         });
         expect(result.current.status).toBe("pending");
+        expect(result.current.failureReason).toBeNull();
 
         act(() => {
             vi.advanceTimersByTime(TIMEOUT_MS + 1);
@@ -177,6 +178,30 @@ describe("useShellSweep", () => {
 
         expect(result.current.status).toBe("unavailable");
         expect(result.current.points).toBeNull();
+        expect(result.current.failureReason).toBe("timeout");
+    });
+
+    it("clears failureReason once a new request is made", () => {
+        const requestSweep = vi
+            .fn()
+            .mockImplementationOnce((_payload, callback) => {
+                callback(null);
+                return 1;
+            })
+            .mockImplementationOnce(() => 2); // never calls back this time
+
+        const { result } = renderHook(() => useShellSweep(requestSweep as never));
+
+        act(() => {
+            result.current.request(basePayload);
+        });
+        expect(result.current.failureReason).toBe("computation");
+
+        act(() => {
+            result.current.request(basePayload);
+        });
+        expect(result.current.failureReason).toBeNull();
+        expect(result.current.status).toBe("pending");
     });
 
     it("cancel() resets to idle and invalidates any in-flight request", () => {
@@ -198,6 +223,7 @@ describe("useShellSweep", () => {
         });
         expect(result.current.status).toBe("idle");
         expect(result.current.points).toBeNull();
+        expect(result.current.failureReason).toBeNull();
 
         // A response landing after cancel() must not resurrect the sweep.
         act(() => {
