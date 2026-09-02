@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 
 // Numbering contexts for the docs' cross-referenceable elements. See
 // DocsRegistry.tsx for how these maps get populated (a document-order scan
@@ -8,11 +8,11 @@ export const EquationNumbersContext = createContext<Map<string, number> | null>(
 export const TableNumbersContext = createContext<Map<string, number> | null>(null);
 
 export function useEquationNumber(id: string): number | null {
-    const numbers = useContext(EquationNumbersContext);
+    const numbers = use(EquationNumbersContext);
     return numbers?.get(id) ?? null;
 }
 
 export function useTableNumber(id: string): number | null {
-    const numbers = useContext(TableNumbersContext);
+    const numbers = use(TableNumbersContext);
     return numbers?.get(id) ?? null;
 }

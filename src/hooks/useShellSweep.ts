@@ -4,6 +4,12 @@ import type { SweepCallback } from "./useTubeSheetWorker";
 
 export type ShellSweepStatus = "idle" | "pending" | "ready" | "unavailable";
 
+// Why an "unavailable" sweep failed, so the UI can tell a hard failure (the
+// worker computed and returned a null result) apart from a request that never
+// came back in time (likely a crashed/stuck worker) — the right message and
+// retry expectation differ for each.
+export type ShellSweepFailureReason = "computation" | "timeout" | null;
+
 export interface ShellSweepRequest {
     OTLtoShell: number;
     tubeOD: number;
@@ -20,9 +26,9 @@ type RequestSweep = (payload: Record<string, unknown>, callback: SweepCallback) 
 const TIMEOUT_MS = 4000;
 export const SHELL_SWEEP_TIMING = { timeout: TIMEOUT_MS } as const;
 
-// Debounce timing — matches the layout options loading badge so the sweep
-// panel feels consistent: 150 ms before the loading indicator appears, and
-// once shown it stays visible for at least 300 ms to avoid flicker.
+// Debounce timing — matches the layout options loading badge so the sweep panel
+// feels consistent: 150 ms before the loading indicator appears, and once shown
+// it stays visible for at least 300 ms to avoid flicker.
 const SHOW_DELAY_MS = 150;
 const MIN_VISIBLE_MS = 300;
 
@@ -30,18 +36,21 @@ const MIN_VISIBLE_MS = 300;
  * Requests a shell-size sweep (tube count/OTL vs. shell ID) and tracks its
  * status. A sweep is triggered explicitly (e.g. a "Compare shell sizes"
  * button), not on every keystroke, so — unlike useLivePreview — there's no
- * debounce here, only the same stale-response guarding: a `request` call
- * bumps a sequence number, and any earlier in-flight request's response is
- * ignored once it arrives, so a fast second click can't be clobbered by a
- * slower first one resolving after it.
+ * debounce here, only the same stale-response guarding: a `request` call bumps
+ * a sequence number, and any earlier in-flight request's response is ignored
+ * once it arrives, so a fast second click can't be clobbered by a slower first
+ * one resolving after it.
  *
  * `points` are preserved across pending requests so the UI can keep showing
  * stale rows instead of flashing empty. `showLoading` debounces the loading
- * indicator (150 ms show delay, 300 ms minimum visibility).
+ * indicator (150 ms show delay, 300 ms minimum visibility). `failureReason`
+ * distinguishes a worker-reported computation failure from a request that
+ * simply never came back (timeout), since those warrant different messaging.
  */
 export function useShellSweep(requestSweep: RequestSweep) {
     const [points, setPoints] = useState<ShellSweepPoint[] | null>(null);
     const [status, setStatus] = useState<ShellSweepStatus>("idle");
+    const [failureReason, setFailureReason] = useState<ShellSweepFailureReason>(null);
     const [showLoading, setShowLoading] = useState(false);
 
     const timeoutRef = useRef<number | null>(null);
@@ -60,6 +69,7 @@ export function useShellSweep(requestSweep: RequestSweep) {
         clearTimer();
         setStatus("idle");
         setPoints(null);
+        setFailureReason(null);
         setShowLoading(false);
         loadingShownAtRef.current = null;
     }, [clearTimer]);
@@ -69,6 +79,7 @@ export function useShellSweep(requestSweep: RequestSweep) {
             clearTimer();
             const seq = ++seqRef.current;
             setStatus("pending");
+            setFailureReason(null);
 
             requestSweep(
                 {
@@ -88,6 +99,7 @@ export function useShellSweep(requestSweep: RequestSweep) {
                     // unavailable instead of a bogus/empty chart.
                     if (!result) {
                         setStatus("unavailable");
+                        setFailureReason("computation");
                         setPoints(null);
                         return;
                     }
@@ -99,6 +111,7 @@ export function useShellSweep(requestSweep: RequestSweep) {
             timeoutRef.current = window.setTimeout(() => {
                 if (seq === seqRef.current) {
                     setStatus("unavailable");
+                    setFailureReason("timeout");
                     setPoints(null);
                 }
             }, TIMEOUT_MS);
@@ -129,5 +142,5 @@ export function useShellSweep(requestSweep: RequestSweep) {
 
     useEffect(() => clearTimer, [clearTimer]);
 
-    return { points, status, showLoading, request, cancel };
+    return { points, status, failureReason, showLoading, request, cancel };
 }

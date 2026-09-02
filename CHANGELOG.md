@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.8.0
+
+### Minor Changes
+
+- d1b5c7d: Improve shell sweep panel with failure tracking, accessibility, and cancel-on-drift; optimize sweep computation with binary search and memoization
+
 ## 2.7.0
 
 ### Minor Changes
