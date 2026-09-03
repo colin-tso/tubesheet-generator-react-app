@@ -17,6 +17,7 @@ import TubeLabelsOffIcon from "@/assets/tube-labels-off-icon.svg?react";
 import SaveSvgIcon from "@/assets/save-svg-icon.svg?react";
 import SavePngIcon from "@/assets/save-png-icon.svg?react";
 import SavePdfIcon from "@/assets/save-pdf-icon.svg?react";
+import SaveDxfIcon from "@/assets/save-dxf-icon.svg?react";
 import CopyIcon from "@/assets/copy-icon.svg?react";
 import HelpIcon from "@/assets/help-icon.svg?react";
 import { loadDocsPage } from "@/docs/loadDocsPage";
@@ -100,6 +101,10 @@ function ViewportContextMenu() {
         actions.downloadPDF();
         actions.closeContextMenu();
     }, [actions]);
+    const handleSaveDXF = useCallback(() => {
+        actions.downloadDXF();
+        actions.closeContextMenu();
+    }, [actions]);
 
     const items: ContextMenuItem[] = useMemo(
         () => [
@@ -123,15 +128,23 @@ function ViewportContextMenu() {
                 onClick: handleSavePDF,
                 disabled: state.pdfExportState === "pending",
             },
+            {
+                label: "Save as DXF",
+                icon: <SaveDxfIcon />,
+                onClick: handleSaveDXF,
+                disabled: state.dxfExportState === "pending",
+            },
         ],
         [
             handleCopy,
             handleSaveSVG,
             handleSavePNG,
             handleSavePDF,
+            handleSaveDXF,
             state.copyReady,
             state.pngExportState,
             state.pdfExportState,
+            state.dxfExportState,
         ],
     );
 
@@ -333,6 +346,13 @@ function ViewportExportActions() {
               ? "PDF export failed"
               : "Save as PDF";
 
+    const dxfButtonTitle =
+        state.dxfExportState === "pending"
+            ? "Rendering DXF…"
+            : state.dxfExportState === "error"
+              ? "DXF export failed"
+              : "Save as DXF";
+
     return (
         <div
             className="viewport-actions"
@@ -417,6 +437,24 @@ function ViewportExportActions() {
                             aria-hidden="true"
                         />
                         <span className="btn-label">{pdfButtonTitle}</span>
+                    </button>
+                    <button
+                        className={`save-button save-dxf-button${
+                            state.dxfExportState === "error" ? " error" : ""
+                        }`}
+                        onClick={actions.downloadDXF}
+                        type="button"
+                        data-title={dxfButtonTitle}
+                        disabled={state.dxfExportState === "pending"}
+                        aria-busy={state.dxfExportState === "pending"}
+                    >
+                        <SaveDxfIcon
+                            className="btn-icon"
+                            width="19"
+                            height="19"
+                            aria-hidden="true"
+                        />
+                        <span className="btn-label">{dxfButtonTitle}</span>
                     </button>
                 </div>
             </div>
