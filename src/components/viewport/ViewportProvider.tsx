@@ -111,6 +111,8 @@ export function ViewportProvider({
         pngExportState,
         downloadPDF,
         pdfExportState,
+        downloadDXF,
+        dxfExportState,
         copySVG,
         copyReady,
     } = useSvgExportActions(
@@ -154,7 +156,8 @@ export function ViewportProvider({
                     isCalculating ||
                     copyState === "pending" ||
                     pngExportState === "pending" ||
-                    pdfExportState === "pending",
+                    pdfExportState === "pending" ||
+                    dxfExportState === "pending",
                 drawingSVG: labeledDrawingSVG,
                 placeholderSVG,
                 lastSingleResult,
@@ -165,6 +168,7 @@ export function ViewportProvider({
                 copyReady,
                 pngExportState,
                 pdfExportState,
+                dxfExportState,
                 contextMenuPos,
                 contextMenuAnimationState,
                 hovered,
@@ -180,6 +184,7 @@ export function ViewportProvider({
                 downloadSVG,
                 downloadPNG,
                 downloadPDF,
+                downloadDXF,
                 onDrawingRendered,
                 openContextMenu,
                 closeContextMenu: requestClose,
@@ -203,6 +208,7 @@ export function ViewportProvider({
             copyReady,
             pngExportState,
             pdfExportState,
+            dxfExportState,
             contextMenuPos,
             contextMenuAnimationState,
             hovered,
@@ -216,6 +222,7 @@ export function ViewportProvider({
             downloadSVG,
             downloadPNG,
             downloadPDF,
+            downloadDXF,
             onDrawingRendered,
             openContextMenu,
             requestClose,

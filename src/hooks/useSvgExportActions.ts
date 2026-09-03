@@ -7,11 +7,13 @@ import {
     svgToPngBlob,
 } from "@/utils/svgExport";
 import { buildTubeSheetPdfBlob } from "@/utils/pdfExport";
+import { buildTubeSheetDxfBlob } from "@/utils/dxfExport";
 import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported" | "downloaded";
 export type PngExportState = "idle" | "pending" | "error";
 export type PdfExportState = "idle" | "pending" | "error";
+export type DxfExportState = "idle" | "pending" | "error";
 
 // Android Firefox: clipboard image write fails.
 const isAndroidFirefox =
@@ -55,6 +57,8 @@ export function useSvgExportActions(
     const pngExportInFlightRef = useRef(false);
     const [pdfExportState, setPdfExportState] = useState<PdfExportState>("idle");
     const pdfExportInFlightRef = useRef(false);
+    const [dxfExportState, setDxfExportState] = useState<DxfExportState>("idle");
+    const dxfExportInFlightRef = useRef(false);
 
     useEffect(() => {
         preloadPngEncodeWorker();
@@ -112,6 +116,30 @@ export function useSvgExportActions(
                 pdfExportInFlightRef.current = false;
                 setPdfExportState("error");
                 setTimeout(() => setPdfExportState("idle"), 2500);
+            });
+    }, [drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes]);
+
+    const downloadDXF = useCallback(() => {
+        if (dxfExportInFlightRef.current) return;
+
+        dxfExportInFlightRef.current = true;
+        setDxfExportState("pending");
+
+        withTimeout(
+            buildTubeSheetDxfBlob(drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes),
+            COPY_TIMEOUT_MS,
+            "DXF export timed out",
+        )
+            .then((blob) => {
+                downloadBlob(blob, "tubesheet.dxf");
+                dxfExportInFlightRef.current = false;
+                setDxfExportState("idle");
+            })
+            .catch((err) => {
+                console.error("DXF export failed:", err);
+                dxfExportInFlightRef.current = false;
+                setDxfExportState("error");
+                setTimeout(() => setDxfExportState("idle"), 2500);
             });
     }, [drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes]);
 
@@ -202,6 +230,8 @@ export function useSvgExportActions(
         pngExportState,
         downloadPDF,
         pdfExportState,
+        downloadDXF,
+        dxfExportState,
         copySVG,
         copyReady,
     };
