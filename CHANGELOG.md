@@ -1,5 +1,18 @@
 # tubesheet-generator-react-app
 
+## 2.9.0
+
+### Minor Changes
+
+- 816e67e: Add DXF export for tube sheet drawings. Save As DXF renders the tube field, shell ID, OTL, and centerlines onto separate layers (with a dashed linetype for the OTL and centerlines), plus a summary notes block matching the PDF export, so the drawing can be opened directly in CAD software.
+
+### Patch Changes
+
+- f0a9527: Silence `react-hooks/set-state-in-effect` lint error in `PairedFieldRow` by adding an eslint-disable directive with explanation, and fix the `exhaustive-deps` warning by using the full `fieldValues` object in the dependency array.
+- d5b4baf: Restyle form footer: replace plain text links with two consistent icon buttons (GitHub + license), flexbox layout, underline-on-hover, and shared CSS selectors
+- 5c0f042: Deduplicate CSS patterns and rename classes for clarity.
+- a3eb533: Add micro labels below toolbar button icons for touch usability, convert help button from anchor to semantic button element, and standardise all floating toolbar button widths via shared CSS variable
+
 ## 2.8.0
 
 ### Minor Changes
