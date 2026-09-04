@@ -29,6 +29,14 @@
   --transition: 0.15s ease;
   --tooltip-transition: cubic-bezier(0, 0, 0.2, 1);
   --options-btn-font-size: 12.5px;
+  /* Shared button width for .viewport-options-group (grid/table/labels) and
+     .viewport-actions-group (copy + save). Both groups shrink-to-fit their
+     widest child, so pointing every icon+label button at this one value
+     keeps the two floating clusters the same outer width as each other —
+     at every breakpoint, since nothing here overrides it — instead of
+     drifting apart whenever a button's padding or icon size changes (see
+     the .copy-button comment below for the drift this fixed previously). */
+  --viewport-cluster-btn-width: 42px;
   --page-slide-duration: 320ms;
   --page-slide-easing: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -1185,11 +1193,14 @@ footer a {
   position: relative;
 
   display: flex;
-  gap: 0;
+  flex-direction: column;
+  gap: 2px;
   align-items: center;
+  justify-content: center;
 
-  padding: 5px 5px;
-  border: 1.5px solid transparent;
+  width: var(--viewport-cluster-btn-width);
+  padding: 6px 4px;
+  border: 1.5px solid var(--line);
   border-radius: var(--radius-sm);
 
   font-family: var(--font-mono);
@@ -1262,8 +1273,24 @@ footer a {
 }
 
 .btn-icon {
-  width: calc(var(--options-btn-font-size) * 19 / 10.5);
-  height: calc(var(--options-btn-font-size) * 19 / 10.5);
+  width: 23px;
+  height: 23px;
+}
+
+/* Short, always-visible label under the icon so touch users (who never
+   trigger :hover) can identify the button before tapping it. Inherits
+   the button's current text color, so it dims/highlights in step with
+   the icon at rest, hover, and active. The fuller, dynamic ".btn-label"
+   tooltip (e.g. "Show Grid" / "Hide Grid") still appears on hover/focus
+   for the action-level detail this short label doesn't carry. */
+.btn-micro-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 /* Hover shows the tooltip only after a short delay, so it doesn't flash
@@ -1337,10 +1364,12 @@ footer a {
   position: relative;
 
   display: flex;
+  flex-direction: column;
   gap: 0;
   align-items: center;
 
-  padding: 5px 5px;
+  width: var(--viewport-cluster-btn-width);
+  padding: 6px 4px;
   border: 1.5px solid transparent;
   border-radius: var(--radius-sm);
 
@@ -1712,10 +1741,11 @@ footer a {
   position: relative;
 
   display: flex;
-  gap: 0;
+  gap: 2px;
   align-items: center;
+  justify-content: center;
 
-  padding: 5px 5px;
+  padding: 6px 4px;
   border-radius: var(--radius-sm);
 
   transition:
@@ -1723,6 +1753,17 @@ footer a {
     border var(--transition),
     color var(--transition),
     background-color var(--transition);
+}
+
+/* Overrides the shared row layout above: icon-over-label, like the
+   grid/table/tube-labels toggles, and a fixed width matching
+   --viewport-cluster-btn-width instead of the shared rule's
+   padding+icon-driven width — see the token's own comment for why. */
+.copy-button {
+  flex-direction: column;
+  gap: 2px;
+  width: var(--viewport-cluster-btn-width);
+  padding: 6px 4px;
 }
 
 /* Label renders as a floating tooltip to the left of the button instead
@@ -1826,7 +1867,7 @@ footer a {
   flex-direction: column;
   gap: 0;
 
-  padding: 0px;
+  padding: 0;
   border-radius: var(--radius-sm);
 
   background-color: var(--ink);
@@ -1834,7 +1875,7 @@ footer a {
 
 .save-buttons-group .save-button {
   margin: 0px 0;
-  padding: 4px 6px;
+  padding: 9.5px 6px;
   color: var(--panel);
   background-color: var(--ink);
 }
@@ -1886,7 +1927,7 @@ footer a {
 }
 
 .copy-button {
-  border: 1.5px solid transparent;
+  border: 1.5px solid var(--line);
   color: var(--ink);
   background-color: transparent;
   box-shadow: none;
@@ -2142,9 +2183,14 @@ footer a {
     padding: 8px;
   }
 
+  /* Right padding to clear the floating button column (.viewport-options /
+     .viewport-actions, right: 16px + ~53px wide).
+
+     min-height to prevent button clusters to overlap on mobile */
   .viewport,
   .viewport.has-table {
-    padding: 16px;
+    min-height: 420px;
+    padding: 16px 84px 16px 16px;
   }
 
   .viewport-options {
@@ -2200,8 +2246,8 @@ footer a {
   }
 
   .btn-icon {
-    width: calc(var(--options-btn-font-size) * 17 / 10.5);
-    height: calc(var(--options-btn-font-size) * 17 / 10.5);
+    width: 20px;
+    height: 20px;
   }
 
   .tubesheet-data-table {

@@ -188,6 +188,9 @@ function ViewportToolbar() {
                             aria-hidden="true"
                         />
                     )}
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Table
+                    </span>
                     <span className="btn-label">Results Table</span>
                 </button>
                 <button
@@ -207,6 +210,9 @@ function ViewportToolbar() {
                             aria-hidden="true"
                         />
                     )}
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Grid
+                    </span>
                     <span className="btn-label">Grid</span>
                 </button>
                 <button
@@ -231,6 +237,9 @@ function ViewportToolbar() {
                             aria-hidden="true"
                         />
                     )}
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Labels
+                    </span>
                     <span className="btn-label">Tube Labels</span>
                 </button>
             </div>
@@ -296,19 +305,23 @@ function ViewportDocsButton() {
     return (
         <div className="viewport-help" data-no-context-menu>
             <div className="viewport-options-group">
-                <a
+                <button
+                    type="button"
                     className="help-button"
-                    href="#/docs"
+                    onClick={() => {
+                        window.location.hash = "#/docs";
+                    }}
                     aria-label="How the layout math works"
                     data-title="How the layout math works"
-                    // Warms the docs chunk (katex/mdx/diagrams) before the click,
-                    // so Root.tsx's pre-transition await resolves instantly.
                     onMouseEnter={loadDocsPage}
                     onFocus={loadDocsPage}
                 >
                     <HelpIcon className="btn-icon" width="15" height="15" aria-hidden="true" />
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Docs
+                    </span>
                     <span className="btn-label">How the layout math works</span>
-                </a>
+                </button>
             </div>
         </div>
     );
@@ -384,6 +397,9 @@ function ViewportExportActions() {
                         aria-busy={state.copyState === "pending" || !state.copyReady}
                     >
                         <CopyIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <span className="btn-micro-label" aria-hidden="true">
+                            Copy
+                        </span>
                         <span className="btn-label">Copy Image</span>
                     </button>
                 </div>
