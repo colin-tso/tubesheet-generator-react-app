@@ -34,8 +34,7 @@
      widest child, so pointing every icon+label button at this one value
      keeps the two floating clusters the same outer width as each other —
      at every breakpoint, since nothing here overrides it — instead of
-     drifting apart whenever a button's padding or icon size changes (see
-     the .copy-button comment below for the drift this fixed previously). */
+     drifting apart whenever a button's padding or icon size changes. */
   --viewport-cluster-btn-width: 42px;
   --page-slide-duration: 320ms;
   --page-slide-easing: cubic-bezier(0.22, 1, 0.36, 1);
@@ -2130,10 +2129,9 @@ footer a {
     border-right: none;
     border-bottom: 1px solid var(--line);
   }
-  /* .right previously stayed pinned at the desktop 100vh even on mobile,
-     which was harmless while it was the last element in the stack. Now that
-     .form-footer renders after it, .right must shrink to its actual content
-     height too, or the footer would sit below a large empty gap. */
+  /* .right must shrink to its actual content height because .form-footer
+     renders after it — without this, the footer would sit below a large
+     empty gap. */
   .right {
     height: auto;
   }
