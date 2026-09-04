@@ -1004,7 +1004,7 @@ button:disabled {
 .form-footer {
   grid-area: footer;
 
-  padding: 18px 24px 20px;
+  padding: 18px 16px 18px;
   border-top: 1px solid var(--line);
   border-right: 1px solid var(--line);
 
@@ -1012,6 +1012,10 @@ button:disabled {
 }
 
 footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
   width: 100%;
   height: fit-content;
 
@@ -1023,17 +1027,26 @@ footer {
 }
 
 footer a {
-  color: var(--blue);
-}
-
-.github-button {
-  cursor: pointer;
-
   display: inline-flex;
   gap: 6px;
   align-items: center;
 
-  margin-bottom: 10px;
+  color: var(--blue);
+  text-decoration: none;
+}
+
+footer a:hover,
+footer a:focus-visible {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   Footer buttons
+   ============================================================ */
+.github-button,
+.license-button {
+  cursor: pointer;
+
   padding: 6px 10px;
   border: 1.5px solid var(--line);
   border-radius: var(--radius-sm);
@@ -1042,7 +1055,6 @@ footer a {
   font-size: 10.5px;
   font-weight: 600;
   color: var(--ink);
-  text-decoration: none;
   letter-spacing: 0.03em;
 
   background-color: var(--input-background);
@@ -1055,13 +1067,16 @@ footer a {
 }
 
 .github-button:hover,
-.github-button:focus-visible {
+.github-button:focus-visible,
+.license-button:hover,
+.license-button:focus-visible {
   border-color: var(--blue);
   color: var(--blue);
+  text-decoration: none;
 }
 
-.github-button-icon {
-  flex-shrink: 0;
+.github-button-icon,
+.license-button-icon {
   width: 13px;
   height: 13px;
 }
