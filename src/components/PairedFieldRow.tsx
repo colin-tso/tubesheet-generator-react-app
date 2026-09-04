@@ -98,6 +98,7 @@ export function PairedFieldRow({
     // click via applyShellID).  Tracks the previous shellID so we only
     // react to actual changes, not every render.
     const prevShellIDRef = useRef(fieldValues.shellID);
+
     useEffect(() => {
         const prevShellID = prevShellIDRef.current;
         const currentShellID = fieldValues.shellID;
@@ -115,16 +116,20 @@ export function PairedFieldRow({
         const ctx = { ...fieldValues, layoutOption };
         if (!previewConfig.isReady(ctx)) return;
 
+        // previewTargetId here is bookkeeping tied directly to the
+        // requestPreview() call on the next line, marking which field that
+        // in-flight worker request is for (comparable to setLoading(true) right
+        // before a fetch). There's no external event to defer it to, so this is
+        // one of the known cases where set-state-in-effect over-fires; see
+        // facebook/react#34743.
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPreviewTargetId("minTubes");
         requestPreview(previewConfig.buildRequest("shellID", currentShellID, ctx));
-    }, [
-        fieldValues.shellID,
-        fieldValues.minTubes,
-        layoutOption,
-        previewConfig,
-        requestPreview,
-        pinnedField,
-    ]);
+        // Note: fieldValues is a new object every render, so this effect also
+        // re-runs on every keystroke in unrelated fields. It's a cheap no-op
+        // each time (the prevShellID check above bails immediately).
+    }, [fieldValues, layoutOption, previewConfig, requestPreview, pinnedField]);
 
     // Current live-preview number for a field, if any.
     const previewNumberFor = useCallback(
@@ -380,7 +385,7 @@ export function PairedFieldRow({
         <div className="field-row-group">
             <div className="field-row">
                 {fields[0]}
-                <span className="field-row-or">or</span>
+                <span className="field-divider-or">or</span>
                 {fields[1]}
             </div>
             {rowHint ? <p className="field-row-hint">{rowHint}</p> : null}

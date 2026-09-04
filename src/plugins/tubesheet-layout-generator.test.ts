@@ -609,12 +609,12 @@ describe("generateTubeSheetSVG — tube labels", () => {
             expect(text.getAttribute("dy")).toBe("0.35em");
         }
 
-        // Not required for centering anymore, and if both were present a
-        // renderer that *does* support dominant-baseline would apply both
-        // offsets and double-shift the label. (parseSVGStyleString turns
-        // each style entry into its own presentation attribute on the
-        // wrapping <g>, so this checks for the attribute directly on the
-        // <g> that actually wraps the label <text> elements.)
+        // Omit dominant-baseline to avoid double-shifting labels in renderers
+        // that support it — both dy="0.35em" and dominant-baseline would
+        // apply two separate offsets. (parseSVGStyleString turns each style
+        // entry into its own presentation attribute on the wrapping <g>, so
+        // this checks for the attribute directly on the <g> that actually
+        // wraps the label <text> elements.)
         const labelsGroup = texts[0].closest("g");
         expect(labelsGroup?.hasAttribute("dominant-baseline")).toBe(false);
     });
@@ -683,10 +683,9 @@ describe("findDiscreteSweepPoints", () => {
 });
 
 describe("TubeSheet — regression: unknown layout must not hang", () => {
-    // The UI stores the radial layout as the number 0 (see layoutOptionRows).
-    // A stray 0 used to reach the plugin as an unknown layout, where the
-    // non-radial findMinID path's "grow the diameter until a valid tube field
-    // exists" loop could never terminate (tubeFieldOTL always returned null).
+    // A stray 0 (or any unknown layout number) reaching the plugin must throw
+    // a clean error rather than hanging — the non-radial findMinID path's
+    // "grow the diameter until a valid tube field exists" loop must not run.
     it.each([0, 999])("throws a clean error for invalid layout %s", (badLayout) => {
         expect(
             () => new TubeSheet(OTL_CLEARANCE, TUBE_OD, PITCH_RATIO, badLayout as never, 50),
@@ -737,14 +736,12 @@ describe("TubeSheet — regression: findMinID snap can undershoot the OTL-defini
 });
 
 describe("TubeSheet — regression: stale x skips a whole row of the tube grid", () => {
-    // The quarter-tube-field loop reset `i` between rows but not `x`. The inner
-    // while loop's entry guard (Math.abs(x) <= maxOTL) then ran on the leftover
-    // overshoot x from the previous row's break, not a fresh value for the new
-    // row. When that leftover value exceeded maxOTL, the entire next row was
-    // skipped before it computed anything - even though its own first point
-    // belonged in the field. This showed up as tube counts
-    // that jumped straight past small targets like minTubes=3 or 4 without
-    // ever finding the layout (2 tubes) that should have grown to meet them.
+    // The quarter-tube-field loop must reset `x` between rows so that the
+    // inner while loop's entry guard (Math.abs(x) <= maxOTL) evaluates a
+    // fresh value for each row. Without this, leftover overshoot from a
+    // previous row's break can exceed maxOTL and skip the entire next row
+    // before it computes anything, even when its first point belongs in the
+    // field.
     it("finds the 4-tube layout for minTubes=3 on a 45-degree layout instead of getting stuck at 2", () => {
         const ts = new TubeSheet(150, 90.53, 1.5, 45, 3);
 

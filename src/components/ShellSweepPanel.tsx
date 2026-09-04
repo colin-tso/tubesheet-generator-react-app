@@ -187,7 +187,7 @@ export function ShellSweepPanel({
                 <div className="sweep-actions">
                     <button
                         type="button"
-                        className="sweep-button"
+                        className="focus-ring sweep-button"
                         onClick={onSweepClick}
                         disabled={!canSweep || showLoading}
                     >

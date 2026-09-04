@@ -2,11 +2,12 @@
     "name": "tubesheet-generator-react-app",
     "author": "Colin Tso",
     "license": "GPL-3.0-only",
-    "version": "2.8.0",
+    "version": "2.9.0",
     "homepage": "https://colin-tso.github.io/tubesheet-generator-react-app/",
     "private": true,
     "dependencies": {
         "@mdx-js/rollup": "^3.1.1",
+        "@tarikjabiri/dxf": "^2.8.9",
         "jspdf": "^4.2.1",
         "katex": "^0.18.4",
         "lodash.memoize": "^4.1.2",

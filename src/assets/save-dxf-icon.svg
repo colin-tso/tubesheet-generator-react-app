@@ -1,0 +1,7 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <mask id="save-dxf-text-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+        <rect x="0" y="0" width="16" height="16" fill="white"/>
+        <text x="8" y="13" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="6.1" font-weight="700" letter-spacing="-0.5" fill="black">DXF</text>
+    </mask>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M13.353 1.146L14.853 2.646L15 3V14.5L14.5 15H1.5L1 14.5V1.5L1.5 1H13L13.353 1.146ZM4 2H11V6H4V2Z" fill="currentColor" mask="url(#save-dxf-text-mask)"/>
+</svg>

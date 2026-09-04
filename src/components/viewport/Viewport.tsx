@@ -17,6 +17,7 @@ import TubeLabelsOffIcon from "@/assets/tube-labels-off-icon.svg?react";
 import SaveSvgIcon from "@/assets/save-svg-icon.svg?react";
 import SavePngIcon from "@/assets/save-png-icon.svg?react";
 import SavePdfIcon from "@/assets/save-pdf-icon.svg?react";
+import SaveDxfIcon from "@/assets/save-dxf-icon.svg?react";
 import CopyIcon from "@/assets/copy-icon.svg?react";
 import HelpIcon from "@/assets/help-icon.svg?react";
 import { loadDocsPage } from "@/docs/loadDocsPage";
@@ -100,6 +101,10 @@ function ViewportContextMenu() {
         actions.downloadPDF();
         actions.closeContextMenu();
     }, [actions]);
+    const handleSaveDXF = useCallback(() => {
+        actions.downloadDXF();
+        actions.closeContextMenu();
+    }, [actions]);
 
     const items: ContextMenuItem[] = useMemo(
         () => [
@@ -123,15 +128,23 @@ function ViewportContextMenu() {
                 onClick: handleSavePDF,
                 disabled: state.pdfExportState === "pending",
             },
+            {
+                label: "Save as DXF",
+                icon: <SaveDxfIcon />,
+                onClick: handleSaveDXF,
+                disabled: state.dxfExportState === "pending",
+            },
         ],
         [
             handleCopy,
             handleSaveSVG,
             handleSavePNG,
             handleSavePDF,
+            handleSaveDXF,
             state.copyReady,
             state.pngExportState,
             state.pdfExportState,
+            state.dxfExportState,
         ],
     );
 
@@ -157,10 +170,10 @@ function ViewportToolbar() {
 
     return (
         <div className="viewport-options" data-no-context-menu>
-            <div className="viewport-options-group">
+            <div className="floating-card">
                 <button
                     type="button"
-                    className={`table-toggle ${state.showTable ? "active" : ""}`}
+                    className={`icon-btn-vertical focus-ring table-toggle ${state.showTable ? "active" : ""}`}
                     onClick={actions.toggleTable}
                     aria-pressed={state.showTable}
                     data-title={state.showTable ? "Hide Results Table" : "Show Results Table"}
@@ -175,11 +188,14 @@ function ViewportToolbar() {
                             aria-hidden="true"
                         />
                     )}
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Table
+                    </span>
                     <span className="btn-label">Results Table</span>
                 </button>
                 <button
                     type="button"
-                    className={`grid-toggle ${state.showGrid ? "active" : ""}`}
+                    className={`icon-btn-vertical focus-ring grid-toggle ${state.showGrid ? "active" : ""}`}
                     onClick={actions.toggleGrid}
                     aria-pressed={state.showGrid}
                     data-title={state.showGrid ? "Hide Grid" : "Show Grid"}
@@ -194,11 +210,14 @@ function ViewportToolbar() {
                             aria-hidden="true"
                         />
                     )}
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Grid
+                    </span>
                     <span className="btn-label">Grid</span>
                 </button>
                 <button
                     type="button"
-                    className={`tube-labels-toggle ${state.showTubeLabels ? "active" : ""}`}
+                    className={`icon-btn-vertical focus-ring tube-labels-toggle ${state.showTubeLabels ? "active" : ""}`}
                     onClick={actions.toggleTubeLabels}
                     aria-pressed={state.showTubeLabels}
                     data-title={state.showTubeLabels ? "Hide Tube Labels" : "Show Tube Labels"}
@@ -218,6 +237,9 @@ function ViewportToolbar() {
                             aria-hidden="true"
                         />
                     )}
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Labels
+                    </span>
                     <span className="btn-label">Tube Labels</span>
                 </button>
             </div>
@@ -282,20 +304,24 @@ function ViewportTable() {
 function ViewportDocsButton() {
     return (
         <div className="viewport-help" data-no-context-menu>
-            <div className="viewport-options-group">
-                <a
-                    className="help-button"
-                    href="#/docs"
+            <div className="floating-card">
+                <button
+                    type="button"
+                    className="focus-ring help-button"
+                    onClick={() => {
+                        window.location.hash = "#/docs";
+                    }}
                     aria-label="How the layout math works"
                     data-title="How the layout math works"
-                    // Warms the docs chunk (katex/mdx/diagrams) before the click,
-                    // so Root.tsx's pre-transition await resolves instantly.
                     onMouseEnter={loadDocsPage}
                     onFocus={loadDocsPage}
                 >
                     <HelpIcon className="btn-icon" width="15" height="15" aria-hidden="true" />
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Docs
+                    </span>
                     <span className="btn-label">How the layout math works</span>
-                </a>
+                </button>
             </div>
         </div>
     );
@@ -333,14 +359,21 @@ function ViewportExportActions() {
               ? "PDF export failed"
               : "Save as PDF";
 
+    const dxfButtonTitle =
+        state.dxfExportState === "pending"
+            ? "Rendering DXF…"
+            : state.dxfExportState === "error"
+              ? "DXF export failed"
+              : "Save as DXF";
+
     return (
         <div
             className="viewport-actions"
             data-no-context-menu
             hidden={state.drawingSVG === state.placeholderSVG}
         >
-            <div className="viewport-actions-group">
-                <div className="copy-button-wrap">
+            <div className="floating-card">
+                <div className="copy-btn-wrap">
                     <span
                         className={`copy-status-badge noselect${
                             state.copyState !== "idle" ? " visible" : ""
@@ -356,7 +389,7 @@ function ViewportExportActions() {
                         {copyStatusLabel}
                     </span>
                     <button
-                        className="copy-button"
+                        className="icon-btn-vertical focus-ring copy-button"
                         onClick={actions.copySVG}
                         type="button"
                         data-title={state.copyReady ? "Copy Image" : "Preparing image…"}
@@ -364,12 +397,15 @@ function ViewportExportActions() {
                         aria-busy={state.copyState === "pending" || !state.copyReady}
                     >
                         <CopyIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                        <span className="btn-micro-label" aria-hidden="true">
+                            Copy
+                        </span>
                         <span className="btn-label">Copy Image</span>
                     </button>
                 </div>
                 <div className="save-buttons-group">
                     <button
-                        className="save-button save-svg-button"
+                        className="focus-ring export-btn save-svg-button"
                         onClick={actions.downloadSVG}
                         type="button"
                         data-title="Save as SVG"
@@ -383,7 +419,7 @@ function ViewportExportActions() {
                         <span className="btn-label">Save as SVG</span>
                     </button>
                     <button
-                        className={`save-button save-png-button${
+                        className={`focus-ring export-btn save-png-button${
                             state.pngExportState === "error" ? " error" : ""
                         }`}
                         onClick={actions.downloadPNG}
@@ -401,7 +437,7 @@ function ViewportExportActions() {
                         <span className="btn-label">{pngButtonTitle}</span>
                     </button>
                     <button
-                        className={`save-button save-pdf-button${
+                        className={`focus-ring export-btn save-pdf-button${
                             state.pdfExportState === "error" ? " error" : ""
                         }`}
                         onClick={actions.downloadPDF}
@@ -417,6 +453,24 @@ function ViewportExportActions() {
                             aria-hidden="true"
                         />
                         <span className="btn-label">{pdfButtonTitle}</span>
+                    </button>
+                    <button
+                        className={`focus-ring export-btn save-dxf-button${
+                            state.dxfExportState === "error" ? " error" : ""
+                        }`}
+                        onClick={actions.downloadDXF}
+                        type="button"
+                        data-title={dxfButtonTitle}
+                        disabled={state.dxfExportState === "pending"}
+                        aria-busy={state.dxfExportState === "pending"}
+                    >
+                        <SaveDxfIcon
+                            className="btn-icon"
+                            width="19"
+                            height="19"
+                            aria-hidden="true"
+                        />
+                        <span className="btn-label">{dxfButtonTitle}</span>
                     </button>
                 </div>
             </div>
