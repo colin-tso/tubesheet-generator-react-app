@@ -1,4 +1,5 @@
 import GithubIcon from "@/assets/github-icon.svg?react";
+import LicenseIcon from "@/assets/license-icon.svg?react";
 
 export function FormFooter() {
     return (
@@ -11,17 +12,16 @@ export function FormFooter() {
                     rel="noopener noreferrer"
                 >
                     <GithubIcon className="github-button-icon" aria-hidden="true" />
-                    View this repo on GitHub
+                    View on GitHub
                 </a>
-                <br />
-                Released under a GPL 3.0 license.{" "}
                 <a
+                    className="license-button"
                     href="https://www.gnu.org/licenses/gpl-3.0.en.html"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    <br />
-                    Find out more here.
+                    <LicenseIcon className="license-button-icon" aria-hidden="true" />
+                    GPL-3.0
                 </a>
             </footer>
         </div>
