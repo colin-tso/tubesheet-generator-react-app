@@ -170,10 +170,10 @@ function ViewportToolbar() {
 
     return (
         <div className="viewport-options" data-no-context-menu>
-            <div className="viewport-options-group">
+            <div className="floating-card">
                 <button
                     type="button"
-                    className={`table-toggle ${state.showTable ? "active" : ""}`}
+                    className={`icon-btn-vertical focus-ring table-toggle ${state.showTable ? "active" : ""}`}
                     onClick={actions.toggleTable}
                     aria-pressed={state.showTable}
                     data-title={state.showTable ? "Hide Results Table" : "Show Results Table"}
@@ -195,7 +195,7 @@ function ViewportToolbar() {
                 </button>
                 <button
                     type="button"
-                    className={`grid-toggle ${state.showGrid ? "active" : ""}`}
+                    className={`icon-btn-vertical focus-ring grid-toggle ${state.showGrid ? "active" : ""}`}
                     onClick={actions.toggleGrid}
                     aria-pressed={state.showGrid}
                     data-title={state.showGrid ? "Hide Grid" : "Show Grid"}
@@ -217,7 +217,7 @@ function ViewportToolbar() {
                 </button>
                 <button
                     type="button"
-                    className={`tube-labels-toggle ${state.showTubeLabels ? "active" : ""}`}
+                    className={`icon-btn-vertical focus-ring tube-labels-toggle ${state.showTubeLabels ? "active" : ""}`}
                     onClick={actions.toggleTubeLabels}
                     aria-pressed={state.showTubeLabels}
                     data-title={state.showTubeLabels ? "Hide Tube Labels" : "Show Tube Labels"}
@@ -304,10 +304,10 @@ function ViewportTable() {
 function ViewportDocsButton() {
     return (
         <div className="viewport-help" data-no-context-menu>
-            <div className="viewport-options-group">
+            <div className="floating-card">
                 <button
                     type="button"
-                    className="help-button"
+                    className="focus-ring help-button"
                     onClick={() => {
                         window.location.hash = "#/docs";
                     }}
@@ -372,8 +372,8 @@ function ViewportExportActions() {
             data-no-context-menu
             hidden={state.drawingSVG === state.placeholderSVG}
         >
-            <div className="viewport-actions-group">
-                <div className="copy-button-wrap">
+            <div className="floating-card">
+                <div className="copy-btn-wrap">
                     <span
                         className={`copy-status-badge noselect${
                             state.copyState !== "idle" ? " visible" : ""
@@ -389,7 +389,7 @@ function ViewportExportActions() {
                         {copyStatusLabel}
                     </span>
                     <button
-                        className="copy-button"
+                        className="icon-btn-vertical focus-ring copy-button"
                         onClick={actions.copySVG}
                         type="button"
                         data-title={state.copyReady ? "Copy Image" : "Preparing image…"}
@@ -405,7 +405,7 @@ function ViewportExportActions() {
                 </div>
                 <div className="save-buttons-group">
                     <button
-                        className="save-button save-svg-button"
+                        className="focus-ring export-btn save-svg-button"
                         onClick={actions.downloadSVG}
                         type="button"
                         data-title="Save as SVG"
@@ -419,7 +419,7 @@ function ViewportExportActions() {
                         <span className="btn-label">Save as SVG</span>
                     </button>
                     <button
-                        className={`save-button save-png-button${
+                        className={`focus-ring export-btn save-png-button${
                             state.pngExportState === "error" ? " error" : ""
                         }`}
                         onClick={actions.downloadPNG}
@@ -437,7 +437,7 @@ function ViewportExportActions() {
                         <span className="btn-label">{pngButtonTitle}</span>
                     </button>
                     <button
-                        className={`save-button save-pdf-button${
+                        className={`focus-ring export-btn save-pdf-button${
                             state.pdfExportState === "error" ? " error" : ""
                         }`}
                         onClick={actions.downloadPDF}
@@ -455,7 +455,7 @@ function ViewportExportActions() {
                         <span className="btn-label">{pdfButtonTitle}</span>
                     </button>
                     <button
-                        className={`save-button save-dxf-button${
+                        className={`focus-ring export-btn save-dxf-button${
                             state.dxfExportState === "error" ? " error" : ""
                         }`}
                         onClick={actions.downloadDXF}

@@ -258,7 +258,7 @@ const App = () => {
                         {/* Disabled while a calculation is in flight */}
                         <button
                             type="submit"
-                            className="generate-button"
+                            className="focus-ring generate-button"
                             disabled={
                                 !layoutInputsDefined || !layoutOptionSelected || isCalculating
                             }
