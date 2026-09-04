@@ -279,9 +279,8 @@ const ulpAt = (magnitude: number): number => {
  * Empirically, the specific comparisons this is used for (differences of
  * sums/subtractions of a handful of operands) exhibit worst-case error of
  * ~1-1.25 ULPs across a wide magnitude sweep (1 to 1e10); the default of 64
- * ULPs keeps roughly the same ~50x safety margin the file's original fixed
- * constants had over their own observed worst case, while remaining valid
- * regardless of input magnitude.
+ * ULPs provides a ~50x safety margin over the observed worst case, while
+ * remaining valid regardless of input magnitude.
  *
  * Exposed via {@link ULP_TEST_UTILS} so the FP tolerance-analysis scripts in
  * scripts/fp-tolerance-analysis can exercise the real function rather than a
@@ -871,10 +870,9 @@ const getLayoutConstants = (pitch: number, layout: TubeSheetLayout): LayoutConst
     // discarded) on every call. This function sits on the bisection/heuristic
     // hot path in findMinID, so avoiding the extra allocations and Math calls
     // adds up across the hundreds of calls a single search can make. The
-    // formulas themselves are unchanged from the lookup-table version. Preserve
-    // the exact original operation order for each formula (rather than
-    // algebraically simplifying it) so results are bit-for-bit identical to the
-    // previous lookup-table implementation.
+    // Preserve the exact operation order for each formula (rather than
+    // algebraically simplifying it) so results are bit-for-bit identical
+    // regardless of call order or memoization state.
     switch (layout) {
         case 30: {
             const dx = pitch;
@@ -1294,11 +1292,10 @@ export const findDiscreteSweepPoints = (
         );
 
         // How many whole-unit steps down from startShellID are actually available
-        // before hitting minShellID (same bound the old linear walk enforced),
-        // capped at 500. This is pure arithmetic — no tubeCount calls — so it's
-        // cheap even though it mirrors the original step-by-step subtraction
-        // exactly (avoiding any float-drift difference from computing
-        // startShellID - k directly).
+        // before hitting minShellID, capped at 500. This is pure arithmetic —
+        // no tubeCount calls — so it's cheap. The loop mirrors step-by-step
+        // subtraction rather than computing startShellID - k directly, which
+        // avoids float-drift differences across the bisection.
         let stepLimit = 0;
         let probe = startShellID;
         for (let i = 0; i < 500; i++) {
@@ -1312,8 +1309,8 @@ export const findDiscreteSweepPoints = (
         // from startShellID it can only stay the same or fall — i.e. whether
         // tubeCount(startShellID - k) !== startCount is a monotonic boolean in
         // k. That makes the search for the first (smallest) k where it changes
-        // a binary search instead of the previous linear walk of up to 500
-        // tubeCount calls (each an unmemoized quarter-field scan).
+        // a binary search (O(log 500) iterations, each an unmemoized
+        // quarter-field scan).
         const countAtK = (k: number): number =>
             tubeCount(
                 startShellID - k,
@@ -1410,10 +1407,10 @@ export const findMinID = memoizeBounded(
         const BISECT_MAX_ITERATIONS: number = 100;
         const DECIMAL_PLACES = 8;
         // Shared cap for any "grow/shrink the diameter guess until it works"
-        // search below. Every such loop must terminate: an invalid layout (or
-        // pathological inputs) previously spun forever because tubeFieldOTL
-        // kept returning null. 1000 steps of the 1.1 multiplier spans an
-        // astronomically wide diameter range, matching the radial path's cap.
+        // search below. Every such loop must terminate: invalid layouts or
+        // pathological inputs would otherwise cause unbounded iteration.
+        // 1000 steps of the 1.1 multiplier spans an astronomically wide
+        // diameter range, matching the radial path's cap.
         const BOUND_MAX_ITERATIONS: number = 1000;
 
         if (tubeOD <= 0) {
@@ -1595,10 +1592,10 @@ export const findMinID = memoizeBounded(
                         }
                     }
 
-                    // Increase diameter guess until valid tubefield is
-                    // obtained. Bounded: previously an invalid layout (or any
-                    // input that always yields an empty field) made this loop
-                    // forever.
+                    // Increase diameter guess until a valid tubefield is
+                    // obtained. Bounded to prevent unbounded iteration on
+                    // invalid layouts or inputs that always yield an empty
+                    // field.
                     let growOldIterations = 0;
                     while (
                         tubeFieldOTL(
