@@ -380,7 +380,7 @@ export function PairedFieldRow({
         <div className="field-row-group">
             <div className="field-row">
                 {fields[0]}
-                <span className="field-row-or">or</span>
+                <span className="field-divider-or">or</span>
                 {fields[1]}
             </div>
             {rowHint ? <p className="field-row-hint">{rowHint}</p> : null}

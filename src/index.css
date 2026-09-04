@@ -29,12 +29,12 @@
   --transition: 0.15s ease;
   --tooltip-transition: cubic-bezier(0, 0, 0.2, 1);
   --options-btn-font-size: 12.5px;
-  /* Shared button width for .viewport-options-group (grid/table/labels) and
-     .viewport-actions-group (copy + save). Both groups shrink-to-fit their
-     widest child, so pointing every icon+label button at this one value
-     keeps the two floating clusters the same outer width as each other —
-     at every breakpoint, since nothing here overrides it — instead of
-     drifting apart whenever a button's padding or icon size changes. */
+  /* Shared button width for .floating-card groups (grid/table/labels and
+     copy + save). Both groups shrink-to-fit their widest child, so pointing
+     every icon+label button at this one value keeps the two floating clusters
+     the same outer width as each other — at every breakpoint, since nothing
+     here overrides it — instead of drifting apart whenever a button's padding
+     or icon size changes. */
   --viewport-cluster-btn-width: 42px;
   --page-slide-duration: 320ms;
   --page-slide-easing: cubic-bezier(0.22, 1, 0.36, 1);
@@ -491,7 +491,7 @@ hr {
   margin-bottom: 0;
 }
 
-.field-row-or {
+.field-divider-or {
   align-self: center;
 
   margin-top: 20px;
@@ -966,14 +966,7 @@ button:disabled {
 /* Consistent keyboard-focus treatment across custom buttons, matching the
    blue-glow used on text inputs and layout-option rows, instead of falling
    back to the browser's native (OS-dependent) focus ring. */
-.generate-button:focus-visible,
-.save-button:focus-visible,
-.copy-button:focus-visible,
-.grid-toggle:focus-visible,
-.table-toggle:focus-visible,
-.tube-labels-toggle:focus-visible,
-.sweep-button:focus-visible,
-.help-button:focus-visible {
+.focus-ring:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-glow);
 }
@@ -1043,8 +1036,7 @@ footer a:focus-visible {
 /* ============================================================
    Footer buttons
    ============================================================ */
-.github-button,
-.license-button {
+.footer-link-btn {
   cursor: pointer;
 
   padding: 6px 10px;
@@ -1066,17 +1058,14 @@ footer a:focus-visible {
     background-color var(--transition);
 }
 
-.github-button:hover,
-.github-button:focus-visible,
-.license-button:hover,
-.license-button:focus-visible {
+.footer-link-btn:hover,
+.footer-link-btn:focus-visible {
   border-color: var(--blue);
   color: var(--blue);
   text-decoration: none;
 }
 
-.github-button-icon,
-.license-button-icon {
+.footer-link-btn-icon {
   width: 13px;
   height: 13px;
 }
@@ -1183,10 +1172,9 @@ footer a:focus-visible {
   align-items: flex-end;
 }
 
-/* Shared card wrapping the grid/table toggle pair, so the two controls
-   read as one grouped cluster instead of two independently-bordered
-   buttons floating next to each other. */
-.viewport-options-group {
+/* Shared floating card used to group related viewport controls as one
+   visually-connected cluster instead of independently-bordered buttons. */
+.floating-card {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1199,9 +1187,10 @@ footer a:focus-visible {
   box-shadow: var(--elevation-low);
 }
 
-.grid-toggle,
-.table-toggle,
-.tube-labels-toggle {
+/* Shared vertical icon-button layout: icon on top, micro-label below,
+   fixed width matching --viewport-cluster-btn-width. Used by the viewport
+   toolbar toggles (grid/table/labels) and the copy button. */
+.icon-btn-vertical {
   cursor: pointer;
 
   position: relative;
@@ -1233,13 +1222,10 @@ footer a:focus-visible {
     opacity var(--transition);
 }
 
-/* Label renders as a floating tooltip to the left of the button instead
-   of expanding the button's own width. Styled as its own distinct
-   "chip" (solid dark fill, regardless of app theme) rather than a
-   miniature copy of the button, with a small arrow pointing at it. */
-.grid-toggle .btn-label,
-.table-toggle .btn-label,
-.tube-labels-toggle .btn-label {
+/* Shared floating tooltip chip for all viewport buttons (.btn-label).
+   Defaults to left-of-button (arrow on right); .help-button overrides
+   to right-of-button in its own block below. */
+.btn-label {
   pointer-events: none;
 
   position: absolute;
@@ -1269,9 +1255,7 @@ footer a:focus-visible {
 }
 
 /* Small pointer arrow tying the tooltip to its button. */
-.grid-toggle .btn-label::after,
-.table-toggle .btn-label::after,
-.tube-labels-toggle .btn-label::after {
+.btn-label::after {
   content: "";
 
   position: absolute;
@@ -1311,7 +1295,10 @@ footer a:focus-visible {
    in while the cursor is just passing by. */
 .grid-toggle:hover .btn-label,
 .table-toggle:hover .btn-label,
-.tube-labels-toggle:hover .btn-label {
+.tube-labels-toggle:hover .btn-label,
+.help-button:hover .btn-label,
+.export-btn:hover .btn-label,
+.copy-button:hover .btn-label {
   transform: translateY(-50%) scale(1);
   opacity: 1;
   transition-delay: 0.5s;
@@ -1321,7 +1308,10 @@ footer a:focus-visible {
    "passing by" case to guard against. */
 .grid-toggle:focus-visible .btn-label,
 .table-toggle:focus-visible .btn-label,
-.tube-labels-toggle:focus-visible .btn-label {
+.tube-labels-toggle:focus-visible .btn-label,
+.help-button:focus-visible .btn-label,
+.export-btn:focus-visible .btn-label,
+.copy-button:focus-visible .btn-label {
   transform: translateY(-50%) scale(1);
   opacity: 1;
 }
@@ -1402,66 +1392,17 @@ footer a:focus-visible {
     background-color var(--transition);
 }
 
-/* Label renders as a floating tooltip to the RIGHT of the button (the toggle
-   tooltips point left; this one mirrors them). Same chip styling. */
+/* Help-button tooltip mirrors the default: tooltip sits to the RIGHT of the
+   button instead of the left. */
 .help-button .btn-label {
-  pointer-events: none;
-
-  position: absolute;
-  z-index: 5;
-  top: 50%;
+  right: auto;
   left: calc(100% + 10px);
   transform-origin: left center;
-  transform: translateY(-50%) scale(0.94);
-
-  padding: 5px 9px;
-  border-radius: 4px;
-
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 400;
-  color: hsl(210, 40%, 96%);
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-
-  opacity: 0;
-  background-color: hsl(214, 30%, 15%);
-  box-shadow: var(--elevation-low);
-
-  transition:
-    opacity 0.15s var(--tooltip-transition),
-    transform 0.15s var(--tooltip-transition);
 }
 
-/* Small pointer arrow tying the tooltip to its button (on the left edge,
-   pointing left, since the tooltip sits to the right of the button). */
 .help-button .btn-label::after {
-  content: "";
-
-  position: absolute;
-  top: 50%;
+  right: auto;
   left: -4px;
-  transform: translateY(-50%) rotate(45deg);
-
-  width: 8px;
-  height: 8px;
-  border-radius: 1px;
-
-  background-color: inherit;
-}
-/* Hover shows the tooltip only after a short delay, so it doesn't flash
-   in while the cursor is just passing by. */
-.help-button:hover .btn-label {
-  transform: translateY(-50%) scale(1);
-  opacity: 1;
-  transition-delay: 0.5s;
-}
-
-/* Keyboard focus shows the tooltip immediately, since there's no
-   "passing by" case to guard against. */
-.help-button:focus-visible .btn-label {
-  transform: translateY(-50%) scale(1);
-  opacity: 1;
 }
 
 .help-button:hover,
@@ -1685,22 +1626,6 @@ footer a:focus-visible {
   margin-left: auto;
 }
 
-/* Shared card wrapping copy + save, so the export actions read as one
-   grouped cluster (matching .viewport-options-group above) instead of
-   two independently-shadowed buttons stacked next to each other. */
-.viewport-actions-group {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-
-  padding: 4px;
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-md);
-
-  background-color: var(--panel);
-  box-shadow: var(--elevation-low);
-}
-
 .tubesheet-data-table {
   overflow: hidden;
   border-collapse: collapse;
@@ -1748,8 +1673,7 @@ footer a:focus-visible {
   text-align: right;
 }
 
-.save-button,
-.copy-button {
+.export-btn {
   cursor: pointer;
 
   position: relative;
@@ -1769,109 +1693,30 @@ footer a:focus-visible {
     background-color var(--transition);
 }
 
-/* Overrides the shared row layout above: icon-over-label, like the
-   grid/table/tube-labels toggles, and a fixed width matching
-   --viewport-cluster-btn-width instead of the shared rule's
-   padding+icon-driven width — see the token's own comment for why. */
-.copy-button {
-  flex-direction: column;
-  gap: 2px;
-  width: var(--viewport-cluster-btn-width);
-  padding: 6px 4px;
-}
-
-/* Label renders as a floating tooltip to the left of the button instead
-   of expanding the button's own width. Styled as its own distinct
-   "chip" (solid dark fill, regardless of app theme) rather than a
-   miniature copy of the button, with a small arrow pointing at it. */
-.save-button .btn-label,
-.copy-button .btn-label {
-  pointer-events: none;
-
-  position: absolute;
-  z-index: 5;
-  top: 50%;
-  right: calc(100% + 10px);
-  transform-origin: right center;
-  transform: translateY(-50%) scale(0.94);
-
-  padding: 5px 9px;
-  border-radius: 4px;
-
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 400;
-  color: hsl(210, 40%, 96%);
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-
-  opacity: 0;
-  background-color: hsl(214, 30%, 15%);
-  box-shadow: var(--elevation-low);
-
-  transition:
-    opacity 0.15s var(--tooltip-transition),
-    transform 0.15s var(--tooltip-transition);
-}
-
-/* Small pointer arrow tying the tooltip to its button. */
-.save-button .btn-label::after,
-.copy-button .btn-label::after {
-  content: "";
-
-  position: absolute;
-  top: 50%;
-  right: -4px;
-  transform: translateY(-50%) rotate(45deg);
-
-  width: 8px;
-  height: 8px;
-  border-radius: 1px;
-
-  background-color: inherit;
-}
-
-/* Hover shows the tooltip only after a short delay, so it doesn't flash
-   in while the cursor is just passing by. */
-.save-button:hover .btn-label,
-.copy-button:hover .btn-label {
-  transform: translateY(-50%) scale(1);
-  opacity: 1;
-  transition-delay: 0.5s;
-}
-
-/* Keyboard focus shows the tooltip immediately, since there's no
-   "passing by" case to guard against. */
-.save-button:focus-visible .btn-label,
-.copy-button:focus-visible .btn-label {
-  transform: translateY(-50%) scale(1);
-  opacity: 1;
-}
-
-.save-button {
+.export-btn {
   color: var(--panel);
   background-color: var(--ink);
 }
 
-.save-button:hover {
+.export-btn:hover {
   background-color: var(--blue);
 }
 
-.save-button:disabled {
+.export-btn:disabled {
   cursor: default;
   opacity: 0.6;
 }
 
-.save-button:disabled:hover {
+.export-btn:disabled:hover {
   background-color: var(--ink);
 }
 
 /* PNG export failed: flag the button red until the next attempt/reset. */
-.save-button.error {
+.export-btn.error {
   background-color: var(--redline);
 }
 
-.save-button.error:hover {
+.export-btn.error:hover {
   background-color: var(--redline);
 }
 
@@ -1887,23 +1732,23 @@ footer a:focus-visible {
   background-color: var(--ink);
 }
 
-.save-buttons-group .save-button {
+.save-buttons-group .export-btn {
   margin: 0px 0;
   padding: 9.5px 6px;
   color: var(--panel);
   background-color: var(--ink);
 }
 
-.save-buttons-group .save-button:has(+ .save-button) {
+.save-buttons-group .export-btn:has(+ .export-btn) {
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
 }
-.save-buttons-group .save-button + .save-button {
+.save-buttons-group .export-btn + .export-btn {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
 
-.save-buttons-group .save-button + .save-button::before {
+.save-buttons-group .export-btn + .export-btn::before {
   content: "";
 
   position: absolute;
@@ -1916,27 +1761,27 @@ footer a:focus-visible {
   background-color: var(--line);
 }
 
-.save-buttons-group .save-button:hover {
+.save-buttons-group .export-btn:hover {
   background-color: var(--blue);
 }
 
-.save-buttons-group .save-button:disabled {
+.save-buttons-group .export-btn:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.save-buttons-group .save-button:disabled:hover {
+.save-buttons-group .export-btn:disabled:hover {
   color: var(--ink);
   background-color: var(--panel);
 }
 
 /* PNG export failed: red highlight on that button only */
-.save-buttons-group .save-button.error {
+.save-buttons-group .export-btn.error {
   color: var(--panel);
   background-color: var(--redline);
 }
 
-.save-buttons-group .save-button.error:hover {
+.save-buttons-group .export-btn.error:hover {
   background-color: var(--redline);
 }
 
@@ -1962,7 +1807,7 @@ footer a:focus-visible {
   color: var(--ink);
 }
 
-.copy-button-wrap {
+.copy-btn-wrap {
   position: relative;
   display: flex;
   justify-content: flex-end;

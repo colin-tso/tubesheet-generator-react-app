@@ -6,21 +6,21 @@ export function FormFooter() {
         <div className="form-footer">
             <footer>
                 <a
-                    className="github-button"
+                    className="footer-link-btn"
                     href="https://github.com/colin-tso/tubesheet-generator-react-app"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    <GithubIcon className="github-button-icon" aria-hidden="true" />
+                    <GithubIcon className="footer-link-btn-icon" aria-hidden="true" />
                     View on GitHub
                 </a>
                 <a
-                    className="license-button"
+                    className="footer-link-btn"
                     href="https://www.gnu.org/licenses/gpl-3.0.en.html"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    <LicenseIcon className="license-button-icon" aria-hidden="true" />
+                    <LicenseIcon className="footer-link-btn-icon" aria-hidden="true" />
                     GPL-3.0
                 </a>
             </footer>
