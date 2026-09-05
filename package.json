@@ -9,7 +9,7 @@
         "@mdx-js/rollup": "^3.1.1",
         "@tarikjabiri/dxf": "^2.8.9",
         "jspdf": "^4.2.1",
-        "katex": "^0.18.4",
+        "katex": "^0.18.5",
         "lodash.memoize": "^4.1.2",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
