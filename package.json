@@ -70,7 +70,7 @@
         "stylelint-order": "^8.1.1",
         "tsx": "^4.23.13",
         "typescript": "npm:@typescript/typescript6@^6.0.2",
-        "typescript-eslint": "^8.68.0",
+        "typescript-eslint": "^8.69.0",
         "typescript-native": "npm:typescript@^7.0.2",
         "vite": "^8.2.2",
         "vite-plugin-mkcert": "^2.1.0",
