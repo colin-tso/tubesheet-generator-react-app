@@ -38,6 +38,13 @@ export interface ViewportState {
     loadConfigState: LoadConfigState;
     loadConfigErrors: string[];
     shareLinkState: ShareLinkState;
+    // Which mobile "tab" is active -- Form or Drawing (see App.tsx's .row-pane
+    // / data-mobile-view wiring). Unused at desktop widths, where both panes
+    // are always visible side by side; CSS only reacts to it inside the mobile
+    // breakpoint. Lives here (rather than local state in App) so both the
+    // form's submit handler and the tab bar itself can read/set it via
+    // context, matching how showGrid/showTable etc. already work.
+    mobileActiveView: "form" | "drawing";
     contextMenuPos: { x: number; y: number };
     contextMenuAnimationState: AnimationLifecycle;
     hovered: HighlightRegion;
@@ -58,6 +65,7 @@ export interface ViewportActions {
     saveConfigAsJSON: () => void;
     loadConfigFromFile: (file: File) => void;
     copyShareableLink: () => void;
+    setMobileActiveView: (view: "form" | "drawing") => void;
     onDrawingRendered: () => void;
     openContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void;
     closeContextMenu: () => void;

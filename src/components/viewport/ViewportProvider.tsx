@@ -89,6 +89,7 @@ export function ViewportProvider({
     const containerRef = useRef<HTMLDivElement>(null);
     const footerRef = useRef<HTMLDivElement>(null);
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
+    const [mobileActiveView, setMobileActiveView] = useState<"form" | "drawing">("form");
 
     // Tube row/column labels are drawn by re-running SVG generation (cheap,
     // main-thread work already done once per committed result) rather than
@@ -190,6 +191,7 @@ export function ViewportProvider({
                 loadConfigState,
                 loadConfigErrors,
                 shareLinkState,
+                mobileActiveView,
                 contextMenuPos,
                 contextMenuAnimationState,
                 hovered,
@@ -209,6 +211,7 @@ export function ViewportProvider({
                 saveConfigAsJSON,
                 loadConfigFromFile,
                 copyShareableLink,
+                setMobileActiveView,
                 onDrawingRendered,
                 openContextMenu,
                 closeContextMenu: requestClose,
@@ -237,6 +240,7 @@ export function ViewportProvider({
             loadConfigState,
             loadConfigErrors,
             shareLinkState,
+            mobileActiveView,
             contextMenuPos,
             contextMenuAnimationState,
             hovered,
@@ -246,6 +250,7 @@ export function ViewportProvider({
             toggleGrid,
             toggleTable,
             toggleTubeLabels,
+            setMobileActiveView,
             copySVG,
             downloadSVG,
             downloadPNG,
