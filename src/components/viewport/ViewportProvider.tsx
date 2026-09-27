@@ -2,9 +2,11 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useContextMenu } from "@/hooks/useContextMenu";
 import { useSvgExportActions } from "@/hooks/useSvgExportActions";
+import { useLayoutConfigActions } from "@/hooks/useLayoutConfigActions";
 import { useViewportFooterReserve } from "@/hooks/useViewportFooterReserve";
 import { useShellOtlHighlight } from "@/hooks/useShellOTLHighlight";
 import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
+import type { LayoutConfigFields } from "@/utils/layoutConfig";
 import { generateTubeSheetSVG, type ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 import { ViewportContext, type ViewportContextValue } from "./ViewportContext";
 
@@ -49,6 +51,8 @@ interface ViewportProviderProps {
     drawingTableLabel: string;
     drawingTableRequestedTubes: number | undefined;
     basePadding: number;
+    layoutConfig: LayoutConfigFields;
+    onLoadLayoutConfig: (fields: LayoutConfigFields) => void;
 }
 
 // Owns grid/table preferences, the context menu, SVG copy/export, the
@@ -62,6 +66,8 @@ export function ViewportProvider({
     drawingTableLabel,
     drawingTableRequestedTubes,
     basePadding,
+    layoutConfig,
+    onLoadLayoutConfig,
 }: ViewportProviderProps) {
     const {
         drawingSVG,
@@ -83,6 +89,8 @@ export function ViewportProvider({
     const containerRef = useRef<HTMLDivElement>(null);
     const footerRef = useRef<HTMLDivElement>(null);
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
+    const [saveMenuExpanded, setSaveMenuExpanded] = useState(false);
+    const [mobileActiveView, setMobileActiveView] = useState<"form" | "drawing">("form");
 
     // Tube row/column labels are drawn by re-running SVG generation (cheap,
     // main-thread work already done once per committed result) rather than
@@ -122,6 +130,16 @@ export function ViewportProvider({
         drawingTableRequestedTubes,
     );
 
+    const {
+        saveConfigState,
+        saveConfigAsJSON,
+        loadConfigState,
+        loadConfigErrors,
+        loadConfigFromFile,
+        shareLinkState,
+        copyShareableLink,
+    } = useLayoutConfigActions(layoutConfig, onLoadLayoutConfig);
+
     const { viewportBottomReserve } = useViewportFooterReserve({
         containerRef,
         footerRef,
@@ -145,6 +163,8 @@ export function ViewportProvider({
     const toggleGrid = useCallback(() => setShowGrid((v) => !v), [setShowGrid]);
     const toggleTable = useCallback(() => setShowTable((v) => !v), [setShowTable]);
     const toggleTubeLabels = useCallback(() => setShowTubeLabels((v) => !v), [setShowTubeLabels]);
+    const toggleSaveMenu = useCallback(() => setSaveMenuExpanded((v) => !v), []);
+    const closeSaveMenu = useCallback(() => setSaveMenuExpanded(false), []);
 
     const value = useMemo<ViewportContextValue>(
         () => ({
@@ -157,7 +177,8 @@ export function ViewportProvider({
                     copyState === "pending" ||
                     pngExportState === "pending" ||
                     pdfExportState === "pending" ||
-                    dxfExportState === "pending",
+                    dxfExportState === "pending" ||
+                    loadConfigState === "pending",
                 drawingSVG: labeledDrawingSVG,
                 placeholderSVG,
                 lastSingleResult,
@@ -169,6 +190,12 @@ export function ViewportProvider({
                 pngExportState,
                 pdfExportState,
                 dxfExportState,
+                saveConfigState,
+                loadConfigState,
+                loadConfigErrors,
+                shareLinkState,
+                saveMenuExpanded,
+                mobileActiveView,
                 contextMenuPos,
                 contextMenuAnimationState,
                 hovered,
@@ -185,6 +212,12 @@ export function ViewportProvider({
                 downloadPNG,
                 downloadPDF,
                 downloadDXF,
+                saveConfigAsJSON,
+                loadConfigFromFile,
+                copyShareableLink,
+                toggleSaveMenu,
+                closeSaveMenu,
+                setMobileActiveView,
                 onDrawingRendered,
                 openContextMenu,
                 closeContextMenu: requestClose,
@@ -209,6 +242,12 @@ export function ViewportProvider({
             pngExportState,
             pdfExportState,
             dxfExportState,
+            saveConfigState,
+            loadConfigState,
+            loadConfigErrors,
+            shareLinkState,
+            saveMenuExpanded,
+            mobileActiveView,
             contextMenuPos,
             contextMenuAnimationState,
             hovered,
@@ -218,11 +257,17 @@ export function ViewportProvider({
             toggleGrid,
             toggleTable,
             toggleTubeLabels,
+            toggleSaveMenu,
+            closeSaveMenu,
+            setMobileActiveView,
             copySVG,
             downloadSVG,
             downloadPNG,
             downloadPDF,
             downloadDXF,
+            saveConfigAsJSON,
+            loadConfigFromFile,
+            copyShareableLink,
             onDrawingRendered,
             openContextMenu,
             requestClose,

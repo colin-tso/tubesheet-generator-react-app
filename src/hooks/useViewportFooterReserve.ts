@@ -6,6 +6,11 @@ import type { SingleResultPayload } from "./useTubeSheetWorker";
 // px the viewport must widen past the engage point before releasing the reserve
 const RESERVE_RELEASE_BUFFER = 0;
 
+// Single slack value, used both for the "does the table foul the drawing?"
+// clearance test and for the gap left between the drawing and the table once
+// the reserve engages.
+export const FOOTER_RESERVE_SAFETY_MARGIN = 12; // px
+
 interface UseViewportFooterReserveOptions {
     containerRef: RefObject<HTMLDivElement | null>;
     footerRef: RefObject<HTMLDivElement | null>;
@@ -20,6 +25,16 @@ interface UseViewportFooterReserveOptions {
 // space for the footer as the viewport shrinks, rather than re-testing
 // clearance every resize. Release when the viewport widens past its
 // initial engagement or the table stops showing.
+//
+// The reserve is measured from the *table*, not from the footer wrapper.
+// .viewport-overlay-footer is a wrapping flex row holding the table and the
+// .viewport-actions export button column, so its height is whichever of the
+// two is taller (or their sum once they wrap). At desktop widths where the
+// button column outgrows the table, a footer-height reserve tracks the
+// buttons -- a number unrelated to the obstacle the clearance test above
+// actually measured. The button column is deliberately *not* an obstacle
+// here: like .viewport-options and .viewport-help it is treated as corner
+// chrome the drawing is allowed to sit behind.
 export function useViewportFooterReserve({
     containerRef,
     footerRef,
@@ -40,8 +55,6 @@ export function useViewportFooterReserve({
             return;
         }
 
-        const SAFETY_MARGIN = 12; // px
-
         // Fresh data or table visibility means a fresh evaluation baseline;
         // stickiness (see below) should only persist across pure resizing.
         reservedRef.current = false;
@@ -59,7 +72,20 @@ export function useViewportFooterReserve({
                 return;
             }
 
-            const footerRect = footerEl.getBoundingClientRect();
+            // Reading the table's top edge is only padding-independent while
+            // the footer is anchored to the viewport's padding box. Under the
+            // narrow-screen rules .viewport.has-table switches the footer to
+            // position: static, which puts it back in flow -- there the
+            // reserve we apply would move the very edge we measure, and the
+            // two would chase each other. That breakpoint stacks the footer
+            // below the drawing anyway, so no reserve is wanted.
+            const footerPosition =
+                footerEl.ownerDocument.defaultView?.getComputedStyle(footerEl).position;
+            if (footerPosition === "static") {
+                reservedRef.current = false;
+                setViewportBottomReserve(basePadding);
+                return;
+            }
 
             // Size + center the drawing would have if left unshrunk (i.e.
             // reserving only the viewport's normal padding on every side).
@@ -76,7 +102,8 @@ export function useViewportFooterReserve({
                     : (() => {
                           const dx = centerX - tableRect.right;
                           const dy = centerY - tableRect.top;
-                          const safeRadiusWithMargin = safeRadius + SAFETY_MARGIN;
+                          const safeRadiusWithMargin =
+                              safeRadius + FOOTER_RESERVE_SAFETY_MARGIN;
                           return dx * dx + dy * dy >= safeRadiusWithMargin * safeRadiusWithMargin;
                       })();
 
@@ -102,10 +129,16 @@ export function useViewportFooterReserve({
                 needsReserve = false;
             }
 
+            // Distance from the table's top edge down to the viewport's bottom
+            // edge. This already carries the footer's own bottom inset, and it
+            // grows on its own if the footer wraps and pushes the table onto a
+            // row of its own -- no hand-tuned offset needed.
+            const tableClearance = tableRect
+                ? viewportRect.bottom - tableRect.top + FOOTER_RESERVE_SAFETY_MARGIN
+                : basePadding;
+
             setViewportBottomReserve(
-                needsReserve
-                    ? Math.max(basePadding, Math.ceil(footerRect.height) + 44)
-                    : basePadding,
+                needsReserve ? Math.max(basePadding, Math.ceil(tableClearance)) : basePadding,
             );
         };
 
@@ -114,7 +147,9 @@ export function useViewportFooterReserve({
         const observer =
             typeof ResizeObserver === "undefined" ? null : new ResizeObserver(recompute);
         observer?.observe(viewportEl);
-        observer?.observe(footerEl);
+        // The footer wrapper itself is deliberately not observed: it resizes
+        // when the export button column changes (copy status label, PDF card),
+        // which has no bearing on the reserve and only causes churn.
         if (tableEl) {
             observer?.observe(tableEl);
         }

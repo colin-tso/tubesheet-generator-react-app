@@ -26,7 +26,16 @@
 
   --radius-sm: 3px;
   --radius-md: 5px;
-  --transition: 0.15s ease;
+  /* Split into parts (rather than one shorthand value) so rules that need to
+     transition visibility alongside opacity -- see .export-flyout -- can
+     build a longhand transition-duration/-delay list instead of the
+     shorthand `transition` property. Mixing opacity with a delayed,
+     zero-duration visibility entry in one `transition:` shorthand value
+     hits a real Chromium bug where opacity jumps straight to its end value
+     instead of animating; the longhand properties don't have this problem. */
+  --transition-duration: 0.15s;
+  --transition-easing: ease;
+  --transition: var(--transition-duration) var(--transition-easing);
   --tooltip-transition: cubic-bezier(0, 0, 0.2, 1);
   --options-btn-font-size: 12.5px;
   /* Shared button width for .floating-card groups (grid/table/labels and
@@ -272,6 +281,17 @@ a,
   padding: 0;
 }
 
+/* Wraps .left (the form) and .form-footer together. display: contents makes
+   it fully transparent to layout on desktop -- .left and .form-footer act
+   as if they were direct children of .row-pane, so its own grid-area
+   assignments below are unaffected. On mobile it instead becomes the actual
+   scrolling element for the whole Form tab (see the 56.25rem breakpoint),
+   so .form-footer scrolls away with the rest of the form instead of
+   staying pinned, and .title-block can position: sticky against it. */
+.form-pane-group {
+  display: contents;
+}
+
 .left {
   position: relative;
 
@@ -297,9 +317,137 @@ form.column-pane.left {
   position: relative;
   grid-area: viewport;
   /* Spans both grid rows (see .row-pane's grid-template-areas), so 100% here
-     still resolves to the full row-pane height, matching the old 100vh. */
+     still resolves to the full row-pane height. */
   height: 100%;
   padding: 0;
+}
+
+/* Mobile-only Form/Drawing tab bar (see App.tsx's MobileViewTabs and
+   .row-pane's data-mobile-view). Hidden at desktop widths, where both
+   panes are shown side by side and there's nothing to switch between. */
+.mobile-view-tabs {
+  display: none;
+  border-top: 1px solid var(--line);
+  background-color: var(--panel);
+}
+
+.mobile-view-tab {
+  cursor: pointer;
+
+  flex: 1;
+
+  padding: 12px 8px;
+  border: none;
+  border-top: 2px solid transparent;
+  border-radius: 0;
+
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+
+  background-color: transparent;
+
+  transition:
+    color var(--transition),
+    border-color var(--transition);
+}
+
+.mobile-view-tab.active {
+  border-top-color: var(--blue);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Mobile-only bottom toolbar over the drawing, covering the view/grid/label
+   toggles and the export entry point that .viewport-options /
+   .viewport-actions carry on desktop -- see ViewportMobileToolbar and the
+   display:none rules hiding those at this breakpoint below. .viewport-help
+   (the Docs "?" button) is NOT folded in here; it keeps its own floating
+   badge, just repositioned for this breakpoint -- see the .viewport-help
+   override below. Hidden at desktop widths. */
+.mobile-viewport-toolbar {
+  display: none;
+}
+
+.view-toggle-segmented {
+  overflow: hidden;
+  display: flex;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.view-toggle-segment {
+  cursor: pointer;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+
+  padding: 7px 10px;
+  border: none;
+  border-right: 1.5px solid var(--line);
+  border-radius: 0;
+
+  color: var(--muted);
+
+  background-color: var(--panel);
+
+  transition:
+    color var(--transition),
+    background-color var(--transition);
+}
+
+.view-toggle-segment:last-child {
+  border-right: none;
+}
+
+.view-toggle-segment.active {
+  color: var(--blue);
+  background-color: color-mix(in srgb, var(--blue) 12%, var(--panel));
+}
+
+.mobile-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-toolbar-button {
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+
+  width: auto;
+  min-width: 44px;
+  padding: 7px 6px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+
+  color: var(--muted);
+
+  background-color: var(--panel);
+
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background-color var(--transition);
+}
+
+.mobile-toolbar-button:hover,
+.mobile-toolbar-button:focus-visible {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.mobile-toolbar-button[aria-expanded="true"] {
+  color: var(--panel);
+  background-color: var(--blue);
 }
 
 /* ============================================================
@@ -316,6 +464,8 @@ form.column-pane.left {
   border-bottom: 1px solid var(--line);
 
   background-color: var(--panel);
+
+  transition: transform var(--transition);
 }
 
 .title-block .eyebrow {
@@ -1172,7 +1322,7 @@ footer a:focus-visible {
   align-items: flex-end;
 }
 
-/* Shared floating card used to group related viewport controls as one
+/* Shared floating card groups related viewport controls as one
    visually-connected cluster instead of independently-bordered buttons. */
 .floating-card {
   display: flex;
@@ -1618,6 +1768,8 @@ footer a:focus-visible {
 }
 
 .viewport-actions {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -1720,8 +1872,22 @@ footer a:focus-visible {
   background-color: var(--redline);
 }
 
-/* Grouped save buttons — dark card, light individual highlights */
+.export-btn.success {
+  background-color: var(--greenline) !important;
+}
+
+.export-btn.success:hover {
+  background-color: var(--greenline) !important;
+}
+
+/* Save buttons: two visual cards (export + config) inside a wrapper */
 .save-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.action-card {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1732,23 +1898,26 @@ footer a:focus-visible {
   background-color: var(--ink);
 }
 
-.save-buttons-group .export-btn {
+.action-card .export-btn {
+  width: var(--viewport-cluster-btn-width);
   margin: 0px 0;
   padding: 9.5px 6px;
+
   color: var(--panel);
+
   background-color: var(--ink);
 }
 
-.save-buttons-group .export-btn:has(+ .export-btn) {
+.action-card .export-btn:has(+ .export-btn) {
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
 }
-.save-buttons-group .export-btn + .export-btn {
+.action-card .export-btn + .export-btn {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
 
-.save-buttons-group .export-btn + .export-btn::before {
+.action-card .export-btn + .export-btn::before {
   content: "";
 
   position: absolute;
@@ -1761,28 +1930,120 @@ footer a:focus-visible {
   background-color: var(--line);
 }
 
-.save-buttons-group .export-btn:hover {
+.action-card .export-btn:hover {
   background-color: var(--blue);
 }
 
-.save-buttons-group .export-btn:disabled {
+.action-card .export-btn:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.save-buttons-group .export-btn:disabled:hover {
+.action-card .export-btn:disabled:hover {
   color: var(--ink);
   background-color: var(--panel);
 }
 
 /* PNG export failed: red highlight on that button only */
-.save-buttons-group .export-btn.error {
+.action-card .export-btn.error {
   color: var(--panel);
   background-color: var(--redline);
 }
 
-.save-buttons-group .export-btn.error:hover {
+.action-card .export-btn.error:hover {
   background-color: var(--redline);
+}
+
+.export-flyout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--panel);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.export-flyout-close {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 18px;
+  line-height: 1;
+  color: var(--panel);
+
+  background-color: transparent;
+
+  transition: background-color var(--transition);
+}
+
+.export-flyout-close:hover,
+.export-flyout-close:focus-visible {
+  background-color: var(--blue);
+}
+
+/* Section headers grouping the flyout's buttons (Copy / Image formats /
+   Config) so a list of 8 actions still reads as organized rather than one
+   undifferentiated stack. */
+.export-flyout-section-label {
+  margin: 8px 0 2px;
+  padding: 0 4px;
+
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Export flyout — hidden on desktop, toggled on mobile. Rendered as a direct
+   child of .viewport (see ViewportExportFlyout / ViewportFrame), not nested
+   inside .viewport-actions, so its containing block is the same box the
+   drawing/table render into. */
+.export-flyout {
+  display: none;
+}
+
+/* Full-cover highlight shown over the drawing while a file is being dragged
+   over it, for drag-and-drop JSON config import (see ViewportFrame). */
+.viewport-drop-overlay {
+  pointer-events: none;
+
+  position: absolute;
+  z-index: 5;
+  inset: 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+  border: 1.5px dashed var(--blue);
+  border-radius: var(--radius-md);
+
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--blue);
+  text-align: center;
+
+  background-color: color-mix(in srgb, var(--panel), transparent 15%);
+  backdrop-filter: blur(2px);
 }
 
 .copy-button {
@@ -1805,6 +2066,16 @@ footer a:focus-visible {
 .copy-button:disabled:hover {
   border-color: var(--line);
   color: var(--ink);
+}
+
+.copy-button.success {
+  border-color: var(--greenline);
+  color: var(--greenline);
+}
+
+.copy-button.success:hover {
+  border-color: var(--greenline);
+  color: var(--greenline);
 }
 
 .copy-btn-wrap {
@@ -1883,8 +2154,8 @@ footer a:focus-visible {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Outline removed since keyboard navigation uses a roving .focus class
-   to visually highlight the active menu item. */
+/* Keyboard navigation uses a roving .focus class to visually highlight the
+   active menu item, so the native outline is suppressed here. */
 .context-menu:focus,
 .context-menu:focus-visible {
   outline: none;
@@ -1964,48 +2235,120 @@ footer a:focus-visible {
    ============================================================ */
 
 @media screen and (max-width: 56.25rem) {
-  .title-block {
-    position: sticky;
-    z-index: 99;
-    top: 0;
-    width: 100%;
-  }
+  /* Form and Drawing become separate full-screen "tabs" here rather than
+     stacking in one scrolling page (see App.tsx's data-mobile-view /
+     MobileViewTabs). .row-pane is a fixed-height, non-scrolling flex
+     column; whichever of .left/.right is inactive is fully removed via
+     display:none (not just visually shrunk), so the active one can use
+     flex:1 to claim all remaining space after .mobile-view-tabs. Neither
+     pane unmounts -- this is CSS-only -- so state (form inputs, scroll
+     position within each pane, live preview) survives switching back and
+     forth, matching the .route-hidden pattern already used for Calculator
+     vs Docs navigation. */
   .row-pane {
-    display: grid;
-    grid-template-areas:
-      "form"
-      "viewport"
-      "footer";
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    /* Desktop pins this to 100vh so the 1fr/auto row split resolves against a
-       definite height; mobile stacks everything with natural content height
-       instead (matches .left/.form-scroll's own height:auto/overflow:visible
-       overrides just below). */
-    height: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+  .row-pane[data-mobile-view="drawing"] .form-pane-group {
+    display: none;
+  }
+  .row-pane[data-mobile-view="form"] .right {
+    display: none;
+  }
+  .mobile-view-tabs {
+    display: flex;
+    flex: 0 0 auto;
+  }
+  /* .form-pane-group (not .left) owns flex:1/scrolling: .left, .title-block
+     and .form-footer all flow together as one scrollable unit, so the footer
+     scrolls away with the rest of the form instead of staying pinned, and
+     .title-block (position: sticky below) has a scrolling ancestor to stick
+     against. */
+  .form-pane-group {
+    overflow-y: auto;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    min-height: 0;
   }
   .left {
+    flex-shrink: 0;
+    /* Overrides the desktop rule's height: 100% / min-height: 0, which
+       sized .left to exactly fill the "form" grid row there. On mobile
+       .form-pane-group (not .left) is the scrolling element, and .left just
+       needs to take its natural content height -- otherwise .left gets
+       clipped to one .form-pane-group-height-tall box while .form-scroll's
+       real (much taller) content overflows past it, and .form-footer, laid
+       out immediately after that fixed-height box, ends up overlapping the
+       tail end of that overflowing content instead of sitting below it.
+
+       height: auto alone isn't enough: .left is also a flex item of
+       .form-pane-group, and the inherited min-height: 0 (needed on desktop
+       so .left can shrink inside its grid row) also lets the flex algorithm
+       shrink it below its content height here, since the default
+       flex-shrink: 1 still applies -- reintroducing the same overflow/
+       overlap this rule is meant to fix. flex-shrink: 0 keeps .left at its
+       full natural height so .form-pane-group's scrollable area actually
+       covers all of its content, footer included. */
     height: auto;
+    min-height: 0;
     border-right: none;
     border-bottom: 1px solid var(--line);
   }
-  /* .right must shrink to its actual content height because .form-footer
-     renders after it — without this, the footer would sit below a large
-     empty gap. */
-  .right {
-    height: auto;
-  }
+  /* .form-footer rides along inside .form-pane-group, so .form-scroll isn't
+     its own scrolling region. flex: none so it (and .title-block within it)
+     just take their natural content height instead of trying to fill/grow
+     within .left. */
   .form-scroll {
     overflow-y: visible;
+    flex: none;
   }
+  /* Sticks to the top of .form-pane-group's scroll viewport; useAutoHideHeader
+     (see App.tsx) toggles .title-block-hidden as the person scrolls down
+     past it and back up. pointer-events: none while hidden keeps the
+     off-screen ThemeToggle from being clickable; :focus-within overrides
+     both so tabbing to it (keyboard navigation) brings it back. */
+  .title-block {
+    position: sticky;
+    z-index: 2;
+    top: 0;
+  }
+  .title-block.title-block-hidden {
+    pointer-events: none;
+    transform: translateY(-100%);
+  }
+  .title-block.title-block-hidden:focus-within {
+    pointer-events: auto;
+    transform: none;
+  }
+  .right {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+  /* Bottom padding is taller than the other sides: .mobile-viewport-toolbar
+     floats over the drawing at bottom: 16px, and its buttons carry a
+     micro-label under the icon (7px padding + 18px icon + 2px gap + 10px
+     label text + 7px padding, plus the 1.5px border top/bottom on
+     .view-toggle-segmented/.mobile-toolbar-button) making them ~47px tall, so
+     the toolbar's top edge sits ~63px up from the bottom. 75px (63 + a 12px
+     buffer, matching FOOTER_RESERVE_SAFETY_MARGIN's convention) keeps the
+     drawing/grid from being allowed to render underneath the buttons.
+     Top/left/right are 28px. */
   .viewport {
-    overflow: visible;
-    height: auto;
-    padding: 28px;
+    height: 100%;
+    padding: 28px 28px 75px;
   }
+  /* The base rule's max-height is a calc() against 100vh, but .viewport
+     occupies only .row-pane's 100dvh minus .mobile-view-tabs. .viewport has
+     a real, definite height of its own (100% above), so scale the drawing
+     against that directly instead of recalculating the vh-based subtraction
+     for this breakpoint. */
   .tubesheet-svg {
-    height: auto;
-    max-height: none;
+    max-height: 100%;
   }
   /* Move the badge up under the "Layout Preview" */
   .loading-overlay {
@@ -2014,20 +2357,65 @@ footer a:focus-visible {
   }
 
   /* When the table is shown, stack the footer below the drawing instead of
-     overlaying it, and let the viewport grow to fit both. */
+     overlaying it, and let the viewport grow to fit both. Content can
+     still exceed the fixed height above (e.g. a tall table), hence the
+     scroll -- .viewport itself is the one thing on this tab that's allowed
+     to scroll internally, same as .form-pane-group does for the Form tab. */
   .viewport.has-table {
+    overflow-y: auto;
     flex-direction: column;
     gap: 16px;
   }
   .viewport.has-table .viewport-overlay-footer {
     position: static;
     z-index: auto;
+
     width: 100%;
     max-width: 100%;
+    /* Extra buffer on top of .viewport's own 75px bottom padding: the
+       table is the last thing in this stack, i.e. the content closest to
+       .mobile-viewport-toolbar. The
+       stack is vertically centered as a group (align-items/justify-content:
+       center, inherited from the base .viewport rule) when it's shorter
+       than the viewport, so margin on the last child only pulls the whole
+       group up by half its value in that case -- .viewport's padding is
+       what guarantees the hard minimum once content grows enough to fill
+       or overflow the box; this margin is just a bit of visible daylight
+       for the common case in between. */
+    margin-bottom: 16px;
   }
   .viewport.has-table .tubesheet-data-table {
     overflow-x: auto;
     max-width: 100%;
+  }
+
+  /* .viewport-options and .viewport-actions are hidden at this breakpoint;
+     .mobile-viewport-toolbar below covers their toggles, and .export-flyout
+     (also hidden on desktop, shown via its own .expanded class) picks up the
+     rest of what .viewport-actions holds there. .viewport-help (Docs) is NOT
+     one of these -- it keeps its own floating badge like desktop, just moved
+     in closer to match the toolbar's 16px inset (see override below). */
+  .viewport-options,
+  .viewport-actions {
+    display: none;
+  }
+
+  .viewport-help {
+    top: 16px;
+    left: 16px;
+  }
+
+  .mobile-viewport-toolbar {
+    position: absolute;
+    z-index: 3;
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
   }
 }
 
@@ -2044,21 +2432,27 @@ footer a:focus-visible {
   /* Right padding to clear the floating button column (.viewport-options /
      .viewport-actions, right: 16px + ~53px wide).
 
-     min-height to prevent button clusters to overlap on mobile */
+     min-height to prevent button clusters to overlap on mobile.
+
+     Bottom padding stays at the wider breakpoint's 75px: .mobile-viewport-toolbar
+     doesn't move at this width, so the same clearance is still needed below
+     the drawing. */
   .viewport,
   .viewport.has-table {
     min-height: 420px;
-    padding: 16px 84px 16px 16px;
+    padding: 16px 16px 75px;
+  }
+
+  .viewport.has-table .viewport-actions {
+    position: absolute;
+    z-index: 3;
+    right: 16px;
+    bottom: 16px;
   }
 
   .viewport-options {
     top: 16px;
     right: 16px;
-  }
-
-  .viewport-help {
-    top: 16px;
-    left: 16px;
   }
 
   .viewport-label {
@@ -2067,8 +2461,8 @@ footer a:focus-visible {
   }
 
   .viewport-overlay-footer {
-    right: 16px;
-    bottom: 16px;
+    align-items: center;
+    justify-content: center;
   }
 
   .reg-tl,
@@ -2108,12 +2502,215 @@ footer a:focus-visible {
     height: 20px;
   }
 
-  .tubesheet-data-table {
-    font-size: 10px;
-  }
   .tubesheet-data-table th,
   .tubesheet-data-table td {
     padding: 5px 9px;
+  }
+
+  /* Mobile: toggle visible, export card hidden, flyout toggled */
+  .viewport-actions {
+    flex-direction: row;
+    gap: 3px;
+    align-items: flex-end;
+  }
+
+  /* PDF card is desktop-hidden by default (see base rule); it's the
+     mobile stand-in for the PDF button that lives in .export-card on
+     desktop, so bring it back here. */
+  .pdf-card {
+    display: flex;
+  }
+
+  /* Absolute so the toggle doesn't inflate .pdf-card-row width.  Positioned
+     to the left of the PDF button via right:100% relative to
+     .pdf-card-row (which already has position:relative). z-index is above
+     .export-flyout's (12) so the toggle stays visible/tappable as the close
+     control once the panel -- which now overlays this whole area -- is
+     open. */
+  .save-menu-toggle-wrap {
+    position: absolute;
+    z-index: 13;
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%);
+
+    display: flex;
+
+    margin-right: 4px;
+  }
+
+  /* Export card hidden on mobile — buttons move to flyout.  Child selector
+     (>) so the .export-card nested inside .export-flyout is NOT hidden. */
+  .save-buttons-group > .export-card {
+    display: none;
+  }
+
+  /* Center the config-card buttons (JSON/Load/Link) so they align with the
+     PDF button above rather than drifting left. */
+  .config-card {
+    align-items: center;
+  }
+
+  /* Flyout: hidden by default on mobile, slides in from the right edge of
+     .viewport (the drawing/table box itself -- see ViewportExportFlyout)
+     when toggled, with a scrim dimming whatever's behind it. Positioned via
+     plain position: absolute; inset: 0 against .viewport, which has a real,
+     stable height on mobile (Form and Drawing are separate full-screen tabs,
+     see App.tsx's .row-pane / data-mobile-view wiring) -- so no JS
+     measurement or scroll-lock is needed here.
+     Uses visibility (not display:none) so the opacity transition can
+     animate. */
+  .export-flyout {
+    pointer-events: none;
+
+    position: absolute;
+    z-index: 12;
+    inset: 0;
+
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-end;
+
+    visibility: hidden;
+    opacity: 0;
+
+    transition-delay: 0s, var(--transition-duration);
+    transition-timing-function: var(--transition-easing), linear;
+    transition-duration: var(--transition-duration), 0s;
+
+    /* Longhand, not the `transition` shorthand -- see --transition-duration
+       above for why. Delay hiding (`visibility`) until the opacity fade has
+       finished closing, so the panel fades out instead of vanishing on the
+       first frame. */
+    transition-property: opacity, visibility;
+  }
+
+  .export-flyout.expanded {
+    pointer-events: auto;
+
+    visibility: visible;
+    opacity: 1;
+
+    transition-delay: 0s, 0s;
+    transition-timing-function: var(--transition-easing), linear;
+    transition-duration: var(--transition-duration), 0s;
+    transition-property: opacity, visibility;
+  }
+
+  /* Scrim dimming the drawing/table behind the panel. */
+  .export-flyout::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: color-mix(in srgb, var(--ink) 45%, transparent);
+  }
+
+  /* The sliding panel: covers most, not all, of .viewport's width, so the
+     drawing stays visible (and the person keeps their bearings) behind it. */
+  .export-flyout .export-card {
+    position: relative;
+    z-index: 1;
+    transform: translateX(100%);
+
+    overflow-y: auto;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    width: min(78%, 260px);
+    max-width: 100%;
+    height: 100%;
+    border-left: 1.5px solid var(--line);
+    border-radius: 0;
+
+    /* .action-card (shared with the desktop cluster) is a fixed dark chip
+       regardless of theme: background var(--ink), text var(--panel). That
+       reads fine as a small floating toolbar, but a full-height sheet in
+       that palette means the sheet is dark in light mode and light in dark
+       mode -- backwards from what a normal panel should do. Override to
+       theme-following colors instead, just for this sheet. */
+    color: var(--ink);
+
+    background-color: var(--panel);
+    box-shadow: var(--elevation-mid);
+
+    transition: transform var(--transition);
+  }
+
+  .export-flyout.expanded .export-card {
+    transform: translateX(0);
+  }
+
+  /* Roomier rows than the icon-only cluster buttons elsewhere: the panel has
+     the width to spare, so show the full label next to the icon instead of
+     relying on the hover-only tooltip (which touch has no way to trigger). */
+  .export-flyout .export-card .export-btn {
+    gap: 10px;
+    justify-content: flex-start;
+
+    width: 100%;
+    padding: 13px 14px;
+
+    /* Match the sheet's theme-following palette above -- .action-card
+       .export-btn's own color/background-color (var(--panel)/var(--ink))
+       are the fixed dark-chip values from the base rule. */
+    color: var(--ink);
+
+    background-color: var(--panel);
+  }
+
+  /* .export-btn.success/.error rely on var(--panel) reading as "light text"
+     against a solid accent background (--greenline/--redline), which holds
+     in both themes; the override above would otherwise win here too, since
+     it's more specific than the un-scoped .export-btn.success/.error rules,
+     and drop that back to plain ink/panel. */
+  .export-flyout .export-card .export-btn.success {
+    color: var(--greenline);
+  }
+
+  .export-flyout .export-card .export-btn.error {
+    color: var(--panel);
+  }
+
+  /* Same specificity issue for the hover highlight: .action-card
+     .export-btn:hover's var(--blue) background needs reasserting at this
+     selector's specificity or the plain var(--panel) above would win. */
+  .export-flyout .export-card .export-btn:hover {
+    background-color: var(--blue);
+  }
+
+  .export-flyout .export-flyout-header,
+  .export-flyout .export-flyout-close {
+    color: var(--ink);
+  }
+
+  .export-flyout .export-card .btn-label {
+    position: static;
+    transform: none;
+
+    padding: 0;
+    border-radius: 0;
+
+    font-size: 13px;
+    color: inherit;
+
+    opacity: 1;
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  .export-flyout .export-card .btn-label::after {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 344px) {
+  :root { --viewport-cluster-btn-width: 35px; }
+  .btn-icon {
+    width: 15px;
+    height: 15px;
+  }
+  .btn-micro-label {
+    font-size: 9px;
   }
 }
 
