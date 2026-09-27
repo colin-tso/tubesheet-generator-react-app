@@ -14,10 +14,12 @@ import GridIcon from "@/assets/grid-icon.svg?react";
 import GridOffIcon from "@/assets/grid-off-icon.svg?react";
 import TubeLabelsIcon from "@/assets/tube-labels-icon.svg?react";
 import TubeLabelsOffIcon from "@/assets/tube-labels-off-icon.svg?react";
-import SaveSvgIcon from "@/assets/save-svg-icon.svg?react";
-import SavePngIcon from "@/assets/save-png-icon.svg?react";
-import SavePdfIcon from "@/assets/save-pdf-icon.svg?react";
-import SaveDxfIcon from "@/assets/save-dxf-icon.svg?react";
+import {
+    SaveSvgIcon,
+    SavePngIcon,
+    SavePdfIcon,
+    SaveDxfIcon,
+} from "@/components/icons/SaveFormatIcon";
 import CopyIcon from "@/assets/copy-icon.svg?react";
 import HelpIcon from "@/assets/help-icon.svg?react";
 import { loadDocsPage } from "@/docs/loadDocsPage";
