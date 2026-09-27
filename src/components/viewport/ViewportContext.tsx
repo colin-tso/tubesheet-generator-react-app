@@ -38,6 +38,12 @@ export interface ViewportState {
     loadConfigState: LoadConfigState;
     loadConfigErrors: string[];
     shareLinkState: ShareLinkState;
+    // Whether the mobile "more export formats" flyout is open. Lives here
+    // (rather than as local state in ViewportExportActions) so the flyout
+    // panel itself can be rendered by ViewportFrame as a sibling of the
+    // drawing/table -- see ViewportExportFlyout -- while the toggle button
+    // that drives it stays in ViewportExportActions.
+    saveMenuExpanded: boolean;
     // Which mobile "tab" is active -- Form or Drawing (see App.tsx's .row-pane
     // / data-mobile-view wiring). Unused at desktop widths, where both panes
     // are always visible side by side; CSS only reacts to it inside the mobile
@@ -65,6 +71,8 @@ export interface ViewportActions {
     saveConfigAsJSON: () => void;
     loadConfigFromFile: (file: File) => void;
     copyShareableLink: () => void;
+    toggleSaveMenu: () => void;
+    closeSaveMenu: () => void;
     setMobileActiveView: (view: "form" | "drawing") => void;
     onDrawingRendered: () => void;
     openContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void;

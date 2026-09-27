@@ -89,6 +89,7 @@ export function ViewportProvider({
     const containerRef = useRef<HTMLDivElement>(null);
     const footerRef = useRef<HTMLDivElement>(null);
     const [tableEl, setTableEl] = useState<HTMLTableElement | null>(null);
+    const [saveMenuExpanded, setSaveMenuExpanded] = useState(false);
     const [mobileActiveView, setMobileActiveView] = useState<"form" | "drawing">("form");
 
     // Tube row/column labels are drawn by re-running SVG generation (cheap,
@@ -162,6 +163,8 @@ export function ViewportProvider({
     const toggleGrid = useCallback(() => setShowGrid((v) => !v), [setShowGrid]);
     const toggleTable = useCallback(() => setShowTable((v) => !v), [setShowTable]);
     const toggleTubeLabels = useCallback(() => setShowTubeLabels((v) => !v), [setShowTubeLabels]);
+    const toggleSaveMenu = useCallback(() => setSaveMenuExpanded((v) => !v), []);
+    const closeSaveMenu = useCallback(() => setSaveMenuExpanded(false), []);
 
     const value = useMemo<ViewportContextValue>(
         () => ({
@@ -191,6 +194,7 @@ export function ViewportProvider({
                 loadConfigState,
                 loadConfigErrors,
                 shareLinkState,
+                saveMenuExpanded,
                 mobileActiveView,
                 contextMenuPos,
                 contextMenuAnimationState,
@@ -211,6 +215,8 @@ export function ViewportProvider({
                 saveConfigAsJSON,
                 loadConfigFromFile,
                 copyShareableLink,
+                toggleSaveMenu,
+                closeSaveMenu,
                 setMobileActiveView,
                 onDrawingRendered,
                 openContextMenu,
@@ -240,6 +246,7 @@ export function ViewportProvider({
             loadConfigState,
             loadConfigErrors,
             shareLinkState,
+            saveMenuExpanded,
             mobileActiveView,
             contextMenuPos,
             contextMenuAnimationState,
@@ -250,6 +257,8 @@ export function ViewportProvider({
             toggleGrid,
             toggleTable,
             toggleTubeLabels,
+            toggleSaveMenu,
+            closeSaveMenu,
             setMobileActiveView,
             copySVG,
             downloadSVG,
