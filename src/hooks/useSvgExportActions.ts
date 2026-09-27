@@ -11,9 +11,11 @@ import { buildTubeSheetDxfBlob } from "@/utils/dxfExport";
 import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported" | "downloaded";
-export type PngExportState = "idle" | "pending" | "error";
-export type PdfExportState = "idle" | "pending" | "error";
-export type DxfExportState = "idle" | "pending" | "error";
+export type PngExportState = "idle" | "pending" | "success" | "error";
+export type PdfExportState = "idle" | "pending" | "success" | "error";
+export type DxfExportState = "idle" | "pending" | "success" | "error";
+
+const EXPORT_RESET_DELAY_MS = 2500;
 
 // Android Firefox: clipboard image write fails.
 const isAndroidFirefox =
@@ -85,13 +87,14 @@ export function useSvgExportActions(
             .then((blob) => {
                 downloadBlob(blob, "tubesheet.png");
                 pngExportInFlightRef.current = false;
-                setPngExportState("idle");
+                setPngExportState("success");
+                setTimeout(() => setPngExportState("idle"), EXPORT_RESET_DELAY_MS);
             })
             .catch((err) => {
                 console.error("PNG export failed:", err);
                 pngExportInFlightRef.current = false;
                 setPngExportState("error");
-                setTimeout(() => setPngExportState("idle"), 2500);
+                setTimeout(() => setPngExportState("idle"), EXPORT_RESET_DELAY_MS);
             });
     }, [drawingSVG]);
 
@@ -109,13 +112,14 @@ export function useSvgExportActions(
             .then((blob) => {
                 downloadBlob(blob, "tubesheet.pdf");
                 pdfExportInFlightRef.current = false;
-                setPdfExportState("idle");
+                setPdfExportState("success");
+                setTimeout(() => setPdfExportState("idle"), EXPORT_RESET_DELAY_MS);
             })
             .catch((err) => {
                 console.error("PDF export failed:", err);
                 pdfExportInFlightRef.current = false;
                 setPdfExportState("error");
-                setTimeout(() => setPdfExportState("idle"), 2500);
+                setTimeout(() => setPdfExportState("idle"), EXPORT_RESET_DELAY_MS);
             });
     }, [drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes]);
 
@@ -133,13 +137,14 @@ export function useSvgExportActions(
             .then((blob) => {
                 downloadBlob(blob, "tubesheet.dxf");
                 dxfExportInFlightRef.current = false;
-                setDxfExportState("idle");
+                setDxfExportState("success");
+                setTimeout(() => setDxfExportState("idle"), EXPORT_RESET_DELAY_MS);
             })
             .catch((err) => {
                 console.error("DXF export failed:", err);
                 dxfExportInFlightRef.current = false;
                 setDxfExportState("error");
-                setTimeout(() => setDxfExportState("idle"), 2500);
+                setTimeout(() => setDxfExportState("idle"), EXPORT_RESET_DELAY_MS);
             });
     }, [drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes]);
 
