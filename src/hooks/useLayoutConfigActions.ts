@@ -41,11 +41,11 @@ export function useLayoutConfigActions(
         }
     }, [layoutConfig]);
 
-    // Shared by every caller of loadConfigFromFile below -- both the file
-    // picker button and the ViewportFrame drag-and-drop zone hand it a File
-    // and end up here: parses, validates, and applies whatever came out of
-    // it, surfacing per-field errors without blocking on them, since a
-    // partially-valid config should still load what it can.
+    // Parses, validates, and applies a raw config. Shared by the file picker
+    // button and by the ViewportFrame drag-and-drop zone, which both hand
+    // loadConfigFromFile a File and end up here. Surfaces per-field errors
+    // without blocking on them, since a partially-valid config should still
+    // load what it can.
     const applyParsedConfig = useCallback(
         (raw: unknown) => {
             const { fields, errors } = parseLayoutConfig(raw);
@@ -130,7 +130,6 @@ export function useLayoutConfigActions(
         loadConfigState,
         loadConfigErrors,
         loadConfigFromFile,
-        applyParsedConfig,
         shareLinkState,
         copyShareableLink,
     };
