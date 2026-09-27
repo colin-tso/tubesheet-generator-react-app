@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
     dispatchWorkerMessage,
+    resetPendingWorkOnTeardown,
     type CallbackEntry,
     type WorkerDispatchContext,
 } from "./useTubeSheetWorker";
@@ -89,7 +90,8 @@ describe("dispatchWorkerMessage — ERROR handling", () => {
 
         expect(callback).toHaveBeenCalledWith(null);
         expect(ctx.pendingCallbacks.size).toBe(0);
-        // Sweep is always preview-style, so it never touches completion accounting.
+        // Sweep is always preview-style, so it never touches completion
+        // accounting.
         expect(calls.completeCalculation).toBeUndefined();
     });
 
@@ -119,6 +121,94 @@ describe("dispatchWorkerMessage — ERROR handling", () => {
         expect(calls.completeCalculation).toHaveLength(1);
         expect(calls.setCalcError).toBeUndefined();
         expect(calls.setAnnouncement).toBeUndefined();
+    });
+});
+
+describe("resetPendingWorkOnTeardown", () => {
+    it("clears pending callbacks, zeroes the completion counter, and clears isCalculating", () => {
+        const pendingCallbacks = new Map<number, CallbackEntry>([
+            [1, { type: "single", callback: vi.fn(), isPreview: false }],
+            [2, { type: "all", callback: vi.fn(), isPreview: false }],
+        ]);
+        const pendingCompletionsRef = { current: 2 };
+        const setIsCalculating = vi.fn();
+
+        resetPendingWorkOnTeardown({ pendingCallbacks, pendingCompletionsRef, setIsCalculating });
+
+        expect(pendingCallbacks.size).toBe(0);
+        expect(pendingCompletionsRef.current).toBe(0);
+        expect(setIsCalculating).toHaveBeenCalledWith(false);
+    });
+
+    it("is a no-op-safe reset when nothing was in flight", () => {
+        const pendingCallbacks = new Map<number, CallbackEntry>();
+        const pendingCompletionsRef = { current: 0 };
+        const setIsCalculating = vi.fn();
+
+        expect(() =>
+            resetPendingWorkOnTeardown({
+                pendingCallbacks,
+                pendingCompletionsRef,
+                setIsCalculating,
+            }),
+        ).not.toThrow();
+        expect(setIsCalculating).toHaveBeenCalledWith(false);
+    });
+
+    // Reproduces the StrictMode mount -> cleanup -> mount sequence, which
+    // orphans a pending count: a request is sent (pendingCompletionsRef +1),
+    // the worker it was sent to is torn down before responding (triggered here
+    // by a mount effect that posts a worker request -- see useLayoutForm's
+    // shared-link URL bootstrap), and a second request is then sent to -- and
+    // answered by -- the replacement worker. Without the reset, the counter
+    // would settle at 1 instead of 0.
+    it("lets pendingCompletionsRef return to zero after an abandoned request is followed by a completed one", () => {
+        const pendingCompletionsRef = { current: 0 };
+        const setIsCalculating = vi.fn();
+        const completeCalculation = () => {
+            pendingCompletionsRef.current = Math.max(0, pendingCompletionsRef.current - 1);
+            if (pendingCompletionsRef.current === 0) setIsCalculating(false);
+        };
+
+        // First worker instance: a request goes out, then the worker is torn
+        // down before it can ever respond.
+        pendingCompletionsRef.current += 1;
+        setIsCalculating(true);
+        resetPendingWorkOnTeardown({
+            pendingCallbacks: new Map(),
+            pendingCompletionsRef,
+            setIsCalculating,
+        });
+        expect(pendingCompletionsRef.current).toBe(0);
+
+        // Second (replacement) worker instance: a fresh request goes out and
+        // this time gets a real response (postCalculateAll/postCalculateSingle
+        // both register a committed callback, so this is the "entry found" path
+        // in dispatchWorkerMessage, which completes directly).
+        pendingCompletionsRef.current += 1;
+        setIsCalculating(true);
+        const pendingCallbacks = new Map<number, CallbackEntry>([
+            [1, { type: "all", callback: vi.fn(), isPreview: false }],
+        ]);
+        dispatchWorkerMessage(
+            { type: "ALL_RESULTS", requestId: 1, payload: {} },
+            {
+                pendingCallbacks,
+                latestAllRequestId: 1,
+                latestSingleRequestId: null,
+                completeCalculation,
+                recordAllResponse: () => {},
+                recordSingleResponse: () => {},
+                setLayoutResults: () => {},
+                setDrawingSVG: () => {},
+                setLastSingleResult: () => {},
+                setCalcError: () => {},
+                setAnnouncement: () => {},
+            },
+        );
+
+        expect(pendingCompletionsRef.current).toBe(0);
+        expect(setIsCalculating).toHaveBeenLastCalledWith(false);
     });
 });
 
