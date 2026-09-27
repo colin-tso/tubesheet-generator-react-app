@@ -7,6 +7,11 @@ import type {
     PdfExportState,
     PngExportState,
 } from "@/hooks/useSvgExportActions";
+import type {
+    LoadConfigState,
+    SaveConfigState,
+    ShareLinkState,
+} from "@/hooks/useLayoutConfigActions";
 import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
 import type { HighlightRegion } from "@/hooks/useShellOTLHighlight";
 
@@ -29,6 +34,10 @@ export interface ViewportState {
     pngExportState: PngExportState;
     pdfExportState: PdfExportState;
     dxfExportState: DxfExportState;
+    saveConfigState: SaveConfigState;
+    loadConfigState: LoadConfigState;
+    loadConfigErrors: string[];
+    shareLinkState: ShareLinkState;
     contextMenuPos: { x: number; y: number };
     contextMenuAnimationState: AnimationLifecycle;
     hovered: HighlightRegion;
@@ -46,6 +55,9 @@ export interface ViewportActions {
     downloadPNG: () => void;
     downloadPDF: () => void;
     downloadDXF: () => void;
+    saveConfigAsJSON: () => void;
+    loadConfigFromFile: (file: File) => void;
+    copyShareableLink: () => void;
     onDrawingRendered: () => void;
     openContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void;
     closeContextMenu: () => void;

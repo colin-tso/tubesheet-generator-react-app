@@ -2,9 +2,11 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useContextMenu } from "@/hooks/useContextMenu";
 import { useSvgExportActions } from "@/hooks/useSvgExportActions";
+import { useLayoutConfigActions } from "@/hooks/useLayoutConfigActions";
 import { useViewportFooterReserve } from "@/hooks/useViewportFooterReserve";
 import { useShellOtlHighlight } from "@/hooks/useShellOTLHighlight";
 import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
+import type { LayoutConfigFields } from "@/utils/layoutConfig";
 import { generateTubeSheetSVG, type ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 import { ViewportContext, type ViewportContextValue } from "./ViewportContext";
 
@@ -49,6 +51,8 @@ interface ViewportProviderProps {
     drawingTableLabel: string;
     drawingTableRequestedTubes: number | undefined;
     basePadding: number;
+    layoutConfig: LayoutConfigFields;
+    onLoadLayoutConfig: (fields: LayoutConfigFields) => void;
 }
 
 // Owns grid/table preferences, the context menu, SVG copy/export, the
@@ -62,6 +66,8 @@ export function ViewportProvider({
     drawingTableLabel,
     drawingTableRequestedTubes,
     basePadding,
+    layoutConfig,
+    onLoadLayoutConfig,
 }: ViewportProviderProps) {
     const {
         drawingSVG,
@@ -122,6 +128,16 @@ export function ViewportProvider({
         drawingTableRequestedTubes,
     );
 
+    const {
+        saveConfigState,
+        saveConfigAsJSON,
+        loadConfigState,
+        loadConfigErrors,
+        loadConfigFromFile,
+        shareLinkState,
+        copyShareableLink,
+    } = useLayoutConfigActions(layoutConfig, onLoadLayoutConfig);
+
     const { viewportBottomReserve } = useViewportFooterReserve({
         containerRef,
         footerRef,
@@ -157,7 +173,8 @@ export function ViewportProvider({
                     copyState === "pending" ||
                     pngExportState === "pending" ||
                     pdfExportState === "pending" ||
-                    dxfExportState === "pending",
+                    dxfExportState === "pending" ||
+                    loadConfigState === "pending",
                 drawingSVG: labeledDrawingSVG,
                 placeholderSVG,
                 lastSingleResult,
@@ -169,6 +186,10 @@ export function ViewportProvider({
                 pngExportState,
                 pdfExportState,
                 dxfExportState,
+                saveConfigState,
+                loadConfigState,
+                loadConfigErrors,
+                shareLinkState,
                 contextMenuPos,
                 contextMenuAnimationState,
                 hovered,
@@ -185,6 +206,9 @@ export function ViewportProvider({
                 downloadPNG,
                 downloadPDF,
                 downloadDXF,
+                saveConfigAsJSON,
+                loadConfigFromFile,
+                copyShareableLink,
                 onDrawingRendered,
                 openContextMenu,
                 closeContextMenu: requestClose,
@@ -209,6 +233,10 @@ export function ViewportProvider({
             pngExportState,
             pdfExportState,
             dxfExportState,
+            saveConfigState,
+            loadConfigState,
+            loadConfigErrors,
+            shareLinkState,
             contextMenuPos,
             contextMenuAnimationState,
             hovered,
@@ -223,6 +251,9 @@ export function ViewportProvider({
             downloadPNG,
             downloadPDF,
             downloadDXF,
+            saveConfigAsJSON,
+            loadConfigFromFile,
+            copyShareableLink,
             onDrawingRendered,
             openContextMenu,
             requestClose,

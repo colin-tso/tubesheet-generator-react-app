@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { ReactNode, SubmitEvent } from "react";
 import packageJson from "../package.json";
 import { TubeSheet, generateTubeSheetSVG } from "@/plugins/tubesheet-layout-generator";
@@ -119,6 +120,7 @@ const App = () => {
         formOnSubmitHandler,
         inputOnSubmitHandler,
         applyShellID,
+        loadFields,
     } = useLayoutForm({
         lastSingleResult,
         postCalculateSingle: worker.postCalculateSingle,
@@ -135,6 +137,24 @@ const App = () => {
         shellID,
     };
 
+    // Snapshot of every save/load/share-able input, memoized on the primitive
+    // fields themselves (not `fieldValues` above, which is a fresh object
+    // every render) so passing it down to Viewport.Provider doesn't force a
+    // new identity -- and therefore a ViewportContext recompute -- on every
+    // render.
+    const layoutConfig = useMemo(
+        () => ({
+            minTubes,
+            tubeOD,
+            OTLtoShell,
+            tubeClearance,
+            pitchRatio,
+            shellID,
+            layoutOption,
+        }),
+        [minTubes, tubeOD, OTLtoShell, tubeClearance, pitchRatio, shellID, layoutOption],
+    );
+
     // Drawing table label/requested-tube count for the current committed
     // layout.
     const drawingTableLabel =
@@ -149,6 +169,8 @@ const App = () => {
             drawingTableLabel={drawingTableLabel}
             drawingTableRequestedTubes={drawingTableRequestedTubes}
             basePadding={VIEWPORT_BASE_PADDING}
+            layoutConfig={layoutConfig}
+            onLoadLayoutConfig={loadFields}
         >
             <BusyRow>
                 <FormPane onSubmit={formOnSubmitHandler}>
