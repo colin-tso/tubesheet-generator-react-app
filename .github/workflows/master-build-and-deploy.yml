@@ -16,28 +16,20 @@ jobs:
             pages: write
         runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                node-version: [24.x]
-
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
 
-            - name: Set up Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v7
+            # Caches npm's download cache (~/.npm) keyed on the lockfile. The
+            # previous node_modules cache is dropped: `npm ci` deletes
+            # node_modules before installing, so restoring it saved nothing.
+            - name: Set up toolchain
+              uses: ./.github/actions/setup-toolchain
               with:
-                  node-version: ${{ matrix.node-version }}
-
-            - name: Cache dependencies
-              uses: actions/cache@v6
-              with:
-                  path: |
-                      **/node_modules
-                  key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+                  cache: npm
 
             - name: Install dependencies
-              run: npm install
+              run: npm ci
 
             - name: Build
               run: npm run build

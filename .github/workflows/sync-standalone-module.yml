@@ -46,10 +46,13 @@ jobs:
                   token: ${{ secrets.GH_ORG_PAT }}
                   path: target
 
-            - name: Set up Node.js
-              uses: actions/setup-node@v7
+            # The react-app checkout lives in source/. The target install below
+            # runs in a generated directory with its own jq-built package.json,
+            # so it deliberately keeps `npm install` and no cache.
+            - name: Set up toolchain
+              uses: ./source/.github/actions/setup-toolchain
               with:
-                  node-version: "24.x"
+                  working-directory: source
 
             - name: Copy module, test file, and README; recursively sync relative-import dependencies
               run: |

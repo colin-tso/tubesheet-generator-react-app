@@ -31,13 +31,19 @@ The Calculator and Visualiser for Tubesheet Layouts is a web app built with Reac
 
 ### Prerequisites
 
-- Node.js
-- npm >= 8.3.0
+- Node.js `24.21.0`, as pinned in [`.node-version`](.node-version). Tools that read that file (fnm, nodenv, asdf) pick it up automatically; otherwise install that version yourself.
+- npm `12.1.0`, as pinned in the `packageManager` field of [`package.json`](package.json). CI installs it explicitly, since the npm bundled with Node `24.21.0` is `11.19.0`. A different local npm is fine but prints a warning from `devEngines`.
 
 ### Setup
 
 ```bash
 npm install
+```
+
+To match CI exactly, install from the committed lockfile instead:
+
+```bash
+npm ci
 ```
 
 ### Scripts
