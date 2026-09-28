@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import mkcert from "vite-plugin-mkcert";
@@ -43,5 +43,11 @@ export default defineConfig({
         environment: "jsdom",
         setupFiles: "./src/setupTests.js",
         globals: true,
+        // Local scratch directories can hold stale copies of test files. They
+        // are gitignored, so they are not part of the tree, but Vitest's
+        // default include glob would still collect them and report a higher
+        // test count locally than CI sees. Spread configDefaults.exclude so
+        // Vitest's own node_modules/.git exclusions are preserved.
+        exclude: [...configDefaults.exclude, ".localtemp/**"],
     },
 });

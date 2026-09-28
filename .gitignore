@@ -11,6 +11,10 @@
 # production
 /build
 
+# tsc -b output: incremental build state, and the compiled vite.config.js
+*.tsbuildinfo
+/vite.config.js
+
 # misc
 .DS_Store
 .env.local
