@@ -1,6 +1,13 @@
 version: 2
 updates:
-    # npm production dependencies
+    # npm dependencies
+    # Dependabot requires the package-ecosystem + directory + target-branch
+    # combination to be unique, so production and development dependencies must
+    # share one entry and be split by `allow` rather than by separate update
+    # configs. A single entry also means a single label, so the
+    # production/development distinction is no longer carried by a label and
+    # dependabot-auto-merge.yml reads it from dependabot/fetch-metadata's
+    # `dependency-type` output instead.
     - package-ecosystem: "npm"
       directory: "/"
       target-branch: "dev"
@@ -10,23 +17,9 @@ updates:
       rebase-strategy: "auto"
       allow:
           - dependency-type: "production"
-      labels:
-          - "dependencies"
-          - "dependencies:production"
-
-    # npm development dependencies
-    - package-ecosystem: "npm"
-      directory: "/"
-      target-branch: "dev"
-      schedule:
-          interval: "weekly"
-      open-pull-requests-limit: 10
-      rebase-strategy: "auto"
-      allow:
           - dependency-type: "development"
       labels:
           - "dependencies"
-          - "dependencies:development"
       # vitest and @vitest/coverage-v8 pin each other as exact peers, so a bump
       # to one that is not also applied to the other leaves a tree npm cannot
       # install. Grouping them keeps the pair in a single pull request.
