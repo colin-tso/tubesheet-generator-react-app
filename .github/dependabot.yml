@@ -27,6 +27,14 @@ updates:
       labels:
           - "dependencies"
           - "dependencies:development"
+      # vitest and @vitest/coverage-v8 pin each other as exact peers, so a bump
+      # to one that is not also applied to the other leaves a tree npm cannot
+      # install. Grouping them keeps the pair in a single pull request.
+      groups:
+          vitest:
+              patterns:
+                  - "vitest"
+                  - "@vitest/*"
 
     # GitHub Actions workflow dependencies
     - package-ecosystem: "github-actions"
