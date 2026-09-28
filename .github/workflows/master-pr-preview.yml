@@ -42,12 +42,11 @@ jobs:
 
             # No need to build if the PR is being closed - the preview is just
             # removed.
-            - name: Set up Node.js
+            - name: Set up toolchain
               if: github.event.action != 'closed'
-              uses: actions/setup-node@v7
+              uses: ./.github/actions/setup-toolchain
               with:
-                  node-version: "24.x"
-                  cache: "npm"
+                  cache: npm
 
             - name: Install dependencies
               if: github.event.action != 'closed'

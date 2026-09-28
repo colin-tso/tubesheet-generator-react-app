@@ -1,0 +1,57 @@
+name: "Set up toolchain"
+description: >
+    Installs the exact Node version from .node-version and the exact npm
+    version from the packageManager field in package.json, then verifies both.
+    package.json and .node-version are the only places either version is written.
+
+inputs:
+    working-directory:
+        description: "Directory containing package.json and .node-version."
+        required: false
+        default: "."
+    cache:
+        description: "Package manager cache for actions/setup-node (e.g. 'npm'). Empty disables caching."
+        required: false
+        default: ""
+
+runs:
+    using: composite
+    steps:
+        - name: Set up Node.js from .node-version
+          uses: actions/setup-node@v7
+          with:
+              node-version-file: ${{ inputs.working-directory }}/.node-version
+              cache: ${{ inputs.cache }}
+              cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+        # The npm bundled with a given Node release lags behind the npm we pin
+        # (Node 24.21.0 bundles npm 11.19.0), so the pinned version has to be
+        # installed explicitly. Running from RUNNER_TEMP keeps the project's
+        # devEngines/packageManager fields out of the global install.
+        - name: Install the npm version declared in packageManager
+          shell: bash
+          env:
+              WORKDIR: ${{ inputs.working-directory }}
+          run: |
+              set -euo pipefail
+
+              pkg="$(realpath "$WORKDIR/package.json")"
+              declared="$(node -p "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).packageManager ?? ''" "$pkg")"
+
+              if [[ ! "$declared" =~ ^npm@([0-9]+\.[0-9]+\.[0-9]+)(\+.*)?$ ]]; then
+                echo "::error::packageManager in $pkg must be an exact npm version such as npm@12.1.0. Found: '${declared}'."
+                exit 1
+              fi
+              expected="${BASH_REMATCH[1]}"
+
+              cd "$RUNNER_TEMP"
+              if [ "$(npm --version)" != "$expected" ]; then
+                npm install --global "npm@${expected}"
+              fi
+
+              echo "node $(node --version)"
+              echo "npm  $(npm --version)"
+              if [ "$(npm --version)" != "$expected" ]; then
+                echo "::error::Expected npm ${expected} from packageManager, found $(npm --version)."
+                exit 1
+              fi
