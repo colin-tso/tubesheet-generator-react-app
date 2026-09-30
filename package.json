@@ -91,5 +91,10 @@
     "type": "module",
     "overrides": {
         "katex": "$katex"
+    },
+    "allowScripts": {
+        "core-js@3.50.0": true,
+        "esbuild@0.28.2": true,
+        "fsevents": false
     }
 }
