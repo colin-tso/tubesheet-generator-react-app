@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.10.1
+
+### Patch Changes
+
+- aa1c602: chore(deps): bump katex from 0.18.7 to 0.18.9
+
 ## 2.10.0
 
 ### Minor Changes
