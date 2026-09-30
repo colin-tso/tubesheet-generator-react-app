@@ -5,8 +5,20 @@ name: "Master - PR Preview"
 # (merged or not).
 # Previews live at:
 # https://colin-tso.github.io/tubesheet-generator-react-app/pr-preview/pr-<number>/
+#
+# SECURITY MODEL
+# This uses pull_request_target so runs are not held for approval when the
+# triggering actor is Dependabot. Because that event runs with repo secrets,
+# the work is split in two jobs:
+#   1. build  - checks out and builds the PR head (which may contain merged
+#               outside contributions). Read-only token, NO secrets.
+#   2. deploy - runs trusted code from the base branch (master), never checks
+#               out the PR head, and only handles the built static files. This
+#               is the only job that references GH_ORG_PAT.
+# NOTE: pull_request_target always runs the workflow file from the base branch,
+# so edits to this file only take effect once merged into master.
 on:
-    pull_request:
+    pull_request_target:
         branches:
             - master
         types:
@@ -15,54 +27,102 @@ on:
             - synchronize
             - closed
 
-# Cancel any in-flight preview build for a PR if it's updated again before the
+# Cancel any in-flight preview run for a PR if it's updated again before the
 # previous run finished, and make sure deploy/remove runs never race each other
 # on the gh-pages branch.
 concurrency:
     group: pr-preview-${{ github.event.number }}
     cancel-in-progress: true
 
+# Least privilege by default; each job re-grants only what it needs.
+permissions: {}
+
+env:
+    # Must match the "base" in vite.config.ts and the umbrella-dir below.
+    PAGES_BASE_PATH: /tubesheet-generator-react-app/
+    PREVIEW_UMBRELLA_DIR: pr-preview
+
 jobs:
-    preview:
-        name: "Deploy/Remove PR Preview"
-        # Only run for PRs that are actually proposing to merge dev -> master.
-        if: github.event.pull_request.head.ref == 'dev'
+    build:
+        name: "Build PR Preview (no secrets)"
+        # dev -> master only, and only from this repo. Never build a fork's
+        # code here. Nothing to build when the PR is being closed.
+        if: >-
+            github.event.action != 'closed' &&
+            github.event.pull_request.head.ref == 'dev' &&
+            github.event.pull_request.head.repo.full_name == github.repository
         runs-on: ubuntu-latest
         permissions:
-            contents: write
-            pull-requests: write
-        env:
-            # Must match the "base" in vite.config.ts and the umbrella-dir
-            # below.
-            PAGES_BASE_PATH: /tubesheet-generator-react-app/
-            PREVIEW_UMBRELLA_DIR: pr-preview
+            contents: read
         steps:
-            - name: Checkout repository
+            - name: Checkout PR head
               uses: actions/checkout@v7
+              with:
+                  # pull_request_target checks out the base branch by default,
+                  # so explicitly build the PR head (a commit on `dev`).
+                  ref: ${{ github.event.pull_request.head.sha }}
+                  # Don't leave a token in .git/config for build scripts.
+                  persist-credentials: false
 
-            # No need to build if the PR is being closed - the preview is just
-            # removed.
             - name: Set up toolchain
-              if: github.event.action != 'closed'
               uses: ./.github/actions/setup-toolchain
               with:
                   cache: npm
 
             - name: Install dependencies
-              if: github.event.action != 'closed'
-              run: npm ci
+              # Skip dependency lifecycle scripts. If a package genuinely needs
+              # one, run `npm rebuild <pkg>` for just that package.
+              run: npm ci --ignore-scripts
 
             - name: Type-check
-              if: github.event.action != 'closed'
               run: npx tsc -b
 
             - name: Build with preview base path
-              if: github.event.action != 'closed'
               # Override the app's base path so asset URLs resolve correctly
               # when served from the .../pr-preview/pr-<number>/ subdirectory
               # instead of the site root.
               run: npx vite build --base="${PAGES_BASE_PATH}${PREVIEW_UMBRELLA_DIR}/pr-${{ github.event.number }}/"
 
+            - name: Upload build artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: preview-build
+                  path: build/
+                  retention-days: 1
+                  if-no-files-found: error
+
+    deploy:
+        name: "Deploy/Remove PR Preview"
+        needs: build
+        # Deploy after a successful build, or remove directly on close (the
+        # build job is skipped on close, so `always()` is required here).
+        if: >-
+            always() &&
+            github.event.pull_request.head.ref == 'dev' &&
+            github.event.pull_request.head.repo.full_name == github.repository &&
+            (github.event.action == 'closed' || needs.build.result == 'success')
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        steps:
+            # Default ref under pull_request_target is the base branch (master),
+            # i.e. trusted code. NEVER check out the PR head in this job.
+            - name: Checkout base repository
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - name: Download build artifact
+              if: github.event.action != 'closed'
+              uses: actions/download-artifact@v4
+              with:
+                  name: preview-build
+                  path: build/
+
+            # `auto` resolves to deploy on opened/reopened/synchronize and
+            # remove on closed; verified to support pull_request_target in
+            # lib/determine-auto-action.sh (v1 / v1.8.1).
             - name: Deploy or remove PR preview
               uses: rossjrw/pr-preview-action@v1
               with:
