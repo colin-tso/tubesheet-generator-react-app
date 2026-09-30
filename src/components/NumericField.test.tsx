@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import "@testing-library/jest-dom";
 import { NumericField } from "./NumericField";
 import { useLayoutForm } from "@/hooks/useLayoutForm";
 import { numericFieldConfigs } from "@/constants/numericFieldConfigs";
