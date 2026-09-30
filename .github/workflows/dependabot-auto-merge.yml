@@ -21,17 +21,21 @@ jobs:
                   github-token: "${{ secrets.GITHUB_TOKEN }}"
 
             # Only production dependency bumps get a changeset (and therefore
-            # a version bump on dev). Dev-only dependency updates are left
-            # unlabeled here on purpose.
+            # a version bump on dev). Dev-only dependency updates are skipped
+            # here on purpose. dependabot.yml has to keep production and
+            # development in a single update config, so it can no longer label
+            # the two cases apart - the distinction comes from fetch-metadata's
+            # `dependency-type` output, which reads "direct:production" for a
+            # production dependency and "direct:development" for a dev one.
             - name: Checkout PR branch
-              if: contains(github.event.pull_request.labels.*.name, 'dependencies:production')
+              if: contains(steps.metadata.outputs.dependency-type, 'production')
               uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.ref }}
                   token: ${{ secrets.GH_ORG_PAT }}
 
             - name: Add changeset for production dependency update
-              if: contains(github.event.pull_request.labels.*.name, 'dependencies:production')
+              if: contains(steps.metadata.outputs.dependency-type, 'production')
               env:
                   UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}

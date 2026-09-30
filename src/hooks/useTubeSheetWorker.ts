@@ -17,8 +17,8 @@ const emptyLayoutResults: LayoutResults = Object.fromEntries(
     TUBE_SHEET_LAYOUTS.map((layout) => [layout, null]),
 ) as LayoutResults;
 
-// Loading badge is debounced so brief calculations don't cause a flash
-// and is held visible for a minimum duration once shown.
+// Loading badge is debounced so brief calculations don't cause a flash and is
+// held visible for a minimum duration once shown.
 const SHOW_DELAY_MS = 150;
 const MIN_VISIBLE_MS = 300;
 
@@ -130,10 +130,37 @@ export function dispatchWorkerMessage(message: WorkerMessage, ctx: WorkerDispatc
     }
 }
 
-// Owns the tubesheet.worker.ts Web Worker.
-// Request/response handling, error/loading state, and announcements.
-// Supports concurrent CALCULATE_ALL/CALCULATE_SINGLE requests.
-// "isCalculating" only clears once all finish.
+// Everything the worker-lifecycle effect's cleanup needs to abandon whatever
+// was in flight when its worker is torn down. Extracted as a pure function,
+// like dispatchWorkerMessage above, so the reset logic is unit-testable without
+// standing up a real Worker.
+export interface WorkerTeardownContext {
+    pendingCallbacks: Map<number, CallbackEntry>;
+    pendingCompletionsRef: { current: number };
+    setIsCalculating: (value: boolean) => void;
+}
+
+// A request already sent to a worker instance can never get a response once
+// that instance is terminated -- most visibly on a real unmount (nothing
+// left to show a result to anyway), but also, in development, synchronously
+// during React 18 StrictMode's mount -> cleanup -> mount cycle if something
+// posts a request from its own mount effect (see useLayoutForm's shared-link
+// URL bootstrap): that request lands on the worker created by the first mount,
+// gets torn down before it can respond, and the request that effect's retry
+// sends afterward goes to the fresh worker created on remount. Without this
+// reset, the orphaned request's pending count is never decremented and
+// "isCalculating" is stuck true forever. Dropping every counter and callback
+// here means each effect run starts clean.
+export function resetPendingWorkOnTeardown(ctx: WorkerTeardownContext): void {
+    ctx.pendingCallbacks.clear();
+    ctx.pendingCompletionsRef.current = 0;
+    ctx.setIsCalculating(false);
+}
+
+// Owns the tubesheet.worker.ts Web Worker. Request/response handling,
+// error/loading state, and announcements. Supports concurrent
+// CALCULATE_ALL/CALCULATE_SINGLE requests. "isCalculating" only clears once all
+// finish.
 export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     const [layoutResults, setLayoutResults] = useState<LayoutResults>(emptyLayoutResults);
     const [drawingSVG, setDrawingSVG] = useState<SVGSVGElement>(placeholderSVG);
@@ -147,7 +174,8 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
     const loadingShownAtRef = useRef<number | null>(null);
     const hasRenderedOnceRef = useRef(false);
 
-    // Track outstanding calculations so "isCalculating" clears only when all finish.
+    // Track outstanding calculations so "isCalculating" clears only when all
+    // finish.
     const pendingCompletionsRef = useRef(0);
     // Worker responses increment below refs synchronously. Effects drain them
     // once the corresponding state update has actually committed.
@@ -183,7 +211,8 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         [completeCalculation],
     );
 
-    // Core dispatcher – stores callback for preview requests, skips loading badge for previews.
+    // Core dispatcher – stores callback for preview requests, skips loading
+    // badge for previews.
     const makeRequest = useCallback(
         (
             type: "CALCULATE_SINGLE" | "CALCULATE_ALL" | "CALCULATE_SWEEP",
@@ -247,9 +276,9 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         [makeRequest],
     );
 
-    // A shell-size sweep is always a one-off ask for a fresh chart/table, not
-    // a piece of persistent app state, so it's always "preview-style": it
-    // never toggles the global isCalculating/busy-cursor state, matching how
+    // A shell-size sweep is always a one-off ask for a fresh chart/table, not a
+    // piece of persistent app state, so it's always "preview-style": it never
+    // toggles the global isCalculating/busy-cursor state, matching how
     // live-preview requests behave while typing.
     const requestSweep = useCallback(
         (payload: Record<string, unknown>, callback: SweepCallback): number =>
@@ -257,7 +286,7 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         [makeRequest],
     );
 
-    // Legacy wrappers for committed calculations
+    // Committed (non-preview) calculation wrappers
     const postCalculateSingle = useCallback(
         (payload: Record<string, unknown>) => {
             requestSingle(
@@ -294,9 +323,16 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
             type: "module",
         });
 
+        // Captured once per effect run for the cleanup below:
+        // pendingCallbacksRef itself is never reassigned (only ever mutated in
+        // place), but capturing it up front is what lets the cleanup safely
+        // reference "this effect run's" map without the linter having to assume
+        // otherwise.
+        const pendingCallbacks = pendingCallbacksRef.current;
+
         w.onmessage = (event: MessageEvent) => {
             dispatchWorkerMessage(event.data as WorkerMessage, {
-                pendingCallbacks: pendingCallbacksRef.current,
+                pendingCallbacks,
                 latestAllRequestId: latestAllRequestIdRef.current,
                 latestSingleRequestId: latestSingleRequestIdRef.current,
                 completeCalculation,
@@ -324,6 +360,11 @@ export function useTubeSheetWorker(placeholderSVG: SVGSVGElement) {
         return () => {
             w.terminate();
             workerRef.current = null;
+            resetPendingWorkOnTeardown({
+                pendingCallbacks,
+                pendingCompletionsRef,
+                setIsCalculating,
+            });
         };
     }, [completeCalculation]);
 

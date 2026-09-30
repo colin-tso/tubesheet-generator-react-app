@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer } from "react";
 import type { ChangeEvent, SubmitEvent, KeyboardEvent, SyntheticEvent } from "react";
 import { utils } from "@/utils/";
+import { parseLayoutConfigFromSearchParams, type LayoutConfigFields } from "@/utils/layoutConfig";
 import type { SingleResultPayload } from "./useTubeSheetWorker";
 
 interface UseLayoutFormOptions {
@@ -49,7 +50,8 @@ const isGenericFieldName = (name: string): name is GenericFieldName =>
 type FieldAction =
     | { type: "SET_FIELD"; field: GenericFieldName; value: number | undefined }
     | { type: "SET_TUBE_CLEARANCE"; value: number | undefined }
-    | { type: "SET_PITCH_RATIO"; value: number | undefined };
+    | { type: "SET_PITCH_RATIO"; value: number | undefined }
+    | { type: "LOAD_FIELDS"; fields: FieldValues };
 
 // Distinguish absent override (use fallback) from explicit undefined as ??
 // can't distinguish this difference.
@@ -93,6 +95,14 @@ function fieldsReducer(state: FieldValues, action: FieldAction): FieldValues {
                 utils.clearanceFromPitchRatio(state.tubeOD, action.value) ?? state.tubeClearance;
             return { ...state, pitchRatio: action.value, tubeClearance };
         }
+
+        // Wholesale replace, from an already-validated save file/shared link
+        // (see @/utils/layoutConfig) rather than a single field edit -- so
+        // this skips the tubeClearance/pitchRatio re-derivation the two cases
+        // above do, since the caller has already made those consistent with
+        // each other.
+        case "LOAD_FIELDS":
+            return action.fields;
 
         default:
             return state;
@@ -326,14 +336,14 @@ export function useLayoutForm({
     );
 
     // Commits a new shell ID exactly as if the user had typed it into the
-    // shellID field and blurred: clears any min-tubes value (last-edited
-    // wins), and refreshes both the layout-options comparison and the
-    // current single drawing. Shared by onBlur's shellID branch and by
-    // anything else that wants to programmatically set the shell ID (e.g.
-    // applying a shell-size sweep result). A plain function (like onBlur/
-    // onAcceptEmpty above), not a useCallback: it closes over the same
-    // per-render fields/triggerSingleCalculation those already do, and nothing
-    // downstream depends on it being referentially stable across renders.
+    // shellID field and blurred: clears any min-tubes value (last-edited wins),
+    // and refreshes both the layout-options comparison and the current single
+    // drawing. Shared by onBlur's shellID branch and by anything else that
+    // wants to programmatically set the shell ID (e.g. applying a shell-size
+    // sweep result). A plain function (like onBlur/ onAcceptEmpty above), not a
+    // useCallback: it closes over the same per-render
+    // fields/triggerSingleCalculation those already do, and nothing downstream
+    // depends on it being referentially stable across renders.
     const applyShellID = (value: number) => {
         const changed = fields.shellID !== value;
         const clearsMinTubes = utils.isNumber(fields.minTubes);
@@ -352,6 +362,100 @@ export function useLayoutForm({
             triggerSingleCalculation({ shellID: value, minTubes: undefined });
         }
     };
+
+    // Bulk-applies an already-validated set of fields, from a loaded JSON file
+    // or a shared link's query string (see @/utils/layoutConfig, which is
+    // responsible for validation/derivation before this ever runs). Mirrors
+    // the minTubes/shellID commit logic in onBlur above: a shellID stands in
+    // for minTubes, so if both are present here (shouldn't be -- the parser
+    // already resolves that -- but this stays defensive) shellID wins.
+    // A plain function, like applyShellID: it isn't threaded into any
+    // memoized dependency array, so it doesn't need referential stability
+    // across renders.
+    const loadFields = (rawFields: LayoutConfigFields) => {
+        const hasShellID = utils.isNumber(rawFields.shellID) && rawFields.shellID > 0;
+
+        const next: FieldValues = {
+            minTubes: hasShellID ? undefined : rawFields.minTubes,
+            tubeOD: rawFields.tubeOD,
+            OTLtoShell: rawFields.OTLtoShell,
+            tubeClearance: rawFields.tubeClearance,
+            pitchRatio: rawFields.pitchRatio,
+            shellID: rawFields.shellID,
+            actualTubes: undefined,
+            layoutOption: rawFields.layoutOption,
+        };
+
+        dispatch({ type: "LOAD_FIELDS", fields: next });
+
+        const hasMinTubes = utils.isNumber(next.minTubes) && next.minTubes > 0;
+        const inputsValid =
+            utils.isNumber(next.OTLtoShell) &&
+            utils.isNumber(next.tubeOD) &&
+            utils.isNumber(next.tubeClearance) &&
+            utils.isNumber(next.pitchRatio) &&
+            next.OTLtoShell >= 0 &&
+            next.tubeOD > 0 &&
+            next.tubeClearance >= 0 &&
+            next.pitchRatio >= 1 &&
+            (hasMinTubes || hasShellID);
+
+        if (!inputsValid) return;
+
+        requestAllLayoutResults({
+            OTLtoShell: next.OTLtoShell,
+            tubeOD: next.tubeOD,
+            pitchRatio: next.pitchRatio,
+            minTubes: hasShellID ? undefined : next.minTubes,
+            shellID: hasShellID ? next.shellID : undefined,
+        });
+
+        if (utils.isNumber(next.layoutOption)) {
+            triggerSingleCalculation({
+                OTLtoShell: next.OTLtoShell,
+                tubeOD: next.tubeOD,
+                pitchRatio: next.pitchRatio,
+                minTubes: hasShellID ? undefined : next.minTubes,
+                shellID: hasShellID ? next.shellID : undefined,
+                overrideLayout: next.layoutOption,
+            });
+        }
+    };
+
+    // Bootstraps from a shared link's query string on mount -- see
+    // @/utils/layoutConfig for the field names/format this reads. Any fields
+    // the URL doesn't recognise are dropped (with a console warning) rather
+    // than blocking the rest of the fields from loading.
+    //
+    // No "only run once" guard: with an empty dependency array this already
+    // only runs on mount, and re-reading window.location.search is idempotent,
+    // so there's nothing to gain from one and it would cause a real problem
+    // here. React 18 StrictMode synchronously tears this effect down and
+    // re-runs it once in development, and the worker-lifecycle effect in
+    // useTubeSheetWorker goes through that same cycle -- terminating its worker
+    // and creating a new one. A guard that only let this run once would send
+    // its one worker request to the worker instance that's about to be replaced
+    // and terminated, and that request would never resolve. Letting it run
+    // again on the remount sends a second, harmless request to the worker that
+    // actually survives. See the corresponding reset in useTubeSheetWorker's
+    // cleanup, which keeps the first, abandoned request from leaving
+    // "isCalculating" stuck once this one lands.
+    useEffect(() => {
+        if (!window.location.search) return;
+
+        const { fields, errors } = parseLayoutConfigFromSearchParams(
+            new URLSearchParams(window.location.search),
+        );
+        if (errors.length) {
+            console.warn("Ignored invalid fields in shared link:", errors);
+        }
+        if (Object.keys(fields).length > 0) {
+            loadFields(fields);
+        }
+        // loadFields/requestAllLayoutResults/triggerSingleCalculation close
+        // over per-render fields the same way applyShellID does above.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const formOnSubmitHandler = (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -544,5 +648,6 @@ export function useLayoutForm({
         inputOnSubmitHandler,
         triggerSingleCalculation,
         applyShellID,
+        loadFields,
     };
 }

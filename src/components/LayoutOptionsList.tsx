@@ -9,6 +9,15 @@ interface LayoutOptionsListProps {
     layoutResults: LayoutResults;
     showLoadingBadge: boolean;
     onLayoutOptionChange: (e: ChangeEvent<HTMLInputElement>) => void;
+    // Currently selected layout, as the numeric value backing each row (see
+    // layoutOptionRows.ts). Without this the radios are effectively
+    // uncontrolled: a user click sets the browser's own radio state directly,
+    // but a programmatic change (loading a saved JSON config or a shared
+    // link, both of which go through useLayoutForm's loadFields rather than
+    // a click) updates fields.layoutOption without ever touching the DOM's
+    // checked state, so no row visibly appears selected even though the
+    // drawing renders using that layout.
+    selectedLayoutOption?: number;
 }
 
 // Convert minID to bar width percent (symlog scale, min 12%).
@@ -33,6 +42,7 @@ export function LayoutOptionsList({
     layoutResults,
     showLoadingBadge,
     onLayoutOptionChange,
+    selectedLayoutOption,
 }: LayoutOptionsListProps) {
     // The shell ID basis of the last completed calculation
     const layoutResultsUseCustomShellID = rows.some((row) =>
@@ -83,6 +93,10 @@ export function LayoutOptionsList({
                                     id={id}
                                     name="layoutOption"
                                     value={value}
+                                    checked={
+                                        selectedLayoutOption !== undefined &&
+                                        Number(value) === selectedLayoutOption
+                                    }
                                     onChange={onLayoutOptionChange}
                                     disabled={showLoadingBadge}
                                     required={required}

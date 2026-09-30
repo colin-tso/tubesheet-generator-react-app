@@ -7,6 +7,11 @@ import type {
     PdfExportState,
     PngExportState,
 } from "@/hooks/useSvgExportActions";
+import type {
+    LoadConfigState,
+    SaveConfigState,
+    ShareLinkState,
+} from "@/hooks/useLayoutConfigActions";
 import type { SingleResultPayload } from "@/hooks/useTubeSheetWorker";
 import type { HighlightRegion } from "@/hooks/useShellOTLHighlight";
 
@@ -29,6 +34,23 @@ export interface ViewportState {
     pngExportState: PngExportState;
     pdfExportState: PdfExportState;
     dxfExportState: DxfExportState;
+    saveConfigState: SaveConfigState;
+    loadConfigState: LoadConfigState;
+    loadConfigErrors: string[];
+    shareLinkState: ShareLinkState;
+    // Whether the mobile "more export formats" flyout is open. Lives here
+    // (rather than as local state in ViewportExportActions) so the flyout
+    // panel itself can be rendered by ViewportFrame as a sibling of the
+    // drawing/table -- see ViewportExportFlyout -- while the toggle button
+    // that drives it stays in ViewportExportActions.
+    saveMenuExpanded: boolean;
+    // Which mobile "tab" is active -- Form or Drawing (see App.tsx's .row-pane
+    // / data-mobile-view wiring). Unused at desktop widths, where both panes
+    // are always visible side by side; CSS only reacts to it inside the mobile
+    // breakpoint. Lives here (rather than local state in App) so both the
+    // form's submit handler and the tab bar itself can read/set it via
+    // context, matching how showGrid/showTable etc. already work.
+    mobileActiveView: "form" | "drawing";
     contextMenuPos: { x: number; y: number };
     contextMenuAnimationState: AnimationLifecycle;
     hovered: HighlightRegion;
@@ -46,6 +68,12 @@ export interface ViewportActions {
     downloadPNG: () => void;
     downloadPDF: () => void;
     downloadDXF: () => void;
+    saveConfigAsJSON: () => void;
+    loadConfigFromFile: (file: File) => void;
+    copyShareableLink: () => void;
+    toggleSaveMenu: () => void;
+    closeSaveMenu: () => void;
+    setMobileActiveView: (view: "form" | "drawing") => void;
     onDrawingRendered: () => void;
     openContextMenu: (e: ReactMouseEvent<HTMLDivElement>) => void;
     closeContextMenu: () => void;
