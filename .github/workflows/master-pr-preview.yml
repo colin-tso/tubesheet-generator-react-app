@@ -84,7 +84,7 @@ jobs:
               run: npx vite build --base="${PAGES_BASE_PATH}${PREVIEW_UMBRELLA_DIR}/pr-${{ github.event.number }}/"
 
             - name: Upload build artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: preview-build
                   path: build/
