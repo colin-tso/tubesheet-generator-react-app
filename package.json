@@ -11,7 +11,7 @@
         "jspdf": "^4.2.1",
         "katex": "^0.18.9",
         "lodash.memoize": "^4.1.2",
-        "react": "^19.3.0",
+        "react": "^19.3.1",
         "react-dom": "^19.3.0",
         "react-number-format": "^5.4.5",
         "remark-gfm": "^4.0.1",
