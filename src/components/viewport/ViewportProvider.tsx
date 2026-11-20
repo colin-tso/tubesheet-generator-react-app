@@ -115,6 +115,7 @@ export function ViewportProvider({
     const {
         copyState,
         downloadSVG,
+        svgExportState,
         downloadPNG,
         pngExportState,
         downloadPDF,
@@ -187,6 +188,7 @@ export function ViewportProvider({
                 announcement,
                 copyState,
                 copyReady,
+                svgExportState,
                 pngExportState,
                 pdfExportState,
                 dxfExportState,
@@ -239,6 +241,7 @@ export function ViewportProvider({
             announcement,
             copyState,
             copyReady,
+            svgExportState,
             pngExportState,
             pdfExportState,
             dxfExportState,

@@ -6,6 +6,7 @@ import type {
     DxfExportState,
     PdfExportState,
     PngExportState,
+    SvgExportState,
 } from "@/hooks/useSvgExportActions";
 import type {
     LoadConfigState,
@@ -31,6 +32,7 @@ export interface ViewportState {
     announcement: string;
     copyState: CopyState;
     copyReady: boolean;
+    svgExportState: SvgExportState;
     pngExportState: PngExportState;
     pdfExportState: PdfExportState;
     dxfExportState: DxfExportState;
