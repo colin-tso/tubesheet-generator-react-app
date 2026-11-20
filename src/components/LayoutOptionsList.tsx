@@ -2,6 +2,7 @@ import type { ChangeEvent } from "react";
 import { utils } from "@/utils";
 import type { LayoutResults } from "@/hooks/useTubeSheetWorker";
 import type { LayoutOptionRow } from "@/constants/layoutOptionRows";
+import { LayoutGlyph } from "@/components/icons/LayoutGlyph";
 import StarIcon from "@/assets/star.svg?react";
 
 interface LayoutOptionsListProps {
@@ -59,7 +60,8 @@ export function LayoutOptionsList({
         <div className="section">
             <div className="field-group-card">
                 <h3 className="field-group-title">Layout options</h3>
-                <div className="layout-list-header" aria-hidden="true">
+                <div className="layout-list-header has-glyph" aria-hidden="true">
+                    <span />
                     <span />
                     <span />
                     <span />
@@ -76,7 +78,7 @@ export function LayoutOptionsList({
                     aria-label="Tube layout angle"
                     aria-busy={showLoadingBadge}
                 >
-                    {rows.map(({ key, id, label, value, required }) => {
+                    {rows.map(({ key, id, label, name, value, required }) => {
                         // Hide stale values while calculating
                         const result = showLoadingBadge ? undefined : layoutResults[key];
                         const minIDValue =
@@ -85,7 +87,7 @@ export function LayoutOptionsList({
                         return (
                             <label
                                 key={id}
-                                className={`layout-row ${result?.preferred ? "preferred" : ""}`}
+                                className={`layout-row has-glyph ${result?.preferred ? "preferred" : ""}`}
                                 htmlFor={id}
                             >
                                 <input
@@ -101,6 +103,9 @@ export function LayoutOptionsList({
                                     disabled={showLoadingBadge}
                                     required={required}
                                 />
+                                <span className="row-glyph" title={name === label ? name : `${name} (${label})`}>
+                                    <LayoutGlyph layout={key} />
+                                </span>
                                 <span className="row-angle noselect">
                                     {label}
                                     {result?.preferred && (

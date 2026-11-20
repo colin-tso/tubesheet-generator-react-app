@@ -851,6 +851,23 @@ input[type="text"].field-preview:focus {
   gap: 0;
 }
 
+.layout-row.has-glyph,
+.layout-list-header.has-glyph {
+  grid-template-columns: 16px 16px 35px 1fr auto;
+}
+
+.layout-row .row-glyph {
+  display: flex;
+  justify-content: center;
+  color: var(--muted);
+  transition: color var(--transition);
+}
+
+.layout-row:has(input:checked) .row-glyph,
+.layout-row:hover:not(:has(input:disabled)) .row-glyph {
+  color: var(--ink);
+}
+
 .layout-row {
   cursor: pointer;
 
@@ -955,6 +972,10 @@ input[type="text"].field-preview:focus {
   font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
+}
+
+.layout-row.has-glyph .row-angle {
+  margin-left: -10px;
 }
 
 .layout-row .row-bar-track {
@@ -2595,6 +2616,13 @@ footer a:focus-visible {
   .layout-list-header {
     grid-template-columns: 16px 44px 1fr auto;
     gap: 8px;
+  }
+  .layout-row.has-glyph,
+  .layout-list-header.has-glyph {
+    grid-template-columns: 16px 16px 36px 1fr auto;
+  }
+  .layout-row.has-glyph .row-angle {
+    margin-left: -5px;
   }
   .layout-row {
     padding: 8px;
