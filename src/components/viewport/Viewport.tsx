@@ -448,7 +448,12 @@ function ViewportMobileToolbar() {
                     {state.showGrid ? (
                         <GridIcon className="btn-icon" width="18" height="18" aria-hidden="true" />
                     ) : (
-                        <GridOffIcon className="btn-icon" width="18" height="18" aria-hidden="true" />
+                        <GridOffIcon
+                            className="btn-icon"
+                            width="18"
+                            height="18"
+                            aria-hidden="true"
+                        />
                     )}
                     <span className="btn-micro-label" aria-hidden="true">
                         Grid
@@ -569,6 +574,13 @@ function ViewportExportFlyout() {
             : state.saveConfigState === "error"
               ? "Save failed"
               : "Save as JSON";
+
+    const svgButtonTitle =
+        state.svgExportState === "success"
+            ? "Saved!"
+            : state.svgExportState === "error"
+              ? "SVG export failed"
+              : "Save as SVG";
 
     const loadJsonButtonTitle =
         state.loadConfigState === "pending"
@@ -691,14 +703,20 @@ function ViewportExportFlyout() {
                     <span className="btn-label">{pngButtonTitle}</span>
                 </button>
                 <button
-                    className="focus-ring export-btn save-svg-button"
+                    className={`focus-ring export-btn save-svg-button${
+                        state.svgExportState === "success"
+                            ? " success"
+                            : state.svgExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
                     onClick={actions.downloadSVG}
                     type="button"
-                    data-title="Save as SVG"
+                    data-title={svgButtonTitle}
                     hidden={noDrawing}
                 >
                     <SaveSvgIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
-                    <span className="btn-label">Save as SVG</span>
+                    <span className="btn-label">{svgButtonTitle}</span>
                 </button>
                 <button
                     className={`focus-ring export-btn save-dxf-button${
@@ -871,6 +889,13 @@ function ViewportExportActions() {
               ? "Save failed"
               : "Save as JSON";
 
+    const svgButtonTitle =
+        state.svgExportState === "success"
+            ? "Saved!"
+            : state.svgExportState === "error"
+              ? "SVG export failed"
+              : "Save as SVG";
+
     const loadJsonButtonTitle =
         state.loadConfigState === "pending"
             ? "Loading…"
@@ -929,12 +954,18 @@ function ViewportExportActions() {
                 <button
                     type="button"
                     role="menuitem"
-                    className="export-dropdown-item focus-ring save-svg-button"
+                    className={`export-dropdown-item focus-ring save-svg-button${
+                        state.svgExportState === "success"
+                            ? " success"
+                            : state.svgExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
                     onClick={handleSaveSVG}
                     hidden={noDrawing}
                 >
                     <SaveSvgIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
-                    <span>Save as SVG</span>
+                    <span>{svgButtonTitle}</span>
                 </button>
                 <button
                     type="button"
@@ -1075,12 +1106,24 @@ function ViewportExportActions() {
                         aria-busy={state.copyState === "pending" || !state.copyReady}
                     >
                         {state.copyState === "copied" || state.copyState === "downloaded" ? (
-                            <CheckIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                            <CheckIcon
+                                className="btn-icon"
+                                width="19"
+                                height="19"
+                                aria-hidden="true"
+                            />
                         ) : (
-                            <CopyIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                            <CopyIcon
+                                className="btn-icon"
+                                width="19"
+                                height="19"
+                                aria-hidden="true"
+                            />
                         )}
                         <span className="btn-micro-label" aria-hidden="true">
-                            {state.copyState === "copied" || state.copyState === "downloaded" ? "Copied" : "Copy"}
+                            {state.copyState === "copied" || state.copyState === "downloaded"
+                                ? "Copied"
+                                : "Copy"}
                         </span>
                         <span className="btn-label">Copy Image</span>
                     </button>
