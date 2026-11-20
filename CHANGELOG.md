@@ -1,5 +1,20 @@
 # tubesheet-generator-react-app
 
+## 2.11.0
+
+### Minor Changes
+
+- f36bede: Consolidate desktop export buttons into a dropdown/popover menu, replacing the permanently stacked export column with a clean Export toggle button and floating popover card.
+- f7d10a6: chore(deps): bump @tarikjabiri/dxf from 2.9.0 to 2.10.0
+- 21306df: chore(deps): bump svg2pdf.js from 2.8.1 to 2.9.0
+- 4992f81: Add (i) help links in the form that jump straight to the relevant docs section: next to the OTL to shell diametrical clearance and Pitch ratio inputs, and on the Layout options card.
+- 27c4433: Show a small outline glyph (triangle, rhombus, inverted triangle, square, concentric circles) beside each option in the Layout options list (with a hover hint naming the pattern: triangular, rotated square, rotated triangular, square, radial), so the angles are easier to tell apart at a glance.
+
+### Patch Changes
+
+- 421f018: chore(deps): bump the react group with 2 updates
+- 8243f7d: chore(deps): bump @tarikjabiri/dxf from 2.10.0 to 2.10.1
+
 ## 2.10.2
 
 ### Patch Changes
