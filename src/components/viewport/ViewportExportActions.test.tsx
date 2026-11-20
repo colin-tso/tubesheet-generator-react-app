@@ -127,13 +127,14 @@ describe("desktop export dropdown menu", () => {
         expect(screen.getByRole("menuitem", { name: /copy shareable link/i })).toBeInTheDocument();
     });
 
-    it("closes the dropdown menu when an export option is clicked", () => {
+    it("keeps the dropdown menu open when an export option is clicked (so status feedback is visible)", () => {
         renderViewport();
 
         fireEvent.click(getDesktopExportToggle());
         const svgBtn = screen.getByRole("menuitem", { name: /save as svg/i });
         fireEvent.click(svgBtn);
 
-        expect(getDesktopExportMenu()).toHaveAttribute("hidden");
+        expect(getDesktopExportMenu()).not.toHaveAttribute("hidden");
+        expect(getDesktopExportToggle().getAttribute("aria-expanded")).toBe("true");
     });
 });

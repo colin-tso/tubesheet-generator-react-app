@@ -900,34 +900,16 @@ function ViewportExportActions() {
         e.currentTarget.value = "";
     };
 
-    const handleSaveSVG = () => {
-        actions.downloadSVG();
-        actions.closeSaveMenu();
-    };
-    const handleSavePNG = () => {
-        actions.downloadPNG();
-        actions.closeSaveMenu();
-    };
-    const handleSavePDF = () => {
-        actions.downloadPDF();
-        actions.closeSaveMenu();
-    };
-    const handleSaveDXF = () => {
-        actions.downloadDXF();
-        actions.closeSaveMenu();
-    };
-    const handleSaveJSON = () => {
-        actions.saveConfigAsJSON();
-        actions.closeSaveMenu();
-    };
-    const handleLoadJSON = () => {
-        fileInputRef.current?.click();
-        actions.closeSaveMenu();
-    };
-    const handleShareLink = () => {
-        actions.copyShareableLink();
-        actions.closeSaveMenu();
-    };
+    // Keep the menu open after each action so the success/error status is
+    // visible to the user. The menu closes via the toggle button, Escape, or
+    // an outside click as usual.
+    const handleSaveSVG = () => actions.downloadSVG();
+    const handleSavePNG = () => actions.downloadPNG();
+    const handleSavePDF = () => actions.downloadPDF();
+    const handleSaveDXF = () => actions.downloadDXF();
+    const handleSaveJSON = () => actions.saveConfigAsJSON();
+    const handleLoadJSON = () => fileInputRef.current?.click();
+    const handleShareLink = () => actions.copyShareableLink();
 
     return (
         <div className="viewport-actions" data-no-context-menu>
