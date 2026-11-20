@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import "@testing-library/jest-dom";
 import { ShellSweepPanel } from "./ShellSweepPanel";
 import type { ShellSweepPoint } from "@/plugins/tubesheet-layout-generator";
 import type { SweepCallback } from "@/hooks/useTubeSheetWorker";

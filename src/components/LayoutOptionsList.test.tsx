@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import "@testing-library/jest-dom";
 import { LayoutOptionsList } from "./LayoutOptionsList";
 import { layoutOptionRows } from "@/constants/layoutOptionRows";
 import type { LayoutResults } from "@/hooks/useTubeSheetWorker";

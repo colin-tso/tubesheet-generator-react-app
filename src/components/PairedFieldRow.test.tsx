@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import "@testing-library/jest-dom";
 import { PairedFieldRow } from "./PairedFieldRow";
 import { NumericField } from "./NumericField";
 import { useLayoutForm } from "@/hooks/useLayoutForm";

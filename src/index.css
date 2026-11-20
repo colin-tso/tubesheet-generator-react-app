@@ -2658,6 +2658,16 @@ footer a:focus-visible {
     background-color: var(--panel);
   }
 
+  /* .copy-button's border belongs to the desktop icon cluster
+     (.icon-btn-vertical), where it's what makes a 42px chip legible against
+     the drawing. Here the same class is a full-width list row flush under
+     .export-flyout-header's own border-bottom, so the border reads as a
+     second line stacked on the header divider -- and no other row in the
+     panel has one. Drop it so Copy matches its siblings. */
+  .export-flyout .export-card .copy-button {
+    border: none;
+  }
+
   /* .export-btn.success/.error rely on var(--panel) reading as "light text"
      against a solid accent background (--greenline/--redline), which holds
      in both themes; the override above would otherwise win here too, since
