@@ -2,6 +2,7 @@ import type { ChangeEvent } from "react";
 import { utils } from "@/utils";
 import type { LayoutResults } from "@/hooks/useTubeSheetWorker";
 import type { LayoutOptionRow } from "@/constants/layoutOptionRows";
+import { DocsHelpLink } from "@/components/DocsHelpLink";
 import { LayoutGlyph } from "@/components/icons/LayoutGlyph";
 import StarIcon from "@/assets/star.svg?react";
 
@@ -59,7 +60,10 @@ export function LayoutOptionsList({
     return (
         <div className="section">
             <div className="field-group-card">
-                <h3 className="field-group-title">Layout options</h3>
+                <h3 className="field-group-title">
+                    Layout options
+                    <DocsHelpLink section="patterns" topic="layout patterns" />
+                </h3>
                 <div className="layout-list-header has-glyph" aria-hidden="true">
                     <span />
                     <span />
@@ -103,7 +107,10 @@ export function LayoutOptionsList({
                                     disabled={showLoadingBadge}
                                     required={required}
                                 />
-                                <span className="row-glyph" title={name === label ? name : `${name} (${label})`}>
+                                <span
+                                    className="row-glyph"
+                                    title={name === label ? name : `${name} (${label})`}
+                                >
                                     <LayoutGlyph layout={key} />
                                 </span>
                                 <span className="row-angle noselect">

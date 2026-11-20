@@ -667,12 +667,39 @@ hr {
   margin-bottom: 0;
 }
 
+.field-label-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.docs-help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 2px;
+  border-radius: 50%;
+
+  color: var(--muted);
+  text-decoration: none;
+
+  transition: color 0.15s ease;
+}
+
+.docs-help-link:hover {
+  color: var(--blue);
+}
+
+.field-group-title .docs-help-link {
+  align-self: center;
+}
+
 .field-label {
   display: flex;
   gap: 4px;
   align-items: baseline;
-
-  margin-bottom: 6px;
 
   font-size: 12.5px;
   font-weight: 700;
