@@ -11,6 +11,7 @@ import { buildTubeSheetDxfBlob } from "@/utils/dxfExport";
 import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported" | "downloaded";
+export type SvgExportState = "idle" | "success" | "error";
 export type PngExportState = "idle" | "pending" | "success" | "error";
 export type PdfExportState = "idle" | "pending" | "success" | "error";
 export type DxfExportState = "idle" | "pending" | "success" | "error";
@@ -55,6 +56,7 @@ export function useSvgExportActions(
 ) {
     const [copyState, setCopyState] = useState<CopyState>("idle");
     const copyInFlightRef = useRef(false);
+    const [svgExportState, setSvgExportState] = useState<SvgExportState>("idle");
     const [pngExportState, setPngExportState] = useState<PngExportState>("idle");
     const pngExportInFlightRef = useRef(false);
     const [pdfExportState, setPdfExportState] = useState<PdfExportState>("idle");
@@ -68,9 +70,19 @@ export function useSvgExportActions(
 
     const copyReady = true;
 
-    const downloadSVG = useCallback(() => {
-        const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
-        downloadBlob(blob, "tubesheet.svg");
+    const downloadSVG = useCallback((): boolean => {
+        try {
+            const blob = new Blob([drawingSVG.outerHTML], { type: "image/svg+xml" });
+            downloadBlob(blob, "tubesheet.svg");
+            setSvgExportState("success");
+            setTimeout(() => setSvgExportState("idle"), EXPORT_RESET_DELAY_MS);
+            return true;
+        } catch (err) {
+            console.error("SVG export failed:", err);
+            setSvgExportState("error");
+            setTimeout(() => setSvgExportState("idle"), EXPORT_RESET_DELAY_MS);
+            return false;
+        }
     }, [drawingSVG]);
 
     const downloadPNG = useCallback(() => {
@@ -151,11 +163,15 @@ export function useSvgExportActions(
     const copySVG = useCallback(() => {
         if (copyInFlightRef.current) return;
 
+        const downloadFallback = () => {
+            const downloaded = downloadSVG();
+            setCopyState(downloaded ? "downloaded" : "error");
+            setTimeout(() => setCopyState("idle"), 2500);
+        };
+
         // Android Firefox and iOS: skip clipboard and download directly.
         if (isAndroidFirefox || isIOS) {
-            downloadSVG();
-            setCopyState("downloaded");
-            setTimeout(() => setCopyState("idle"), 2500);
+            downloadFallback();
             return;
         }
 
@@ -165,9 +181,7 @@ export function useSvgExportActions(
             !navigator.clipboard ||
             typeof ClipboardItem === "undefined"
         ) {
-            downloadSVG();
-            setCopyState("downloaded");
-            setTimeout(() => setCopyState("idle"), 2500);
+            downloadFallback();
             return;
         }
 
@@ -231,6 +245,7 @@ export function useSvgExportActions(
     return {
         copyState,
         downloadSVG,
+        svgExportState,
         downloadPNG,
         pngExportState,
         downloadPDF,

@@ -667,12 +667,39 @@ hr {
   margin-bottom: 0;
 }
 
+.field-label-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.docs-help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 2px;
+  border-radius: 50%;
+
+  color: var(--muted);
+  text-decoration: none;
+
+  transition: color 0.15s ease;
+}
+
+.docs-help-link:hover {
+  color: var(--blue);
+}
+
+.field-group-title .docs-help-link {
+  align-self: center;
+}
+
 .field-label {
   display: flex;
   gap: 4px;
   align-items: baseline;
-
-  margin-bottom: 6px;
 
   font-size: 12.5px;
   font-weight: 700;
@@ -851,6 +878,23 @@ input[type="text"].field-preview:focus {
   gap: 0;
 }
 
+.layout-row.has-glyph,
+.layout-list-header.has-glyph {
+  grid-template-columns: 16px 16px 35px 1fr auto;
+}
+
+.layout-row .row-glyph {
+  display: flex;
+  justify-content: center;
+  color: var(--muted);
+  transition: color var(--transition);
+}
+
+.layout-row:has(input:checked) .row-glyph,
+.layout-row:hover:not(:has(input:disabled)) .row-glyph {
+  color: var(--ink);
+}
+
 .layout-row {
   cursor: pointer;
 
@@ -955,6 +999,10 @@ input[type="text"].field-preview:focus {
   font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
+}
+
+.layout-row.has-glyph .row-angle {
+  margin-left: -10px;
 }
 
 .layout-row .row-bar-track {
@@ -1448,7 +1496,8 @@ footer a:focus-visible {
 .tube-labels-toggle:hover .btn-label,
 .help-button:hover .btn-label,
 .export-btn:hover .btn-label,
-.copy-button:hover .btn-label {
+.copy-button:hover .btn-label,
+.export-toggle-button:hover .btn-label {
   transform: translateY(-50%) scale(1);
   opacity: 1;
   transition-delay: 0.5s;
@@ -1461,7 +1510,8 @@ footer a:focus-visible {
 .tube-labels-toggle:focus-visible .btn-label,
 .help-button:focus-visible .btn-label,
 .export-btn:focus-visible .btn-label,
-.copy-button:focus-visible .btn-label {
+.copy-button:focus-visible .btn-label,
+.export-toggle-button:focus-visible .btn-label {
   transform: translateY(-50%) scale(1);
   opacity: 1;
 }
@@ -1489,6 +1539,10 @@ footer a:focus-visible {
   color: var(--blue);
   opacity: 1;
   background-color: var(--blue-tint);
+}
+
+.export-toggle-button[aria-expanded="true"] .btn-label {
+  display: none;
 }
 
 .grid-toggle svg,
@@ -1954,6 +2008,151 @@ footer a:focus-visible {
   background-color: var(--redline);
 }
 
+/* ============================================================
+   Desktop export dropdown / popover menu
+   ============================================================ */
+.export-dropdown-menu {
+  position: absolute;
+  z-index: 10;
+  right: 0;
+  bottom: calc(100% + 8px);
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  min-width: 210px;
+  margin: 0;
+  padding: 6px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+
+  background-color: var(--panel);
+  box-shadow: var(--elevation-high);
+
+  animation: export-dropdown-popover-in var(--transition-duration) var(--transition-easing);
+}
+
+.export-dropdown-menu[hidden] {
+  display: none;
+}
+
+@keyframes export-dropdown-popover-in {
+  from {
+    transform: translateY(4px) scale(0.98);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.export-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 4px;
+  padding: 6px 8px 4px;
+  border-bottom: 1px solid var(--line);
+
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.export-dropdown-section-title {
+  margin: 6px 0 2px;
+  padding: 0 8px;
+
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.export-dropdown-divider {
+  height: 1px;
+  margin: 4px 0;
+  border: none;
+  background-color: var(--line);
+}
+
+.export-dropdown-item {
+  cursor: pointer;
+
+  position: relative;
+
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: left;
+  letter-spacing: 0.01em;
+
+  background-color: transparent;
+
+  transition:
+    color var(--transition),
+    background-color var(--transition);
+}
+
+.export-dropdown-item:hover:not(:disabled) {
+  color: var(--blue);
+  background-color: var(--input-readonly-background);
+}
+
+.export-dropdown-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--blue-glow);
+}
+
+.export-dropdown-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.export-dropdown-item.error {
+  color: var(--redline);
+}
+
+.export-dropdown-item.error:hover:not(:disabled) {
+  color: var(--redline);
+  background-color: var(--input-readonly-background);
+}
+
+.export-dropdown-item.success {
+  color: var(--greenline);
+}
+
+.export-dropdown-item.success:hover:not(:disabled) {
+  color: var(--greenline);
+  background-color: var(--input-readonly-background);
+}
+
+.export-dropdown-item .btn-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}
+
 .export-flyout-header {
   display: flex;
   align-items: center;
@@ -2082,6 +2281,26 @@ footer a:focus-visible {
   position: relative;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Export toggle button on the desktop floating card: styled as a dark chip
+   matching the original export-btn / action-card buttons, not the
+   transparent icon-btn-vertical toggle style. */
+.export-toggle-button {
+  border-color: var(--ink);
+  color: var(--panel);
+  opacity: 1;
+  background-color: var(--ink);
+}
+
+.export-toggle-button:hover {
+  border-color: var(--blue);
+  background-color: var(--blue);
+}
+
+.export-toggle-button[aria-expanded="true"] {
+  border-color: var(--blue);
+  background-color: var(--blue);
 }
 
 .copy-status-badge {
@@ -2424,6 +2643,13 @@ footer a:focus-visible {
   .layout-list-header {
     grid-template-columns: 16px 44px 1fr auto;
     gap: 8px;
+  }
+  .layout-row.has-glyph,
+  .layout-list-header.has-glyph {
+    grid-template-columns: 16px 16px 36px 1fr auto;
+  }
+  .layout-row.has-glyph .row-angle {
+    margin-left: -5px;
   }
   .layout-row {
     padding: 8px;

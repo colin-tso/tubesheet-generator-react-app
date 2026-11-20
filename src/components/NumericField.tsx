@@ -1,6 +1,7 @@
 import { memo, useRef, useState } from "react";
 import type { KeyboardEvent, SyntheticEvent, SubmitEvent, InputHTMLAttributes } from "react";
 import { NumericFormat } from "react-number-format";
+import { DocsHelpLink } from "@/components/DocsHelpLink";
 import { utils } from "@/utils";
 
 export interface NumericFieldProps {
@@ -20,6 +21,7 @@ export interface NumericFieldProps {
     pairedLabel?: string;
     touched?: boolean;
     hideAsterisk?: boolean;
+    docsSection?: string;
     // True when "value" is a live preview, not yet user-committed. Suppresses
     // valid/error styling until the user overrides it for real.
     isPreview?: boolean;
@@ -53,6 +55,7 @@ function NumericFieldImpl({
     pairedLabel,
     touched: touchedProp,
     hideAsterisk = false,
+    docsSection,
     isPreview = false,
     onFocus,
     onBlur,
@@ -131,10 +134,17 @@ function NumericFieldImpl({
 
     return (
         <div className="field">
-            <label className="field-label" htmlFor={id}>
-                {label}
-                {required && !hideAsterisk ? <span className="required-asterisk">*</span> : null}
-            </label>
+            <div className="field-label-row">
+                <label className="field-label" htmlFor={id}>
+                    {label}
+                    {required && !hideAsterisk ? (
+                        <span className="required-asterisk">*</span>
+                    ) : null}
+                </label>
+                {docsSection ? (
+                    <DocsHelpLink section={docsSection} topic={label} tabbable={false} />
+                ) : null}
+            </div>
             <div className="input-group">
                 <NumericFormat
                     key={resetSeq}

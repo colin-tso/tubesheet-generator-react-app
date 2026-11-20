@@ -41,3 +41,35 @@ describe("LayoutOptionsList — NaN minID display", () => {
         expect(radialRow).not.toHaveTextContent("NaN");
     });
 });
+
+describe("LayoutOptionsList — pattern glyphs", () => {
+    it("shows a decorative glyph and a named hint for every layout row", () => {
+        const { container } = render(
+            <LayoutOptionsList
+                rows={layoutOptionRows}
+                layoutResults={layoutResultsWithNaNRadialMinID}
+                showLoadingBadge={false}
+                onLayoutOptionChange={() => {}}
+            />,
+        );
+
+        const glyphs = container.querySelectorAll(".row-glyph");
+        expect(Array.from(glyphs, (g) => g.getAttribute("title"))).toEqual([
+            "Triangular (30°)",
+            "Rotated square (45°)",
+            "Rotated triangular (60°)",
+            "Square (90°)",
+            "Radial",
+        ]);
+        glyphs.forEach((g) => {
+            const svg = g.querySelector("svg");
+            expect(svg).toHaveAttribute("aria-hidden", "true");
+            expect(svg).toHaveAttribute("viewBox", "0 0 16 16");
+            expect(svg).toHaveAttribute("width", "12.8");
+            expect(svg).toHaveAttribute("height", "12.8");
+            expect(g.querySelector("polygon, rect, circle")).not.toBeNull();
+        });
+        // Radio labels are unchanged: the glyph must not add to the accessible name.
+        expect(screen.getByLabelText("30°", { exact: false })).toBeInTheDocument();
+    });
+});

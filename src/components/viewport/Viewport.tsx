@@ -448,7 +448,12 @@ function ViewportMobileToolbar() {
                     {state.showGrid ? (
                         <GridIcon className="btn-icon" width="18" height="18" aria-hidden="true" />
                     ) : (
-                        <GridOffIcon className="btn-icon" width="18" height="18" aria-hidden="true" />
+                        <GridOffIcon
+                            className="btn-icon"
+                            width="18"
+                            height="18"
+                            aria-hidden="true"
+                        />
                     )}
                     <span className="btn-micro-label" aria-hidden="true">
                         Grid
@@ -569,6 +574,13 @@ function ViewportExportFlyout() {
             : state.saveConfigState === "error"
               ? "Save failed"
               : "Save as JSON";
+
+    const svgButtonTitle =
+        state.svgExportState === "success"
+            ? "Saved!"
+            : state.svgExportState === "error"
+              ? "SVG export failed"
+              : "Save as SVG";
 
     const loadJsonButtonTitle =
         state.loadConfigState === "pending"
@@ -691,14 +703,20 @@ function ViewportExportFlyout() {
                     <span className="btn-label">{pngButtonTitle}</span>
                 </button>
                 <button
-                    className="focus-ring export-btn save-svg-button"
+                    className={`focus-ring export-btn save-svg-button${
+                        state.svgExportState === "success"
+                            ? " success"
+                            : state.svgExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
                     onClick={actions.downloadSVG}
                     type="button"
-                    data-title="Save as SVG"
+                    data-title={svgButtonTitle}
                     hidden={noDrawing}
                 >
                     <SaveSvgIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
-                    <span className="btn-label">Save as SVG</span>
+                    <span className="btn-label">{svgButtonTitle}</span>
                 </button>
                 <button
                     className={`focus-ring export-btn save-dxf-button${
@@ -797,13 +815,16 @@ function ViewportExportActions() {
     const { saveMenuExpanded } = state;
     const noDrawing = state.drawingSVG === state.placeholderSVG;
 
-    // Close flyout when clicking outside the floating card or the flyout
-    // panel itself (the panel renders in ViewportExportFlyout, outside
-    // .floating-card -- see that component for why).
+    // Close flyout when clicking outside the floating card, flyout panel,
+    // or desktop export dropdown menu.
     useEffect(() => {
         if (!saveMenuExpanded) return;
         const handleClose = (e: PointerEvent) => {
-            if (!(e.target as HTMLElement).closest(".floating-card, .export-flyout")) {
+            if (
+                !(e.target as HTMLElement).closest(
+                    ".floating-card, .export-flyout, .export-dropdown-menu",
+                )
+            ) {
                 actions.closeSaveMenu();
             }
         };
@@ -868,6 +889,13 @@ function ViewportExportActions() {
               ? "Save failed"
               : "Save as JSON";
 
+    const svgButtonTitle =
+        state.svgExportState === "success"
+            ? "Saved!"
+            : state.svgExportState === "error"
+              ? "SVG export failed"
+              : "Save as SVG";
+
     const loadJsonButtonTitle =
         state.loadConfigState === "pending"
             ? "Loading…"
@@ -897,8 +925,158 @@ function ViewportExportActions() {
         e.currentTarget.value = "";
     };
 
+    // Keep the menu open after each action so the success/error status is
+    // visible to the user. The menu closes via the toggle button, Escape, or
+    // an outside click as usual.
+    const handleSaveSVG = () => actions.downloadSVG();
+    const handleSavePNG = () => actions.downloadPNG();
+    const handleSavePDF = () => actions.downloadPDF();
+    const handleSaveDXF = () => actions.downloadDXF();
+    const handleSaveJSON = () => actions.saveConfigAsJSON();
+    const handleLoadJSON = () => fileInputRef.current?.click();
+    const handleShareLink = () => actions.copyShareableLink();
+
     return (
         <div className="viewport-actions" data-no-context-menu>
+            {/* Desktop Export Dropdown / Popover Menu */}
+            <div
+                id="desktop-export-menu"
+                className={`export-dropdown-menu${saveMenuExpanded ? " open" : ""}`}
+                role="menu"
+                aria-label="Export options"
+                hidden={!saveMenuExpanded}
+            >
+                <div className="export-dropdown-header">
+                    <span>Export & Share</span>
+                </div>
+
+                <span className="export-dropdown-section-title">Image formats</span>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring save-svg-button${
+                        state.svgExportState === "success"
+                            ? " success"
+                            : state.svgExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={handleSaveSVG}
+                    hidden={noDrawing}
+                >
+                    <SaveSvgIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    <span>{svgButtonTitle}</span>
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring save-png-button${
+                        state.pngExportState === "success"
+                            ? " success"
+                            : state.pngExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={handleSavePNG}
+                    disabled={state.pngExportState === "pending"}
+                    aria-busy={state.pngExportState === "pending"}
+                    hidden={noDrawing}
+                >
+                    <SavePngIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    <span>{pngButtonTitle}</span>
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring save-pdf-button${
+                        state.pdfExportState === "success"
+                            ? " success"
+                            : state.pdfExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={handleSavePDF}
+                    disabled={state.pdfExportState === "pending"}
+                    aria-busy={state.pdfExportState === "pending"}
+                    hidden={noDrawing}
+                >
+                    <SavePdfIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    <span>{pdfButtonTitle}</span>
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring save-dxf-button${
+                        state.dxfExportState === "success"
+                            ? " success"
+                            : state.dxfExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={handleSaveDXF}
+                    disabled={state.dxfExportState === "pending"}
+                    aria-busy={state.dxfExportState === "pending"}
+                    hidden={noDrawing}
+                >
+                    <SaveDxfIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    <span>{dxfButtonTitle}</span>
+                </button>
+
+                <hr className="export-dropdown-divider" />
+
+                <span className="export-dropdown-section-title">Configuration</span>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring save-json-button${
+                        state.saveConfigState === "success"
+                            ? " success"
+                            : state.saveConfigState === "error"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={handleSaveJSON}
+                    hidden={noDrawing}
+                >
+                    <SaveJsonIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    <span>{jsonButtonTitle}</span>
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring load-json-button${
+                        state.loadConfigState === "error" ? " error" : ""
+                    }`}
+                    onClick={handleLoadJSON}
+                    disabled={state.loadConfigState === "pending"}
+                    aria-busy={state.loadConfigState === "pending"}
+                >
+                    <LoadJsonIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    <span>{loadJsonButtonTitle}</span>
+                </button>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring share-link-button${
+                        state.shareLinkState === "copied"
+                            ? " success"
+                            : state.shareLinkState === "error" ||
+                                state.shareLinkState === "unsupported"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={handleShareLink}
+                    hidden={noDrawing}
+                >
+                    {state.shareLinkState === "copied" ? (
+                        <CheckIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    ) : (
+                        <LinkIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    )}
+                    <span>{shareLinkButtonTitle}</span>
+                </button>
+            </div>
+
             <div className="floating-card">
                 <div className="copy-btn-wrap" hidden={noDrawing}>
                     <span
@@ -928,195 +1106,54 @@ function ViewportExportActions() {
                         aria-busy={state.copyState === "pending" || !state.copyReady}
                     >
                         {state.copyState === "copied" || state.copyState === "downloaded" ? (
-                            <CheckIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                            <CheckIcon
+                                className="btn-icon"
+                                width="19"
+                                height="19"
+                                aria-hidden="true"
+                            />
                         ) : (
-                            <CopyIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                            <CopyIcon
+                                className="btn-icon"
+                                width="19"
+                                height="19"
+                                aria-hidden="true"
+                            />
                         )}
                         <span className="btn-micro-label" aria-hidden="true">
-                            {state.copyState === "copied" || state.copyState === "downloaded" ? "Copied" : "Copy"}
+                            {state.copyState === "copied" || state.copyState === "downloaded"
+                                ? "Copied"
+                                : "Copy"}
                         </span>
                         <span className="btn-label">Copy Image</span>
                     </button>
                 </div>
 
-                <div className="save-buttons-group">
-                    {/* Export card: SVG/PNG/PDF/DXF (visible on desktop, hidden on mobile) */}
-                    <div className="action-card export-card">
-                        <button
-                            className="focus-ring export-btn save-svg-button"
-                            onClick={actions.downloadSVG}
-                            type="button"
-                            data-title="Save as SVG"
-                            hidden={noDrawing}
-                        >
-                            <SaveSvgIcon
-                                className="btn-icon"
-                                width="19"
-                                height="19"
-                                aria-hidden="true"
-                            />
-                            <span className="btn-label">Save as SVG</span>
-                        </button>
-                        <button
-                            className={`focus-ring export-btn save-png-button${
-                                state.pngExportState === "success"
-                                    ? " success"
-                                    : state.pngExportState === "error"
-                                      ? " error"
-                                      : ""
-                            }`}
-                            onClick={actions.downloadPNG}
-                            type="button"
-                            data-title={pngButtonTitle}
-                            disabled={state.pngExportState === "pending"}
-                            aria-busy={state.pngExportState === "pending"}
-                            hidden={noDrawing}
-                        >
-                            <SavePngIcon
-                                className="btn-icon"
-                                width="19"
-                                height="19"
-                                aria-hidden="true"
-                            />
-                            <span className="btn-label">{pngButtonTitle}</span>
-                        </button>
-                        <button
-                            className={`focus-ring export-btn save-pdf-button${
-                                state.pdfExportState === "success"
-                                    ? " success"
-                                    : state.pdfExportState === "error"
-                                      ? " error"
-                                      : ""
-                            }`}
-                            onClick={actions.downloadPDF}
-                            type="button"
-                            data-title={pdfButtonTitle}
-                            disabled={state.pdfExportState === "pending"}
-                            aria-busy={state.pdfExportState === "pending"}
-                            hidden={noDrawing}
-                        >
-                            <SavePdfIcon
-                                className="btn-icon"
-                                width="19"
-                                height="19"
-                                aria-hidden="true"
-                            />
-                            <span className="btn-label">{pdfButtonTitle}</span>
-                        </button>
-                        <button
-                            className={`focus-ring export-btn save-dxf-button${
-                                state.dxfExportState === "success"
-                                    ? " success"
-                                    : state.dxfExportState === "error"
-                                      ? " error"
-                                      : ""
-                            }`}
-                            onClick={actions.downloadDXF}
-                            type="button"
-                            data-title={dxfButtonTitle}
-                            disabled={state.dxfExportState === "pending"}
-                            aria-busy={state.dxfExportState === "pending"}
-                            hidden={noDrawing}
-                        >
-                            <SaveDxfIcon
-                                className="btn-icon"
-                                width="19"
-                                height="19"
-                                aria-hidden="true"
-                            />
-                            <span className="btn-label">{dxfButtonTitle}</span>
-                        </button>
-                    </div>
-
-                    {/* PDF/Copy/JSON/Load/Share also render inside
-                        ViewportExportFlyout for mobile, where this whole
-                        .viewport-actions cluster is hidden in favor of the
-                        toolbar + consolidated sheet -- see
-                        ViewportMobileToolbar and ViewportExportFlyout. */}
-
-                    {/* Config card: JSON save, JSON load, share link */}
-                    <div className="action-card config-card">
-                        <button
-                            className={`focus-ring export-btn save-json-button${
-                                state.saveConfigState === "success"
-                                    ? " success"
-                                    : state.saveConfigState === "error"
-                                      ? " error"
-                                      : ""
-                            }`}
-                            onClick={actions.saveConfigAsJSON}
-                            type="button"
-                            data-title={jsonButtonTitle}
-                            hidden={noDrawing}
-                        >
-                            <SaveJsonIcon
-                                className="btn-icon"
-                                width="19"
-                                height="19"
-                                aria-hidden="true"
-                            />
-                            <span className="btn-label">{jsonButtonTitle}</span>
-                        </button>
-                        <button
-                            className={`focus-ring export-btn load-json-button${
-                                state.loadConfigState === "error" ? " error" : ""
-                            }`}
-                            onClick={() => fileInputRef.current?.click()}
-                            type="button"
-                            data-title={loadJsonButtonTitle}
-                            disabled={state.loadConfigState === "pending"}
-                            aria-busy={state.loadConfigState === "pending"}
-                        >
-                            <LoadJsonIcon
-                                className="btn-icon"
-                                width="19"
-                                height="19"
-                                aria-hidden="true"
-                            />
-                            <span className="btn-label">{loadJsonButtonTitle}</span>
-                        </button>
-                        <button
-                            className={`focus-ring export-btn share-link-button${
-                                state.shareLinkState === "copied"
-                                    ? " success"
-                                    : state.shareLinkState === "error" ||
-                                        state.shareLinkState === "unsupported"
-                                      ? " error"
-                                      : ""
-                            }`}
-                            onClick={actions.copyShareableLink}
-                            type="button"
-                            data-title={shareLinkButtonTitle}
-                            hidden={noDrawing}
-                        >
-                            {state.shareLinkState === "copied" ? (
-                                <CheckIcon
-                                    className="btn-icon"
-                                    width="19"
-                                    height="19"
-                                    aria-hidden="true"
-                                />
-                            ) : (
-                                <LinkIcon
-                                    className="btn-icon"
-                                    width="19"
-                                    height="19"
-                                    aria-hidden="true"
-                                />
-                            )}
-                            <span className="btn-label">{shareLinkButtonTitle}</span>
-                        </button>
-                    </div>
-                </div>
-
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="application/json,.json"
-                    hidden
-                    onChange={handleFileInputChange}
-                />
+                <button
+                    type="button"
+                    className={`icon-btn-vertical focus-ring export-toggle-button${
+                        saveMenuExpanded ? " active" : ""
+                    }`}
+                    onClick={actions.toggleSaveMenu}
+                    aria-expanded={saveMenuExpanded}
+                    aria-controls="desktop-export-menu"
+                    data-title={saveMenuExpanded ? "Hide export options" : "Export options"}
+                >
+                    <MoreIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                    <span className="btn-micro-label" aria-hidden="true">
+                        More
+                    </span>
+                    <span className="btn-label">Export options</span>
+                </button>
             </div>
+
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json,.json"
+                hidden
+                onChange={handleFileInputChange}
+            />
         </div>
     );
 }
