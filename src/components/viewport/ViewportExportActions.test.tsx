@@ -55,7 +55,7 @@ describe("desktop export dropdown menu", () => {
         const toggle = getDesktopExportToggle();
         expect(toggle).not.toBeNull();
         expect(toggle.getAttribute("aria-expanded")).toBe("false");
-        expect(toggle.textContent).toContain("Export");
+        expect(toggle.textContent).toContain("More");
     });
 
     it("has the dropdown menu hidden by default", () => {

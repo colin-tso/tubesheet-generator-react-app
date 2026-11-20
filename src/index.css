@@ -1470,8 +1470,7 @@ footer a:focus-visible {
 
 .grid-toggle:hover,
 .table-toggle:hover,
-.tube-labels-toggle:hover,
-.export-toggle-button:hover {
+.tube-labels-toggle:hover {
   border-color: var(--blue);
   color: var(--blue);
   opacity: 1;
@@ -1479,8 +1478,7 @@ footer a:focus-visible {
 
 .grid-toggle.active:hover,
 .table-toggle.active:hover,
-.tube-labels-toggle.active:hover,
-.export-toggle-button.active:hover {
+.tube-labels-toggle.active:hover {
   border-color: hsl(from var(--blue) h calc(s + 30) calc(l + 20));
   color: hsl(from var(--blue) h calc(s + 30) calc(l + 20));
   opacity: 1;
@@ -1488,8 +1486,7 @@ footer a:focus-visible {
 
 .grid-toggle.active,
 .table-toggle.active,
-.tube-labels-toggle.active,
-.export-toggle-button.active {
+.tube-labels-toggle.active {
   border-color: var(--blue);
   color: var(--blue);
   opacity: 1;
@@ -2236,6 +2233,26 @@ footer a:focus-visible {
   position: relative;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Export toggle button on the desktop floating card: styled as a dark chip
+   matching the original export-btn / action-card buttons, not the
+   transparent icon-btn-vertical toggle style. */
+.export-toggle-button {
+  border-color: var(--ink);
+  color: var(--panel);
+  opacity: 1;
+  background-color: var(--ink);
+}
+
+.export-toggle-button:hover {
+  border-color: var(--blue);
+  background-color: var(--blue);
+}
+
+.export-toggle-button[aria-expanded="true"] {
+  border-color: var(--blue);
+  background-color: var(--blue);
 }
 
 .copy-status-badge {

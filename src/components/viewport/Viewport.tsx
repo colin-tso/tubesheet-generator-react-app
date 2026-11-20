@@ -1116,7 +1116,7 @@ function ViewportExportActions() {
                 >
                     <MoreIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
                     <span className="btn-micro-label" aria-hidden="true">
-                        Export
+                        More
                     </span>
                     <span className="btn-label">Export options</span>
                 </button>
