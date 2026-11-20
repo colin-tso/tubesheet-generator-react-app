@@ -13,6 +13,8 @@ export type NumericFieldConfig = Omit<NumericFieldProps, "value" | "pairedValue"
     // Fields sharing the same "group" label are rendered together inside one
     // titled card, so related inputs read as a set rather than a flat list.
     group?: string;
+    // Docs section explaining this input; renders an (i) link beside the label.
+    docsSection?: string;
     // Overrides the static min/minExclusive once enough sibling values are
     // known to compute a tighter, physically-derived minimum.
     dynamicMin?: (ctx: PairPreviewContext) => { min: number; minExclusive: boolean } | undefined;
@@ -75,6 +77,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         units: "mm",
         min: 0,
         group: "Layout Parameters",
+        docsSection: "otl",
     },
     {
         id: "tubeClearance",
@@ -98,6 +101,7 @@ export const numericFieldConfigs: NumericFieldConfig[] = [
         inputMode: "decimal",
         required: true,
         min: 1,
+        docsSection: "pitch",
         row: "clearance-pitch",
         pairedWith: "tubeClearance",
         pairedLabel: "tube clearance",
