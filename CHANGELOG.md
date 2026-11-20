@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.10.2
+
+### Patch Changes
+
+- 19d6f6b: Drop the extra border on the Copy row in the mobile export flyout so it matches the panel's other rows.
+
 ## 2.10.1
 
 ### Patch Changes
