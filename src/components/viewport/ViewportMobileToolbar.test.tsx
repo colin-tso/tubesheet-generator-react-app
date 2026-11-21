@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { Viewport } from "./Viewport";
 
 function makeSvg() {
@@ -30,6 +30,7 @@ function renderViewport() {
             onLoadLayoutConfig={() => {}}
         >
             <Viewport.Frame>
+                <Viewport.Toolbar />
                 <Viewport.DocsButton />
                 <Viewport.Drawing />
                 <Viewport.Footer>
@@ -69,12 +70,27 @@ describe("mobile toolbar restructuring", () => {
         renderViewport();
 
         const toolbar = document.querySelector(".mobile-viewport-toolbar")!;
-        for (const label of ["Table", "Grid", "Labels", "More"]) {
+        for (const label of ["Table", "Grid", "Labels", "Dims", "More"]) {
             expect(
                 Array.from(toolbar.querySelectorAll(".btn-micro-label")).some(
                     (el) => el.textContent === label,
                 ),
             ).toBe(true);
+        }
+    });
+
+    it("toggles dimensions from the desktop and mobile toolbars", () => {
+        renderViewport();
+
+        for (const selector of [
+            ".dimensions-toggle",
+            ".mobile-viewport-toolbar [aria-pressed][data-title$='Dimensions']",
+        ]) {
+            const btn = document.querySelector(selector) as HTMLButtonElement;
+            expect(btn.getAttribute("aria-pressed")).toBe("false");
+            fireEvent.click(btn);
+            expect(btn.getAttribute("aria-pressed")).toBe("true");
+            fireEvent.click(btn);
         }
     });
 });

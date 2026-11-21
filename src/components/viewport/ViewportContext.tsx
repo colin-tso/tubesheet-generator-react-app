@@ -6,6 +6,7 @@ import type {
     DxfExportState,
     PdfExportState,
     PngExportState,
+    SvgExportState,
 } from "@/hooks/useSvgExportActions";
 import type {
     LoadConfigState,
@@ -22,6 +23,7 @@ export interface ViewportState {
     showGrid: boolean;
     showTable: boolean;
     showTubeLabels: boolean;
+    showDimensions: boolean;
     isBusy: boolean;
     drawingSVG: SVGSVGElement;
     placeholderSVG: SVGSVGElement;
@@ -31,6 +33,7 @@ export interface ViewportState {
     announcement: string;
     copyState: CopyState;
     copyReady: boolean;
+    svgExportState: SvgExportState;
     pngExportState: PngExportState;
     pdfExportState: PdfExportState;
     dxfExportState: DxfExportState;
@@ -63,6 +66,7 @@ export interface ViewportActions {
     toggleGrid: () => void;
     toggleTable: () => void;
     toggleTubeLabels: () => void;
+    toggleDimensions: () => void;
     copySVG: () => void;
     downloadSVG: () => void;
     downloadPNG: () => void;

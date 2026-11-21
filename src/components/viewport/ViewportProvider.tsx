@@ -85,6 +85,10 @@ export function ViewportProvider({
         "view-options.showTubeLabels",
         false,
     );
+    const [showDimensions, setShowDimensions] = usePersistedBoolean(
+        "view-options.showDimensions",
+        false,
+    );
 
     const containerRef = useRef<HTMLDivElement>(null);
     const footerRef = useRef<HTMLDivElement>(null);
@@ -115,6 +119,7 @@ export function ViewportProvider({
     const {
         copyState,
         downloadSVG,
+        svgExportState,
         downloadPNG,
         pngExportState,
         downloadPDF,
@@ -163,6 +168,7 @@ export function ViewportProvider({
     const toggleGrid = useCallback(() => setShowGrid((v) => !v), [setShowGrid]);
     const toggleTable = useCallback(() => setShowTable((v) => !v), [setShowTable]);
     const toggleTubeLabels = useCallback(() => setShowTubeLabels((v) => !v), [setShowTubeLabels]);
+    const toggleDimensions = useCallback(() => setShowDimensions((v) => !v), [setShowDimensions]);
     const toggleSaveMenu = useCallback(() => setSaveMenuExpanded((v) => !v), []);
     const closeSaveMenu = useCallback(() => setSaveMenuExpanded(false), []);
 
@@ -172,6 +178,7 @@ export function ViewportProvider({
                 showGrid,
                 showTable,
                 showTubeLabels,
+                showDimensions,
                 isBusy:
                     isCalculating ||
                     copyState === "pending" ||
@@ -187,6 +194,7 @@ export function ViewportProvider({
                 announcement,
                 copyState,
                 copyReady,
+                svgExportState,
                 pngExportState,
                 pdfExportState,
                 dxfExportState,
@@ -207,6 +215,7 @@ export function ViewportProvider({
                 toggleGrid,
                 toggleTable,
                 toggleTubeLabels,
+                toggleDimensions,
                 copySVG,
                 downloadSVG,
                 downloadPNG,
@@ -230,6 +239,7 @@ export function ViewportProvider({
             showGrid,
             showTable,
             showTubeLabels,
+            showDimensions,
             isCalculating,
             labeledDrawingSVG,
             placeholderSVG,
@@ -239,6 +249,7 @@ export function ViewportProvider({
             announcement,
             copyState,
             copyReady,
+            svgExportState,
             pngExportState,
             pdfExportState,
             dxfExportState,
@@ -257,6 +268,7 @@ export function ViewportProvider({
             toggleGrid,
             toggleTable,
             toggleTubeLabels,
+            toggleDimensions,
             toggleSaveMenu,
             closeSaveMenu,
             setMobileActiveView,

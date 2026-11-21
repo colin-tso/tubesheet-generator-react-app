@@ -27,6 +27,13 @@ jobs:
             # the two cases apart - the distinction comes from fetch-metadata's
             # `dependency-type` output, which reads "direct:production" for a
             # production dependency and "direct:development" for a dev one.
+            #
+            # For a grouped update fetch-metadata reports the highest-priority
+            # type in the group, so a group mixing production and development
+            # dependencies reads as "direct:production" and does get a
+            # changeset. That is why dependabot.yml keeps `react` (production)
+            # and `react-types` (development) in separate groups instead of one
+            # group covering both.
             - name: Checkout PR branch
               if: contains(steps.metadata.outputs.dependency-type, 'production')
               uses: actions/checkout@v7
@@ -64,6 +71,9 @@ jobs:
                   git commit -m "chore: add changeset for dependency update"
                   git push origin "HEAD:$PR_HEAD_REF"
 
+            # For a grouped update `update-type` is the highest semver level in
+            # the group, so a group made up of patches still auto-merges and any
+            # group containing a major does not.
             - name: Enable auto-merge for patch/minor updates
               if: |
                   steps.metadata.outputs.update-type == 'version-update:semver-patch' ||

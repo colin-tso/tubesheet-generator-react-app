@@ -8,6 +8,12 @@ updates:
     # production/development distinction is no longer carried by a label and
     # dependabot-auto-merge.yml reads it from dependabot/fetch-metadata's
     # `dependency-type` output instead.
+    #
+    # `groups` is only for packages that have to move in lockstep. A group
+    # merges as a single pull request and one member that fails CI blocks all of
+    # it, so packages that merely share a name prefix (@vitejs/plugin-react,
+    # react-number-format, eslint-plugin-react-*) stay on individual pull
+    # requests.
     - package-ecosystem: "npm"
       directory: "/"
       target-branch: "dev"
@@ -28,6 +34,31 @@ updates:
               patterns:
                   - "vitest"
                   - "@vitest/*"
+
+          # react-dom's peer range for react is a caret on its own version, so
+          # bumping it alone makes npm pull react forward in the lockfile while
+          # package.json still points at the old version. The other half of the
+          # release then arrives as a separate pull request that has to rebase,
+          # and dev gets a second version bump for what is really one upstream
+          # release. Majors stay out of the group so a React major still arrives
+          # on its own for review.
+          react:
+              patterns:
+                  - "react"
+                  - "react-dom"
+              update-types:
+                  - "minor"
+                  - "patch"
+
+          # @types/react* follow the same releases but are development
+          # dependencies, and dependabot-auto-merge.yml keys the changeset off
+          # fetch-metadata's `dependency-type`. Keeping the types in their own
+          # group keeps that output at "direct:development", so a types-only bump
+          # does not mint a version bump on dev.
+          react-types:
+              patterns:
+                  - "@types/react"
+                  - "@types/react-dom"
 
     # GitHub Actions workflow dependencies
     - package-ecosystem: "github-actions"
