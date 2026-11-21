@@ -23,6 +23,7 @@ export interface ViewportState {
     showGrid: boolean;
     showTable: boolean;
     showTubeLabels: boolean;
+    showDimensions: boolean;
     isBusy: boolean;
     drawingSVG: SVGSVGElement;
     placeholderSVG: SVGSVGElement;
@@ -65,6 +66,7 @@ export interface ViewportActions {
     toggleGrid: () => void;
     toggleTable: () => void;
     toggleTubeLabels: () => void;
+    toggleDimensions: () => void;
     copySVG: () => void;
     downloadSVG: () => void;
     downloadPNG: () => void;
