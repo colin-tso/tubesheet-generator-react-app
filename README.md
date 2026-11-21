@@ -20,6 +20,7 @@ The Calculator and Visualiser for Tubesheet Layouts is a web app built with Reac
 - Live preview of the tubesheet layout as form inputs change
 - SVG and data table views of the generated layout
 - Export to SVG, PNG, PDF or DXF
+- Optional dimension callouts (Shell ID, OTL, tube pitch) and a scale bar on the drawing
 - Dark mode toggle
 - Installable as a PWA (manifest + icons included)
 

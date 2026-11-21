@@ -14,6 +14,10 @@ import GridIcon from "@/assets/grid-icon.svg?react";
 import GridOffIcon from "@/assets/grid-off-icon.svg?react";
 import TubeLabelsIcon from "@/assets/tube-labels-icon.svg?react";
 import TubeLabelsOffIcon from "@/assets/tube-labels-off-icon.svg?react";
+import { DimensionsIcon } from "@/components/icons/DimensionsIcon";
+import { useDimensions } from "@/hooks/useDimensions";
+import { useScreenScale } from "@/hooks/useScreenScale";
+import { ScaleBar } from "@/components/ScaleBar";
 import {
     SaveSvgIcon,
     SavePngIcon,
@@ -319,14 +323,50 @@ function ViewportToolbar() {
                     </span>
                     <span className="btn-label">Tube Labels</span>
                 </button>
+                <button
+                    type="button"
+                    className={`icon-btn-vertical focus-ring dimensions-toggle ${state.showDimensions ? "active" : ""}`}
+                    onClick={actions.toggleDimensions}
+                    aria-pressed={state.showDimensions}
+                    data-title={state.showDimensions ? "Hide Dimensions" : "Show Dimensions"}
+                >
+                    <DimensionsIcon className="btn-icon" width="19" height="19" />
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Dims
+                    </span>
+                    <span className="btn-label">Dimensions</span>
+                </button>
             </div>
         </div>
     );
 }
 
+// Matches the CSS breakpoint that switches to the mobile layout.
+const DESKTOP_QUERY = "(min-width: 56.26rem)";
+function useIsDesktop(): boolean {
+    const [matches, setMatches] = useState(
+        () => typeof window.matchMedia !== "function" || window.matchMedia(DESKTOP_QUERY).matches,
+    );
+    useEffect(() => {
+        if (typeof window.matchMedia !== "function") return;
+        const mq = window.matchMedia(DESKTOP_QUERY);
+        const onChange = () => setMatches(mq.matches);
+        onChange();
+        mq.addEventListener("change", onChange);
+        return () => mq.removeEventListener("change", onChange);
+    }, []);
+    return matches;
+}
+
 // The rendered SVG plus its cursor-following shell/OTL tooltip.
 function ViewportDrawing() {
     const { state, actions, meta } = useViewportContext();
+    // On desktop the scale bar is a separate overlay next to the action
+    // buttons; on the mobile layout it stays inside the drawing.
+    const isDesktop = useIsDesktop();
+    const showDims = state.showDimensions && !!state.lastSingleResult;
+    useDimensions(state.drawingSVG, state.lastSingleResult, state.showDimensions, !isDesktop);
+    const pxPerMm = useScreenScale(state.drawingSVG, showDims && isDesktop);
 
     return (
         <>
@@ -335,6 +375,7 @@ function ViewportDrawing() {
                 className="tubesheet-svg"
                 onRendered={actions.onDrawingRendered}
             />
+            {pxPerMm !== null && <ScaleBar pxPerMm={pxPerMm} />}
             <ShellOTLTooltip
                 // meta.tooltipRef: provider-owned ref, see ViewportFrame
                 // comment above.
@@ -485,6 +526,18 @@ function ViewportMobileToolbar() {
                     )}
                     <span className="btn-micro-label" aria-hidden="true">
                         Labels
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    className={`view-toggle-segment focus-ring${state.showDimensions ? " active" : ""}`}
+                    onClick={actions.toggleDimensions}
+                    aria-pressed={state.showDimensions}
+                    data-title={state.showDimensions ? "Hide Dimensions" : "Show Dimensions"}
+                >
+                    <DimensionsIcon className="btn-icon" width="18" height="18" />
+                    <span className="btn-micro-label" aria-hidden="true">
+                        Dims
                     </span>
                 </button>
             </div>
