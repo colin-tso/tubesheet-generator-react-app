@@ -78,3 +78,7 @@ export function SaveDxfIcon(props: SVGProps<SVGSVGElement>) {
 export function SaveJsonIcon(props: SVGProps<SVGSVGElement>) {
     return <SaveFormatIcon text="JSON" textFontSize={5.1} textLetterSpacing={-0.6} {...props} />;
 }
+
+export function SaveCsvIcon(props: SVGProps<SVGSVGElement>) {
+    return <SaveFormatIcon text="CSV" {...props} />;
+}

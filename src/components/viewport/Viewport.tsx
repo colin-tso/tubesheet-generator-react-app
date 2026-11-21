@@ -23,6 +23,7 @@ import {
     SavePngIcon,
     SavePdfIcon,
     SaveDxfIcon,
+    SaveCsvIcon,
     SaveJsonIcon,
 } from "@/components/icons/SaveFormatIcon";
 import LoadJsonIcon from "@/assets/load-json-icon.svg?react";
@@ -152,6 +153,7 @@ function ViewportFrame({ children }: { children: ReactNode }) {
 // actions, so callers just hand it the context.
 function ViewportContextMenu() {
     const { state, actions, meta } = useViewportContext();
+    const hasTubes = (state.lastSingleResult?.tubeField?.length ?? 0) > 0;
 
     const handleCopy = useCallback(() => {
         actions.copySVG();
@@ -171,6 +173,10 @@ function ViewportContextMenu() {
     }, [actions]);
     const handleSaveDXF = useCallback(() => {
         actions.downloadDXF();
+        actions.closeContextMenu();
+    }, [actions]);
+    const handleSaveCSV = useCallback(() => {
+        actions.downloadCSV();
         actions.closeContextMenu();
     }, [actions]);
     const handleSaveJSON = useCallback(() => {
@@ -211,6 +217,13 @@ function ViewportContextMenu() {
                 disabled: state.dxfExportState === "pending",
             },
             { label: "", isDivider: true, onClick: () => {} },
+            {
+                label: "Save Coordinates (CSV)",
+                icon: <SaveCsvIcon />,
+                onClick: handleSaveCSV,
+                disabled: !hasTubes,
+            },
+            { label: "", isDivider: true, onClick: () => {} },
             { label: "Save as JSON", icon: <SaveJsonIcon />, onClick: handleSaveJSON },
             { label: "Copy Shareable Link", icon: <LinkIcon />, onClick: handleCopyLink },
         ],
@@ -220,7 +233,9 @@ function ViewportContextMenu() {
             handleSavePNG,
             handleSavePDF,
             handleSaveDXF,
+            handleSaveCSV,
             handleSaveJSON,
+            hasTubes,
             handleCopyLink,
             state.copyReady,
             state.pngExportState,
@@ -578,6 +593,7 @@ function ViewportMobileToolbar() {
 // .row-pane / data-mobile-view wiring).
 function ViewportExportFlyout() {
     const { state, actions } = useViewportContext();
+    const hasTubes = (state.lastSingleResult?.tubeField?.length ?? 0) > 0;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const noDrawing = state.drawingSVG === state.placeholderSVG;
 
@@ -620,6 +636,13 @@ function ViewportExportFlyout() {
               : state.dxfExportState === "error"
                 ? "DXF export failed"
                 : "Save as DXF";
+
+    const csvButtonTitle =
+        state.csvExportState === "success"
+            ? "Saved!"
+            : state.csvExportState === "error"
+              ? "CSV export failed"
+              : "Save Coordinates (CSV)";
 
     const jsonButtonTitle =
         state.saveConfigState === "success"
@@ -790,6 +813,25 @@ function ViewportExportFlyout() {
                     <span className="btn-label">{dxfButtonTitle}</span>
                 </button>
 
+                <p className="export-flyout-section-label">Data</p>
+                <button
+                    className={`focus-ring export-btn save-csv-button${
+                        state.csvExportState === "success"
+                            ? " success"
+                            : state.csvExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={actions.downloadCSV}
+                    type="button"
+                    data-title={csvButtonTitle}
+                    disabled={!hasTubes}
+                    hidden={noDrawing}
+                >
+                    <SaveCsvIcon className="btn-icon" width="19" height="19" aria-hidden="true" />
+                    <span className="btn-label">{csvButtonTitle}</span>
+                </button>
+
                 <p className="export-flyout-section-label">Config</p>
                 <button
                     className={`focus-ring export-btn save-json-button${
@@ -864,6 +906,7 @@ function ViewportExportFlyout() {
 // file for the same reason).
 function ViewportExportActions() {
     const { state, actions } = useViewportContext();
+    const hasTubes = (state.lastSingleResult?.tubeField?.length ?? 0) > 0;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { saveMenuExpanded } = state;
     const noDrawing = state.drawingSVG === state.placeholderSVG;
@@ -935,6 +978,13 @@ function ViewportExportActions() {
                 ? "DXF export failed"
                 : "Save as DXF";
 
+    const csvButtonTitle =
+        state.csvExportState === "success"
+            ? "Saved!"
+            : state.csvExportState === "error"
+              ? "CSV export failed"
+              : "Save Coordinates (CSV)";
+
     const jsonButtonTitle =
         state.saveConfigState === "success"
             ? "Saved!"
@@ -985,6 +1035,7 @@ function ViewportExportActions() {
     const handleSavePNG = () => actions.downloadPNG();
     const handleSavePDF = () => actions.downloadPDF();
     const handleSaveDXF = () => actions.downloadDXF();
+    const handleSaveCSV = () => actions.downloadCSV();
     const handleSaveJSON = () => actions.saveConfigAsJSON();
     const handleLoadJSON = () => fileInputRef.current?.click();
     const handleShareLink = () => actions.copyShareableLink();
@@ -1073,6 +1124,27 @@ function ViewportExportActions() {
                 >
                     <SaveDxfIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
                     <span>{dxfButtonTitle}</span>
+                </button>
+
+                <hr className="export-dropdown-divider" />
+
+                <span className="export-dropdown-section-title">Data</span>
+                <button
+                    type="button"
+                    role="menuitem"
+                    className={`export-dropdown-item focus-ring save-csv-button${
+                        state.csvExportState === "success"
+                            ? " success"
+                            : state.csvExportState === "error"
+                              ? " error"
+                              : ""
+                    }`}
+                    onClick={handleSaveCSV}
+                    disabled={!hasTubes}
+                    hidden={noDrawing}
+                >
+                    <SaveCsvIcon className="btn-icon" width="16" height="16" aria-hidden="true" />
+                    <span>{csvButtonTitle}</span>
                 </button>
 
                 <hr className="export-dropdown-divider" />
