@@ -1,0 +1,3 @@
+{
+	"extends": ["@stylistic/stylelint-config", "stylelint-config-clean-order"]
+}
