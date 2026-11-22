@@ -1,5 +1,11 @@
 # tubesheet-generator-react-app
 
+## 2.12.1
+
+### Patch Changes
+
+- 21f1c24: Clarify the CSV radial-distance column header for tube coordinates.
+
 ## 2.12.0
 
 ### Minor Changes
