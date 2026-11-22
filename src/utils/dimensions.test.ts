@@ -35,7 +35,7 @@ describe("renderDimensions", () => {
         const { data, svg } = build("radial");
         renderDimensions(svg, data);
         const pitch = texts(svg).find((x) => x?.startsWith("Pitch"));
-        expect(pitch).toBe(`Pitch ${(19.05 * 1.333).toFixed(2)}`);
+        expect(pitch).toBe(`Pitch ${(19.05 * 1.333).toFixed(2)} mm`);
     });
 
     it("keeps text a constant on-screen size as the scale changes", () => {
@@ -88,15 +88,17 @@ describe("renderDimensions", () => {
     it("omits the in-SVG scale bar when it is shown separately", () => {
         const { data, svg } = build(45);
         renderDimensions(svg, data, { scaleBar: false });
-        expect(texts(svg).some((x) => x?.endsWith(" mm"))).toBe(false);
-        expect(texts(svg).some((x) => x?.startsWith("Pitch"))).toBe(true);
+        const t = texts(svg);
+        expect(t).not.toContain("0");
+        expect(t.some((x) => /^\d+(?:\.\d+)? mm$/.test(x ?? ""))).toBe(false);
+        expect(t.some((x) => x?.startsWith("Pitch"))).toBe(true);
     });
 
     it("still draws a pitch callout when the tube field is tiny and crowded", () => {
         const ts = new TubeSheet(150, 90.53, 1.25, "radial", 11) as unknown as ITubeSheetData;
         const svg = generateTubeSheetSVG(ts);
         renderDimensions(svg, ts);
-        expect(texts(svg)).toContain(`Pitch ${(90.53 * 1.25).toFixed(2)}`);
+        expect(texts(svg)).toContain(`Pitch ${(90.53 * 1.25).toFixed(2)} mm`);
     });
 
     it("draws a pitch callout for every layout", () => {

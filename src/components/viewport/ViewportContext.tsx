@@ -4,6 +4,7 @@ import type { AnimationLifecycle } from "@/hooks/useContextMenu";
 import type {
     CopyState,
     DxfExportState,
+    CsvExportState,
     PdfExportState,
     PngExportState,
     SvgExportState,
@@ -37,6 +38,7 @@ export interface ViewportState {
     pngExportState: PngExportState;
     pdfExportState: PdfExportState;
     dxfExportState: DxfExportState;
+    csvExportState: CsvExportState;
     saveConfigState: SaveConfigState;
     loadConfigState: LoadConfigState;
     loadConfigErrors: string[];
@@ -72,6 +74,7 @@ export interface ViewportActions {
     downloadPNG: () => void;
     downloadPDF: () => void;
     downloadDXF: () => void;
+    downloadCSV: () => void;
     saveConfigAsJSON: () => void;
     loadConfigFromFile: (file: File) => void;
     copyShareableLink: () => void;
