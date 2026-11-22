@@ -15,7 +15,7 @@ jobs:
     check_changeset:
         name: "Check For Changeset"
         if: |
-            github.actor != 'dependabot[bot]' &&
+            github.event.pull_request.user.login != 'dependabot[bot]' &&
             !contains(github.event.pull_request.labels.*.name, 'no-changeset')
         runs-on: ubuntu-latest
         steps:
