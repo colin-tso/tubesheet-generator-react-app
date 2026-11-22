@@ -1,0 +1,87 @@
+name: "Dev - PR Validation"
+on:
+    pull_request:
+        branches:
+            - dev
+        types:
+            - opened
+            - reopened
+            - synchronize
+
+permissions:
+    contents: read
+
+jobs:
+    app-validation:
+        name: "Application checks"
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Set up toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci --ignore-scripts
+
+            - name: Run tests
+              run: npm test -- --run
+
+            - name: Lint TypeScript
+              run: npm run lint
+
+            - name: Lint CSS
+              run: npm exec -- stylelint "src/**/*.css"
+
+            - name: Build
+              run: npm run build
+
+            - name: Prepare artifact-action smoke test
+              run: printf '%s\n' "artifact action compatibility test" > "$RUNNER_TEMP/artifact-smoke-test.txt"
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v7
+              with:
+                  name: pr-validation-smoke-test
+                  path: ${{ runner.temp }}/artifact-smoke-test.txt
+                  if-no-files-found: error
+
+    artifact-validation:
+        name: "Artifact action check"
+        needs: app-validation
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download artifact
+              uses: actions/download-artifact@v8
+              with:
+                  name: pr-validation-smoke-test
+                  path: ${{ runner.temp }}/downloaded-artifact
+
+            - name: Verify downloaded artifact
+              run: printf '%s\n' "artifact action compatibility test" | cmp - "$RUNNER_TEMP/downloaded-artifact/artifact-smoke-test.txt"
+
+    validate:
+        name: "Validate"
+        if: always()
+        needs:
+            - app-validation
+            - artifact-validation
+        runs-on: ubuntu-latest
+        steps:
+            - name: Require all validation jobs to pass
+              env:
+                  APP_VALIDATION_RESULT: ${{ needs.app-validation.result }}
+                  ARTIFACT_VALIDATION_RESULT: ${{ needs.artifact-validation.result }}
+              run: |
+                  if [[ "$APP_VALIDATION_RESULT" != "success" ]]; then
+                      echo "::error::Application checks did not pass (result: $APP_VALIDATION_RESULT)."
+                      exit 1
+                  fi
+                  if [[ "$ARTIFACT_VALIDATION_RESULT" != "success" ]]; then
+                      echo "::error::Artifact action checks did not pass (result: $ARTIFACT_VALIDATION_RESULT)."
+                      exit 1
+                  fi
