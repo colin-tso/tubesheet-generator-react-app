@@ -4,7 +4,7 @@ export const TUBE_COORDINATES_CSV_HEADER = [
     "Tube_Index",
     "X_mm",
     "Y_mm",
-    "Radius_mm",
+    "Radial_Distance_mm",
     "Diameter_mm",
 ] as const;
 
@@ -26,7 +26,7 @@ const fmt = (value: number): string => {
  * - `X_mm` / `Y_mm` are tube-centre coordinates in mm from the shell centre,
  *   with Y pointing up. The SVG is Y-down, so Y is negated here, exactly as the
  *   DXF export does, which keeps this table in step with the DXF drawing.
- * - `Radius_mm` is each tube centre's radial distance from the shell centre
+ * - `Radial_Distance_mm` is each tube centre's radial distance from the shell centre
  *   (not the tube's own radius, which is half of `Diameter_mm`).
  * - `Diameter_mm` is the tube OD.
  *

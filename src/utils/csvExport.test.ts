@@ -21,7 +21,7 @@ describe("buildTubeCoordinatesCsv", () => {
         });
         expect(csv).toBe(
             [
-                "Tube_Index,X_mm,Y_mm,Radius_mm,Diameter_mm",
+                "Tube_Index,X_mm,Y_mm,Radial_Distance_mm,Diameter_mm",
                 "1,0.000,0.000,0.000,19.050",
                 "2,3.000,-4.000,5.000,19.050",
                 "3,-19.050,0.000,19.050,19.050",
