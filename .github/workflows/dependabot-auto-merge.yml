@@ -1,7 +1,27 @@
 name: Dependabot auto-merge
 
+# Deliberately `pull_request`, not `pull_request_target`. This workflow checks
+# out and pushes to the PR branch, and `pull_request_target` would do that with
+# base-repo secrets and a write token (CodeQL: actions/untrusted-checkout/high).
+#
+# The push authenticates with DEPENDABOT_PAT, a fine-grained token scoped to
+# this repository with only `Contents: Read and write`. It is kept separate from
+# GH_ORG_PAT on purpose: that token is shared by six other workflows and also
+# needs write access to colin-tso/tubesheet-generator, so reusing it here would
+# put the release and deploy path behind a PR checkout.
+#
+# Dependabot-triggered runs cannot see Actions secrets, so DEPENDABOT_PAT,
+# GH_ORG_EMAIL and GH_ORG_NAME must also exist in the *Dependabot* secret store
+# (Settings > Secrets and variables > Dependabot). The Actions copies are not a
+# fallback: a missing secret arrives as an empty string, and the commit step
+# then dies on `empty ident name` rather than anything readable.
+#
+# The `permissions` block below governs GITHUB_TOKEN only, which still does the
+# metadata fetch and `gh pr merge`. Dependabot PRs get a read-only token by
+# default; `contents: write` is required because merging writes to the base
+# branch.
 on:
-    pull_request_target:
+    pull_request:
         branches:
             - dev
 
@@ -11,7 +31,14 @@ permissions:
 
 jobs:
     auto-merge:
-        if: github.actor == 'dependabot[bot]'
+        # Keyed on the PR author rather than github.actor: on `synchronize` the
+        # actor is whoever pushed, and a manual re-run uses the re-runner, so an
+        # actor check would skip the changeset after a human rebases a Dependabot
+        # branch. The head-repo check is defence in depth, so a fork head can
+        # never reach DEPENDABOT_PAT.
+        if: |
+            github.event.pull_request.user.login == 'dependabot[bot]' &&
+            github.event.pull_request.head.repo.full_name == github.repository
         runs-on: ubuntu-latest
         steps:
             - name: Fetch Dependabot metadata
@@ -39,7 +66,7 @@ jobs:
               uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.ref }}
-                  token: ${{ secrets.GH_ORG_PAT }}
+                  token: ${{ secrets.DEPENDABOT_PAT }}
 
             - name: Add changeset for production dependency update
               if: contains(steps.metadata.outputs.dependency-type, 'production')
@@ -68,6 +95,16 @@ jobs:
                   git config user.email "${{ secrets.GH_ORG_EMAIL }}"
                   git config user.name "${{ secrets.GH_ORG_NAME }}"
                   git add .changeset
+
+                  # A PAT push re-triggers `synchronize`, so this step runs again
+                  # with the changeset already on the branch. Commit only when
+                  # something is staged, or that re-run fails on "nothing to
+                  # commit" and turns the check red.
+                  if git diff --cached --quiet; then
+                    echo "Changeset already present; nothing to push."
+                    exit 0
+                  fi
+
                   git commit -m "chore: add changeset for dependency update"
                   git push origin "HEAD:$PR_HEAD_REF"
 
