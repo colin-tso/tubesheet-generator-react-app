@@ -1,32 +1,12 @@
 name: Dependabot auto-merge
 
-# Deliberately `pull_request`, not `pull_request_target`. This workflow checks
-# out and pushes to the PR branch, and `pull_request_target` would do that with
-# base-repo secrets and a write token (CodeQL: actions/untrusted-checkout/high).
-#
-# The push authenticates with DEPENDABOT_PAT, a fine-grained token scoped to
-# this repository with only `Contents: Read and write`. It is kept separate from
-# GH_ORG_PAT on purpose: that token is shared by six other workflows and also
-# needs write access to colin-tso/tubesheet-generator, so reusing it here would
-# put the release and deploy path behind a PR checkout.
-#
-# Dependabot-triggered runs cannot see Actions secrets, so DEPENDABOT_PAT must
-# also exist in the *Dependabot* secret store (Settings > Secrets and variables
-# > Dependabot). There is no fallback and no error if it is missing: checkout
-# receives an empty token, falls back to GITHUB_TOKEN, and the push still
-# succeeds because of the `contents: write` permission below. The run only
-# degrades - it stops using the scoped token, and its commit does not trigger
-# other workflows.
-#
-# The commit identity comes from repository variables instead (GH_ORG_EMAIL and
-# GH_ORG_NAME). Variables are not restricted for Dependabot-triggered runs, so
-# unlike the token they only have to exist in one place. An unset variable is
-# loud rather than silent: the commit fails on `empty ident name`.
-#
-# The `permissions` block below governs GITHUB_TOKEN only, which still does the
-# metadata fetch and `gh pr merge`. Dependabot PRs get a read-only token by
-# default; `contents: write` is required because merging writes to the base
-# branch.
+# This workflow uses `pull_request`, not `pull_request_target`: it checks out
+# untrusted PR code, so it must not receive base-repository secrets or a broad
+# write token. DEPENDABOT_PAT is a repository-scoped fine-grained token with only
+# `Contents: Read and write`; keep it separate from organization tokens used for
+# releases or deployments. It must be configured in the Dependabot secret store.
+# Repository variables supply the commit identity. GITHUB_TOKEN handles metadata
+# and merging, and `contents: write` is limited to the merge operation.
 on:
     pull_request:
         branches:
@@ -54,29 +34,23 @@ jobs:
               with:
                   github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-            # Only production dependency bumps get a changeset (and therefore
-            # a version bump on dev). Dev-only dependency updates are skipped
-            # here on purpose. dependabot.yml has to keep production and
-            # development in a single update config, so it can no longer label
-            # the two cases apart - the distinction comes from fetch-metadata's
-            # `dependency-type` output, which reads "direct:production" for a
-            # production dependency and "direct:development" for a dev one.
-            #
-            # For a grouped update fetch-metadata reports the highest-priority
-            # type in the group, so a group mixing production and development
-            # dependencies reads as "direct:production" and does get a
-            # changeset. That is why dependabot.yml keeps `react` (production)
-            # and `react-types` (development) in separate groups instead of one
-            # group covering both.
+            # Add a changeset only for production npm dependency updates.
+            # fetch-metadata identifies dependency type and ecosystem; dev-only
+            # and GitHub Actions updates are excluded. Keep React and React type
+            # dependencies in separate groups because grouped updates report as production.
             - name: Checkout PR branch
-              if: contains(steps.metadata.outputs.dependency-type, 'production')
+              if: |
+                  contains(steps.metadata.outputs.dependency-type, 'production') &&
+                  !startsWith(steps.metadata.outputs.package-ecosystem, 'github')
               uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.ref }}
                   token: ${{ secrets.DEPENDABOT_PAT }}
 
             - name: Add changeset for production dependency update
-              if: contains(steps.metadata.outputs.dependency-type, 'production')
+              if: |
+                  contains(steps.metadata.outputs.dependency-type, 'production') &&
+                  !startsWith(steps.metadata.outputs.package-ecosystem, 'github')
               env:
                   UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}

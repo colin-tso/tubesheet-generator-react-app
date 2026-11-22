@@ -60,6 +60,13 @@ updates:
                   - "@types/react"
                   - "@types/react-dom"
 
+          # Keep Stylelint dependencies together in the same update pull request.
+          stylelint:
+              patterns:
+                  - "stylelint"
+                  - "stylelint-*"
+                  - "@stylistic/*"
+
     # GitHub Actions workflow dependencies
     - package-ecosystem: "github-actions"
       directory: "/"
@@ -68,3 +75,9 @@ updates:
           interval: "weekly"
       labels:
           - "dependencies"
+      # Keep GitHub artifact actions together in the same update pull request.
+      groups:
+          artifact-actions:
+              patterns:
+                  - "actions/upload-artifact"
+                  - "actions/download-artifact"
