@@ -1,6 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Viewport } from "./Viewport";
+import { downloadBlob } from "@/utils/svgExport";
+
+vi.mock("@/utils/svgExport", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@/utils/svgExport")>()),
+    downloadBlob: vi.fn(),
+}));
 
 function makeSvg() {
     return document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
@@ -26,10 +32,10 @@ function getDesktopExportMenu() {
     return document.getElementById("desktop-export-menu") as HTMLDivElement;
 }
 
-function renderViewport() {
+function renderViewport(workerOverride: Partial<typeof worker> = {}) {
     return render(
         <Viewport.Provider
-            worker={worker}
+            worker={{ ...worker, ...workerOverride } as typeof worker}
             placeholderSVG={placeholderSVG}
             drawingTableLabel=""
             drawingTableRequestedTubes={undefined}
@@ -122,6 +128,9 @@ describe("desktop export dropdown menu", () => {
         expect(screen.getByRole("menuitem", { name: /save as png/i })).toBeInTheDocument();
         expect(screen.getByRole("menuitem", { name: /save as pdf/i })).toBeInTheDocument();
         expect(screen.getByRole("menuitem", { name: /save as dxf/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole("menuitem", { name: /save coordinates \(csv\)/i }),
+        ).toBeInTheDocument();
         expect(screen.getByRole("menuitem", { name: /save as json/i })).toBeInTheDocument();
         expect(screen.getByRole("menuitem", { name: /load json/i })).toBeInTheDocument();
         expect(screen.getByRole("menuitem", { name: /copy shareable link/i })).toBeInTheDocument();
@@ -136,5 +145,43 @@ describe("desktop export dropdown menu", () => {
 
         expect(getDesktopExportMenu()).not.toHaveAttribute("hidden");
         expect(getDesktopExportToggle().getAttribute("aria-expanded")).toBe("true");
+    });
+});
+
+describe("Save Coordinates (CSV)", () => {
+    beforeEach(() => vi.mocked(downloadBlob).mockClear());
+
+    it("downloads tubesheet-coordinates.csv from the committed tube field", () => {
+        renderViewport({
+            lastSingleResult: {
+                tubeField: [
+                    { x: 0, y: 0 },
+                    { x: 25, y: 0 },
+                ],
+                OTL: 44.05,
+                shellID: 60,
+                minID: 54.05,
+                tubeOD: 19.05,
+                pitchRatio: 1.25,
+                layout: 90,
+                numTubes: 2,
+            } as never,
+        });
+
+        fireEvent.click(getDesktopExportToggle());
+        fireEvent.click(screen.getByRole("menuitem", { name: /save coordinates \(csv\)/i }));
+
+        expect(downloadBlob).toHaveBeenCalledTimes(1);
+        const [blob, filename] = vi.mocked(downloadBlob).mock.calls[0] as [Blob, string];
+        expect(filename).toBe("tubesheet-coordinates.csv");
+        expect(blob.type).toContain("text/csv");
+    });
+});
+
+describe("Save Coordinates (CSV) availability", () => {
+    it("is disabled until a layout with tubes has been calculated", () => {
+        renderViewport();
+        fireEvent.click(getDesktopExportToggle());
+        expect(screen.getByRole("menuitem", { name: /save coordinates \(csv\)/i })).toBeDisabled();
     });
 });

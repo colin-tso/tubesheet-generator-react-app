@@ -8,6 +8,7 @@ import {
 } from "@/utils/svgExport";
 import { buildTubeSheetPdfBlob } from "@/utils/pdfExport";
 import { buildTubeSheetDxfBlob } from "@/utils/dxfExport";
+import { buildTubeCoordinatesCsvBlob } from "@/utils/csvExport";
 import type { ITubeSheetData } from "@/plugins/tubesheet-layout-generator";
 
 export type CopyState = "idle" | "pending" | "copied" | "error" | "unsupported" | "downloaded";
@@ -15,6 +16,7 @@ export type SvgExportState = "idle" | "success" | "error";
 export type PngExportState = "idle" | "pending" | "success" | "error";
 export type PdfExportState = "idle" | "pending" | "success" | "error";
 export type DxfExportState = "idle" | "pending" | "success" | "error";
+export type CsvExportState = "idle" | "success" | "error";
 
 const EXPORT_RESET_DELAY_MS = 2500;
 
@@ -63,6 +65,7 @@ export function useSvgExportActions(
     const pdfExportInFlightRef = useRef(false);
     const [dxfExportState, setDxfExportState] = useState<DxfExportState>("idle");
     const dxfExportInFlightRef = useRef(false);
+    const [csvExportState, setCsvExportState] = useState<CsvExportState>("idle");
 
     useEffect(() => {
         preloadPngEncodeWorker();
@@ -160,6 +163,24 @@ export function useSvgExportActions(
             });
     }, [drawingSVG, tableData, tableLayoutLabel, tableRequestedTubes]);
 
+    // Tube-centre coordinates for CNC/CAM and QA. Synchronous like the SVG
+    // export: it is just text built from the committed tube field.
+    const downloadCSV = useCallback((): boolean => {
+        try {
+            const blob = buildTubeCoordinatesCsvBlob(tableData);
+            if (!blob) throw new Error("No tube field to export");
+            downloadBlob(blob, "tubesheet-coordinates.csv");
+            setCsvExportState("success");
+            setTimeout(() => setCsvExportState("idle"), EXPORT_RESET_DELAY_MS);
+            return true;
+        } catch (err) {
+            console.error("CSV export failed:", err);
+            setCsvExportState("error");
+            setTimeout(() => setCsvExportState("idle"), EXPORT_RESET_DELAY_MS);
+            return false;
+        }
+    }, [tableData]);
+
     const copySVG = useCallback(() => {
         if (copyInFlightRef.current) return;
 
@@ -252,6 +273,8 @@ export function useSvgExportActions(
         pdfExportState,
         downloadDXF,
         dxfExportState,
+        downloadCSV,
+        csvExportState,
         copySVG,
         copyReady,
     };
