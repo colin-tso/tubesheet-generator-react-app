@@ -131,5 +131,5 @@ jobs:
                   preview-branch: gh-pages
                   umbrella-dir: ${{ env.PREVIEW_UMBRELLA_DIR }}
                   action: auto
-                  git-config-name: ${{ secrets.GH_ORG_NAME }}
-                  git-config-email: ${{ secrets.GH_ORG_EMAIL }}
+                  git-config-name: ${{ vars.GH_ORG_NAME }}
+                  git-config-email: ${{ vars.GH_ORG_EMAIL }}

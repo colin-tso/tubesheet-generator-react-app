@@ -10,11 +10,18 @@ name: Dependabot auto-merge
 # needs write access to colin-tso/tubesheet-generator, so reusing it here would
 # put the release and deploy path behind a PR checkout.
 #
-# Dependabot-triggered runs cannot see Actions secrets, so DEPENDABOT_PAT,
-# GH_ORG_EMAIL and GH_ORG_NAME must also exist in the *Dependabot* secret store
-# (Settings > Secrets and variables > Dependabot). The Actions copies are not a
-# fallback: a missing secret arrives as an empty string, and the commit step
-# then dies on `empty ident name` rather than anything readable.
+# Dependabot-triggered runs cannot see Actions secrets, so DEPENDABOT_PAT must
+# also exist in the *Dependabot* secret store (Settings > Secrets and variables
+# > Dependabot). There is no fallback and no error if it is missing: checkout
+# receives an empty token, falls back to GITHUB_TOKEN, and the push still
+# succeeds because of the `contents: write` permission below. The run only
+# degrades - it stops using the scoped token, and its commit does not trigger
+# other workflows.
+#
+# The commit identity comes from repository variables instead (GH_ORG_EMAIL and
+# GH_ORG_NAME). Variables are not restricted for Dependabot-triggered runs, so
+# unlike the token they only have to exist in one place. An unset variable is
+# loud rather than silent: the commit fails on `empty ident name`.
 #
 # The `permissions` block below governs GITHUB_TOKEN only, which still does the
 # metadata fetch and `gh pr merge`. Dependabot PRs get a read-only token by
@@ -92,8 +99,8 @@ jobs:
                   ${PR_TITLE}
                   EOF
 
-                  git config user.email "${{ secrets.GH_ORG_EMAIL }}"
-                  git config user.name "${{ secrets.GH_ORG_NAME }}"
+                  git config user.email "${{ vars.GH_ORG_EMAIL }}"
+                  git config user.name "${{ vars.GH_ORG_NAME }}"
                   git add .changeset
 
                   # A PAT push re-triggers `synchronize`, so this step runs again
