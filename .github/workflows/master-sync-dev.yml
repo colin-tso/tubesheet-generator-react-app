@@ -35,8 +35,8 @@ jobs:
 
             - name: Git config
               run: |
-                  git config --global user.email "${{ secrets.GH_ORG_EMAIL }}"
-                  git config --global user.name "${{ secrets.GH_ORG_NAME }}"
+                  git config --global user.email "${{ vars.GH_ORG_EMAIL }}"
+                  git config --global user.name "${{ vars.GH_ORG_NAME }}"
 
             - name: Merge master into dev
               id: merge

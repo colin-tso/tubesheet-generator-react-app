@@ -207,8 +207,8 @@ jobs:
               env:
                   GH_TOKEN: ${{ secrets.GH_ORG_PAT }}
               run: |
-                  git config user.name "${{ secrets.GH_ORG_NAME }}"
-                  git config user.email "${{ secrets.GH_ORG_EMAIL }}"
+                  git config user.name "${{ vars.GH_ORG_NAME }}"
+                  git config user.email "${{ vars.GH_ORG_EMAIL }}"
                   git add -A
                   if git diff --cached --quiet; then
                     echo "No changes to sync."
