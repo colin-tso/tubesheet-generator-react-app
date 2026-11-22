@@ -89,13 +89,18 @@ jobs:
                   git commit -m "chore: add changeset for dependency update"
                   git push origin "HEAD:$PR_HEAD_REF"
 
-            # For a grouped update `update-type` is the highest semver level in
-            # the group, so a group made up of patches still auto-merges and any
-            # group containing a major does not.
-            - name: Enable auto-merge for patch/minor updates
+            # `gh pr merge --auto` queues the merge; the dev ruleset's required
+            # Validate check must pass before GitHub completes it. Include npm
+            # majors, but leave GitHub Actions majors for manual review because
+            # the app validation job does not exercise every changed action.
+            - name: Enable auto-merge for validated npm majors and patch/minors
               if: |
                   steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-                  steps.metadata.outputs.update-type == 'version-update:semver-minor'
+                  steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+                  (
+                    steps.metadata.outputs.update-type == 'version-update:semver-major' &&
+                    steps.metadata.outputs.package-ecosystem == 'npm'
+                  )
               run: gh pr merge --auto --squash "$PR_URL"
               env:
                   PR_URL: ${{ github.event.pull_request.html_url }}
